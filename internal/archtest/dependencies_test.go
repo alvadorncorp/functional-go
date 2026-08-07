@@ -1,8 +1,9 @@
-// Package archtest proves two dependency invariants of the functional
-// module mechanically, so they stay true rather than merely documented: the
-// module has zero non-stdlib dependencies outside itself, and no public
-// subpackage imports another (functional/internal/eq is the one shared
-// exception every public package may use).
+// Package archtest proves dependency invariants of the functional module
+// mechanically, so they stay true rather than merely documented: the module
+// has zero non-stdlib dependencies outside itself, no public subpackage
+// imports another (functional/internal/eq is the one shared exception every
+// public package may use), and the internal/core DAG stays a star into
+// ownership with no peer edges and no reflect.
 package archtest
 
 import (
@@ -22,6 +23,15 @@ import (
 // depend on anything outside itself.
 const functionalModulePrefix = "github.com/alvadorncorp/gopackages/functional/"
 
+const (
+	pkgOwnership = "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	pkgCow       = "github.com/alvadorncorp/gopackages/functional/internal/core/cow"
+	pkgTransient = "github.com/alvadorncorp/gopackages/functional/internal/core/transient"
+	pkgSharing   = "github.com/alvadorncorp/gopackages/functional/internal/core/sharing"
+	pkgEq        = "github.com/alvadorncorp/gopackages/functional/internal/eq"
+	corePrefix   = "github.com/alvadorncorp/gopackages/functional/internal/core/"
+)
+
 // publicPackages are every public subpackage of functional, by import path.
 // None of these may depend on another.
 var publicPackages = []string{
@@ -31,14 +41,55 @@ var publicPackages = []string{
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
 
-// allPackages is publicPackages plus the one internal package every public
-// package is allowed to share: functional/internal/eq.
+// publicPackagesNoCore are the public packages that must never import
+// internal/core. persistent is deliberately omitted: it may depend on core
+// later for the engine contract.
+var publicPackagesNoCore = []string{
+	"github.com/alvadorncorp/gopackages/functional/optional",
+	"github.com/alvadorncorp/gopackages/functional/frozen",
+	"github.com/alvadorncorp/gopackages/functional/valueobject",
+}
+
+// corePackages is every production package under internal/core.
+var corePackages = []string{
+	pkgOwnership,
+	pkgCow,
+	pkgTransient,
+	pkgSharing,
+}
+
+// allPackages is every production package whose non-stdlib dependency set
+// must stay inside the functional module: public packages, internal/eq, and
+// all internal/core packages.
 var allPackages = []string{
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/frozen",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
-	"github.com/alvadorncorp/gopackages/functional/internal/eq",
+	pkgEq,
+	pkgOwnership,
+	pkgCow,
+	pkgTransient,
+	pkgSharing,
+}
+
+// coreAllowedEdges is the only permitted non-self edge set among core
+// packages: a star into ownership. Peer edges and reverse edges are forbidden.
+var coreAllowedEdges = map[string][]string{
+	pkgOwnership: {},
+	pkgCow:       {pkgOwnership},
+	pkgTransient: {pkgOwnership},
+	pkgSharing:   {pkgOwnership},
+}
+
+// coreForbiddenTargets are non-core functional packages no core package may
+// import (today or later without an explicit archtest change).
+var coreForbiddenTargets = []string{
+	pkgEq,
+	"github.com/alvadorncorp/gopackages/functional/optional",
+	"github.com/alvadorncorp/gopackages/functional/frozen",
+	"github.com/alvadorncorp/gopackages/functional/persistent",
+	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
 
 // TestNoNonStdlibDependencies proves the module has zero dependencies
@@ -114,6 +165,74 @@ func TestGoModHasNoRequirements(t *testing.T) {
 	}
 }
 
+// TestCoreNoReflect proves no production file under internal/core imports
+// "reflect". Tests may still use the testing package; this gate inspects
+// production Imports only (go list without -test).
+func TestCoreNoReflect(t *testing.T) {
+	t.Parallel()
+	for _, pkg := range corePackages {
+		t.Run(pkg, func(t *testing.T) {
+			t.Parallel()
+			for _, imp := range productionImports(t, pkg) {
+				if imp == "reflect" {
+					t.Errorf("%s must not import reflect", pkg)
+				}
+			}
+		})
+	}
+}
+
+// TestCoreDependencyDAG proves the core package graph is a star into
+// ownership: cow, transient, and sharing may each depend on ownership, and
+// nothing else in functional. Peer edges, reverse edges into ownership, and
+// edges into eq/public packages are forbidden.
+func TestCoreDependencyDAG(t *testing.T) {
+	t.Parallel()
+	for _, pkg := range corePackages {
+		t.Run(pkg, func(t *testing.T) {
+			t.Parallel()
+			allowed := coreAllowedEdges[pkg]
+			for _, dep := range deps(t, pkg) {
+				if dep == pkg {
+					continue
+				}
+				if !strings.HasPrefix(dep, functionalModulePrefix) {
+					continue // stdlib / outside handled by TestNoNonStdlibDependencies
+				}
+				if slices.Contains(coreForbiddenTargets, dep) {
+					t.Errorf("%s must not depend on %s", pkg, dep)
+					continue
+				}
+				if strings.HasPrefix(dep, corePrefix) || dep == strings.TrimSuffix(corePrefix, "/") {
+					if !slices.Contains(allowed, dep) {
+						t.Errorf("%s must not depend on core package %s (allowed: %v)", pkg, dep, allowed)
+					}
+					continue
+				}
+				// Any other functional package is also forbidden for core.
+				t.Errorf("%s must not depend on %s", pkg, dep)
+			}
+		})
+	}
+}
+
+// TestPublicPackagesDoNotImportCore proves optional, frozen, and
+// valueobject production code never reach into internal/core. persistent is
+// allowed to import core (engine contract) and is not checked here.
+func TestPublicPackagesDoNotImportCore(t *testing.T) {
+	t.Parallel()
+	for _, pkg := range publicPackagesNoCore {
+		t.Run(pkg, func(t *testing.T) {
+			t.Parallel()
+			for _, dep := range deps(t, pkg) {
+				if strings.HasPrefix(dep, corePrefix) {
+					t.Errorf("%s must not depend on core package %s", pkg, dep)
+				}
+			}
+		})
+	}
+}
+
 // goModPath resolves the functional module's go.mod via `go env GOMOD`. The
 // command inherits this test binary's working directory, which `go test`
 // sets to this package's own directory — inside the functional module — so
@@ -158,4 +277,21 @@ func deps(t *testing.T, pkg string) []string {
 		}
 	}
 	return found
+}
+
+// productionImports returns the direct production Imports of pkg (no test
+// files), via `go list -json`. Includes stdlib paths such as "reflect".
+func productionImports(t *testing.T, pkg string) []string {
+	t.Helper()
+	out, err := exec.Command("go", "list", "-json", pkg).Output()
+	if err != nil {
+		t.Fatalf("go list -json %s: %v", pkg, err)
+	}
+	var e struct {
+		Imports []string
+	}
+	if err := json.Unmarshal(out, &e); err != nil {
+		t.Fatalf("decode go list -json %s: %v", pkg, err)
+	}
+	return e.Imports
 }
