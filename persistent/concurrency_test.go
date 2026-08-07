@@ -23,7 +23,7 @@ const numDerivations = 200
 func TestListConcurrentReadDuringDerive(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.NewList(1, 2, 3, 4, 5)
+	base := persistent.ListOf(1, 2, 3, 4, 5)
 	want := base.Items()
 
 	var wg sync.WaitGroup
@@ -82,7 +82,7 @@ func TestListConcurrentReadDuringDerive(t *testing.T) {
 func TestMapConcurrentReadDuringDerive(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.NewMap(map[string]int{"a": 1, "b": 2, "c": 3})
+	base := persistent.MapOf(map[string]int{"a": 1, "b": 2, "c": 3})
 
 	var wg sync.WaitGroup
 	stop := make(chan struct{})
@@ -132,7 +132,7 @@ func TestMapConcurrentReadDuringDerive(t *testing.T) {
 func TestSetConcurrentReadDuringDerive(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.NewSet(1, 2, 3)
+	base := persistent.SetOf(1, 2, 3)
 
 	var wg sync.WaitGroup
 	stop := make(chan struct{})

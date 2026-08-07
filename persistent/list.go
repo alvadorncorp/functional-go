@@ -16,7 +16,7 @@ import (
 // Representation: List holds an unexported vector.Root. The zero List is a
 // valid empty list — it relies on the zero vector.Root (nil trie, empty
 // tail, count 0): Len is 0, At panics, and Append starts a lineage from that
-// seed. Constructed Lists (NewList, CollectList, Builder.Build, and every
+// seed. Constructed Lists (ListOf, CollectList, Builder.Build, and every
 // Append/Set/Delete result) use a proper Empty-seeded root when they first
 // materialize elements.
 //
@@ -28,10 +28,10 @@ type List[T any] struct {
 	root vector.Root[T]
 }
 
-// NewList returns a List holding a copy of items, in order. The caller's
+// ListOf returns a List holding a copy of items, in order. The caller's
 // slice is never retained: later mutation of items through the caller's own
 // reference does not reach the returned List.
-func NewList[T any](items ...T) List[T] {
+func ListOf[T any](items ...T) List[T] {
 	return List[T]{root: vector.Empty[T]().Append(items...)}
 }
 
@@ -46,6 +46,9 @@ func CollectList[T any](seq iter.Seq[T]) List[T] {
 
 // Len returns the number of elements in l.
 func (l List[T]) Len() int { return l.root.Len() }
+
+// IsEmpty reports whether l holds no elements. The zero List is empty.
+func (l List[T]) IsEmpty() bool { return l.root.Len() == 0 }
 
 // At returns the element at index i. It panics with
 // "persistent: index out of range" when i is outside [0, Len).
@@ -141,6 +144,21 @@ func (l List[T]) Equal(other List[T]) bool {
 	return true
 }
 
+// EqualFunc reports whether l and other hold the same number of elements and
+// equal returns true for every pair of elements at the same index, in index
+// order. Comparison stops at the first false result from equal.
+func (l List[T]) EqualFunc(other List[T], equal func(T, T) bool) bool {
+	if l.root.Len() != other.root.Len() {
+		return false
+	}
+	for i, v := range l.root.All() {
+		if !equal(v, other.root.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Builder returns a ListBuilder seeded from l's root (same node graph; later
 // exclusive edits copy-on-write). l is not affected by any later operation
 // on the builder.
@@ -206,6 +224,17 @@ func (b *ListBuilder[T]) Delete(i int) *ListBuilder[T] {
 func (b *ListBuilder[T]) Len() int {
 	b.checkNotBuilt()
 	return b.root.Len()
+}
+
+// At returns the element at index i currently held by the builder. It
+// panics with "persistent: index out of range" when i is outside [0, Len).
+// After Build, At panics with "persistent: builder used after Build".
+func (b *ListBuilder[T]) At(i int) T {
+	b.checkNotBuilt()
+	if i < 0 || i >= b.root.Len() {
+		panic(panicIndexOutOfRange)
+	}
+	return b.root.At(i)
 }
 
 // Build returns an immutable List holding the builder's current root and

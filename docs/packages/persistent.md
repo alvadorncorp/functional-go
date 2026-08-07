@@ -7,6 +7,9 @@ functionally: every update method returns a new collection and leaves the
 receiver unchanged. There is no in-place mutation anywhere in this API;
 "write" always means "derive a new value from an old one."
 
+Constructors are **`ListOf` / `MapOf` / `SetOf`** (not `New*`). See the
+[name glossary](#name-glossary) for historical renames.
+
 ## Engines (Baseline B)
 
 | Type | Engine | Sharing model |
@@ -16,16 +19,29 @@ receiver unchanged. There is no in-place mutation anywhere in this API;
 
 - **HAMT seed policy:** each independent empty `hamt.Root` holds its own
   `maphash.Seed`; derived versions preserve that seed. Key hashing uses
-  `maphash.Comparable` via `internal/engine/keyhash`.
+  `maphash.Comparable` via `internal/engine/keyhash`. The zero `Map`/`Set`
+  is a valid empty collection for reads; the **first write**
+  (`Set`/`Delete`/`Add`/`Remove`) or `Builder()` **materializes** a proper
+  `hamt.Empty` seed so the lineage never freezes a zero `maphash.Seed`.
+  Independent zero receivers each get their own seed on first materialization.
 - **Builders:** open an internal `transient.Window`, edit under the window's
   exclusive `*ownership.Owner` (engine transient paths mutate owned nodes in
   place), and `Freeze` on `Build` — **O(1)** owner invalidation, no tree
   walk. Residual inactive stamps fail `IsOwnedBy`, so no Detach walk is
-  required.
+  required. Builders are **not** safe for concurrent use.
 - **`List.Delete`:** currently **O(n)** (vector rebuild by iteration; mid-index
   shift). A caller MUST NOT depend on a tighter bound for Delete. The vector
   engine also exposes internal `Pop`/`TransientPop` (O(1) when the tail has
   more than one element, else O(log₃₂ n)); there is no public `List.Pop`.
+- **No `reflect` in production:** `persistent` production code does not import
+  `reflect`. Equality goes through `functional/internal/eq` (method, then
+  `==`; never `reflect.DeepEqual`).
+- **Semantic immutability:** the collection structure never mutates in place.
+  Stored values are not deep-copied; mutable referents shared by the caller
+  remain shared across versions.
+- **Concurrency:** published (immutable) collections are safe for concurrent
+  read, including while another goroutine derives new versions from the same
+  base.
 - **Engine micro-benches:** optional alloc/path-copy probes live in
   `internal/engine/hamt/benchmark_test.go` and
   `internal/engine/vector/benchmark_test.go` (not part of the public API).
@@ -43,9 +59,9 @@ slice/map; that is no longer the engine.
 
 | Area | Types / APIs |
 |---|---|
-| Ordered collection | `List[T]`, `NewList`, `CollectList`, `ListBuilder[T]` |
-| Key-value collection | `Map[K,V]`, `NewMap`, `CollectMap`, `MapBuilder[K,V]` |
-| Set collection | `Set[T]`, `NewSet`, `CollectSet`, `SetBuilder[T]` |
+| Ordered collection | `List[T]`, `ListOf`, `CollectList`, `ListBuilder[T]` |
+| Key-value collection | `Map[K,V]`, `MapOf`, `CollectMap`, `MapBuilder[K,V]` |
+| Set collection | `Set[T]`, `SetOf`, `CollectSet`, `SetBuilder[T]` |
 | Engines | `internal/engine/hamt` (Map/Set), `internal/engine/vector` (List) |
 | Mutation substrate | Builders use `internal/core/transient` + engine exclusive-owner paths |
 
@@ -62,14 +78,17 @@ slice/map; that is no longer the engine.
    for (see the table below). Path-copy updates allocate along a tree path
    (depth curve), not a full collection copy — but callers must still use
    the documented bounds, not today's constants.
-4. **None of the three types are `==`-comparable.** Use `Equal`. Comparing
-   by `==` would compare identity of the underlying representation.
+4. **None of the three types are `==`-comparable.** Use `Equal` or
+   `EqualFunc`. Comparing by `==` would compare identity of the underlying
+   representation.
 5. **Calling `Append`/`Set`/`Delete`/`Add`/`Remove` `n` times in a loop still
    allocates `n` intermediate collections.** `Builder()` exists for bulk
    construction: exclusive ownership + O(1) `Freeze`. Builders open a
    `transient.Window` and `Freeze` on `Build`; public panics remain
    `"persistent: ..."`.
-6. **Every test in this package is `package persistent_test`** (external),
+6. **Zero values are valid empty collections.** Map/Set first write or
+   `Builder()` materializes an `hamt.Empty` seed.
+7. **Every test in this package is `package persistent_test`** (external),
    asserting only publicly observable behavior — the acceptance criterion
    for any future engine change is this suite passing unchanged.
 
@@ -79,7 +98,7 @@ slice/map; that is no longer the engine.
 
 | Operation | Documented bound | Notes |
 |---|---|---|
-| `Len` | `O(1)` | |
+| `Len`, `IsEmpty` | `O(1)` | |
 | `At`, `Get`, `Has` | `O(log n)` | |
 | `Set`, `Delete` (Map), `Add`/`Remove` (Set) | `O(log n)` | Path-copy HAMT |
 | `Append`, `Set` (List) | `O(log n)` amortized / path | Path-copy vector |
@@ -92,13 +111,24 @@ and [core.md](core.md).
 
 ---
 
+## Name glossary
+
+| Prefer | Avoid / historical |
+|---|---|
+| `ListOf` / `MapOf` / `SetOf` | `NewList` / `NewMap` / `NewSet` |
+| `Has` | `Contains` |
+| `Build` (public builder publish) | `Freeze` (internal `transient.Window` op) |
+
+---
+
 ## `List[T]`
 
 | Function / method | Behaviour |
 |---|---|
-| `NewList[T](items ...T) List[T]` | Copies `items`, in order (via vector append). |
+| `ListOf[T](items ...T) List[T]` | Copies `items`, in order (via vector append). |
 | `CollectList[T](seq iter.Seq[T]) List[T]` | Drains `seq` into a new `List`, in iteration order. |
 | `(l List[T]) Len() int` | Element count. |
+| `(l List[T]) IsEmpty() bool` | `Len() == 0`. Zero `List` is empty. |
 | `(l List[T]) At(i int) T` | Element at `i`; panics `"persistent: index out of range"` outside `[0, Len)`. |
 | `(l List[T]) Append(items ...T) List[T]` | New `List` with `items` appended. `l` unchanged. Path-copy vector. |
 | `(l List[T]) Set(i int, v T) List[T]` | New `List` with index `i` replaced. Panics as above. |
@@ -106,12 +136,13 @@ and [core.md](core.md).
 | `(l List[T]) Values() iter.Seq[T]` | Elements in index order. |
 | `(l List[T]) All() iter.Seq2[int, T]` | (index, element) pairs in index order. |
 | `(l List[T]) Items() []T` | Fresh mutable copy; caller owns it. |
-| `(l List[T]) Equal(other List[T]) bool` | Same elements, same order, via `functional/internal/eq.Equal`. |
+| `(l List[T]) Equal(other List[T]) bool` | Same elements, same order, via `functional/internal/eq.Equal` (no `DeepEqual`). |
+| `(l List[T]) EqualFunc(other List[T], eq func(T, T) bool) bool` | Same length; pairs compared with `eq`. |
 | `(l List[T]) Builder() *ListBuilder[T]` | Seeds a `ListBuilder[T]` from `l` and opens a `transient.Window`. |
 
 `ListBuilder[T]` — **mutable, not safe for concurrent use** — offers
 `Append`, `Set`, `Delete` (all chainable, same panic messages as `List`),
-`Len`, and `Build() List[T]`. `Build` freezes the builder's transient
+`Len`, `At`, and `Build() List[T]`. `Build` freezes the builder's transient
 window (O(1) owner invalidation), returns an immutable `List`, and
 permanently disables the builder: every method afterward, including a
 repeated `Build`, panics `"persistent: builder used after Build"`.
@@ -120,36 +151,41 @@ repeated `Build`, panics `"persistent: builder used after Build"`.
 
 | Function / method | Behaviour |
 |---|---|
-| `NewMap[K,V](m map[K]V) Map[K,V]` | Copies `m` into a fresh HAMT root. |
+| `MapOf[K,V](m map[K]V) Map[K,V]` | Copies `m` into a fresh HAMT root (`hamt.Empty` seed). |
 | `CollectMap[K,V](seq iter.Seq2[K,V]) Map[K,V]` | Drains `seq`; last value wins on a repeated key, matching `maps.Collect`. |
-| `(m Map[K,V]) Len() int` / `Get(k K) (V, bool)` / `Has(k K) bool` | Read access. |
-| `(m Map[K,V]) Set(k K, v V) Map[K,V]` | New `Map` with `k` mapped to `v`. `m` unchanged. Path-copy HAMT. |
-| `(m Map[K,V]) Delete(k K) Map[K,V]` | New `Map` without `k`. `m` unchanged. |
+| `(m Map[K,V]) Len() int` | Entry count. |
+| `(m Map[K,V]) IsEmpty() bool` | `Len() == 0`. Zero `Map` is empty. |
+| `(m Map[K,V]) Get(k K) (V, bool)` / `Has(k K) bool` | Read access. |
+| `(m Map[K,V]) Set(k K, v V) Map[K,V]` | New `Map` with `k` mapped to `v`. `m` unchanged. Path-copy HAMT. Zero `Map` materializes seed first. |
+| `(m Map[K,V]) Delete(k K) Map[K,V]` | New `Map` without `k`. `m` unchanged. Zero `Map` materializes seed first. |
 | `(m Map[K,V]) All/Keys/Values() iter.Seq(2)[...]` | Unspecified iteration order. |
 | `(m Map[K,V]) Items() map[K]V` | Fresh, non-nil copy. |
-| `(m Map[K,V]) Equal(other Map[K,V]) bool` | Same key set, each value equal via `functional/internal/eq.Equal`. |
-| `(m Map[K,V]) Builder() *MapBuilder[K,V]` | Seeds a `MapBuilder[K,V]` (opens a `transient.Window`). |
+| `(m Map[K,V]) Equal(other Map[K,V]) bool` | Same key set, each value equal via `functional/internal/eq.Equal` (no `DeepEqual`). |
+| `(m Map[K,V]) EqualFunc(other Map[K,V], eq func(V, V) bool) bool` | Same keys; values compared with `eq`. |
+| `(m Map[K,V]) Builder() *MapBuilder[K,V]` | Seeds a `MapBuilder[K,V]` (opens a `transient.Window`). Zero `Map` materializes seed first. |
 
 `MapBuilder[K,V]` — mutable, not concurrency-safe — offers `Set`, `Delete`
-(chainable), `Len`, and `Build() Map[K,V]` with the same freeze,
+(chainable), `Len`, `Get`, `Has`, and `Build() Map[K,V]` with the same freeze,
 publish-and-disable contract as `ListBuilder`.
 
 ## `Set[T]`
 
 | Function / method | Behaviour |
 |---|---|
-| `NewSet[T](items ...T) Set[T]` | Deduplicated. |
+| `SetOf[T](items ...T) Set[T]` | Deduplicated into a fresh HAMT root (`hamt.Empty` seed). |
 | `CollectSet[T](seq iter.Seq[T]) Set[T]` | Deduplicated. |
-| `(s Set[T]) Len() int` / `Has(v T) bool` | Read access. |
-| `(s Set[T]) Add(items ...T) Set[T]` | New `Set` with `items` added; already-present items are a no-op. `s` unchanged. |
-| `(s Set[T]) Remove(items ...T) Set[T]` | New `Set` without `items`; absent items are a no-op. `s` unchanged. |
+| `(s Set[T]) Len() int` | Element count. |
+| `(s Set[T]) IsEmpty() bool` | `Len() == 0`. Zero `Set` is empty. |
+| `(s Set[T]) Has(v T) bool` | Membership. |
+| `(s Set[T]) Add(items ...T) Set[T]` | New `Set` with `items` added; already-present items are a no-op. `s` unchanged. Zero `Set` materializes seed first. |
+| `(s Set[T]) Remove(items ...T) Set[T]` | New `Set` without `items`; absent items are a no-op. `s` unchanged. Zero `Set` materializes seed first. |
 | `(s Set[T]) Values() iter.Seq[T]` | Unspecified iteration order. |
 | `(s Set[T]) Items() []T` | Fresh slice, unspecified order. |
 | `(s Set[T]) Equal(other Set[T]) bool` | Same membership. `T` is `comparable`, so no `eq.Equal` call is needed. |
-| `(s Set[T]) Builder() *SetBuilder[T]` | Seeds a `SetBuilder[T]` (opens a `transient.Window`). |
+| `(s Set[T]) Builder() *SetBuilder[T]` | Seeds a `SetBuilder[T]` (opens a `transient.Window`). Zero `Set` materializes seed first. |
 
 `SetBuilder[T]` — mutable, not concurrency-safe — offers `Add`, `Remove`
-(chainable), `Len`, and `Build() Set[T]` with the same freeze,
+(chainable), `Len`, `Has`, and `Build() Set[T]` with the same freeze,
 publish-and-disable contract.
 
 ---
@@ -164,12 +200,12 @@ for a single `Map.Set` / `Set.Add` / `List.Append` against a pre-built base.
 Looping `Append`/`Set`/`Add` on the immutable type still creates **n
 intermediate roots**. `Builder` is the bulk path: exclusive ownership,
 in-place edits on owned nodes, O(1) `Freeze`. Native mutable baselines
-(`[]T` append, `map[K]V` assign) live in `persistent/bench_test.go` for
+(`[]T` append, `map[K]V` assign / get) live in `persistent/bench_test.go` for
 comparison.
 
 ```sh
 cd functional
-go test ./persistent/ -run '^$' -bench 'BenchmarkMapSet|BenchmarkSetAdd|BenchmarkListAppend|BenchmarkListBuilder' -benchmem
+go test ./persistent/ -run '^$' -bench 'BenchmarkMapSet|BenchmarkSetAdd|BenchmarkListAppend|BenchmarkListBuilder|BenchmarkMapBuilder|BenchmarkMapGet|BenchmarkNativeMap' -benchmem
 ```
 
 Always route loop-building through `<Type>.Builder()`; never call

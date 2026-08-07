@@ -1,33 +1,50 @@
 package eq
 
-import "reflect"
-
-// Equal reports whether a and b are equal, resolved in three tiers:
-//  1. if the dynamic value has a method Equal(T) bool, its result;
-//  2. if the dynamic values are comparable, == semantics;
-//  3. otherwise reflect.DeepEqual.
+// Equal reports whether a and b are equal without using reflect.
 //
-// Equal never panics, including when the dynamic type is a slice, map, or
-// func, and treats two nil interfaces as equal (reflect.DeepEqual(nil, nil)
-// alone would report false).
+// Resolution order:
+//  1. If a implements Equal(T) bool, return a.Equal(b).
+//  2. Otherwise compare via interface ==. Two nil interfaces (possible only
+//     when T is an interface type) are equal. When both dynamic values share
+//     a comparable type, == decides. When the dynamic type is not comparable
+//     (slice, map, func, …) and no Equal method is present, Equal returns
+//     false — it never panics and never deep-compares.
+//
+// Callers that need structural equality for non-comparable types should
+// implement Equal(T) bool on the type or use an EqualFunc at their package
+// (for example frozen.SliceEqualFunc).
 func Equal[T any](a, b T) bool {
-	if eqA, ok := any(a).(interface{ Equal(T) bool }); ok {
-		return eqA.Equal(b)
+	type equaler interface{ Equal(T) bool }
+	if ea, ok := any(a).(equaler); ok {
+		return ea.Equal(b)
 	}
+	return equalAny(any(a), any(b))
+}
 
-	av := reflect.ValueOf(a)
-	bv := reflect.ValueOf(b)
+// EqualComparable reports whether a and b are equal under ==.
+// Use this when T is known comparable and no Equal method should be consulted.
+func EqualComparable[T comparable](a, b T) bool {
+	return a == b
+}
 
-	switch {
-	case !av.IsValid() && !bv.IsValid():
-		// Both are nil interfaces (only possible when T is itself an
-		// interface type, e.g. Equal[any](nil, nil)).
+func equalAny(a, b any) bool {
+	if a == nil && b == nil {
 		return true
-	case av.IsValid() != bv.IsValid():
-		return false
-	case av.Type() == bv.Type() && av.Type().Comparable():
-		return av.Equal(bv)
-	default:
-		return reflect.DeepEqual(a, b)
 	}
+	if a == nil || b == nil {
+		return false
+	}
+	return equalInterface(a, b)
+}
+
+// equalInterface compares two non-nil interface values with ==.
+// Comparing interfaces whose dynamic type is not comparable panics in Go;
+// recover that case and report false so Equal never panics.
+func equalInterface(a, b any) (result bool) {
+	defer func() {
+		if recover() != nil {
+			result = false
+		}
+	}()
+	return a == b
 }

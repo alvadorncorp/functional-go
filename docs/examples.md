@@ -11,6 +11,7 @@ Illustrative sketches for common uses. For API contracts see
 2. [Fallible parse with `MapErr`](#2-fallible-parse-with-maperr)
 3. [Immutable collection field with `frozen.Slice`](#3-immutable-collection-field-with-frozenslice)
 4. [Building a `persistent.List` in a loop](#4-building-a-persistentlist-in-a-loop)
+5. [`persistent.MapOf` / `SetOf` snapshots](#5-persistentmapof--setof-snapshots)
 
 ---
 
@@ -111,7 +112,7 @@ package pipeline
 import "github.com/alvadorncorp/gopackages/functional/persistent"
 
 func collectEven(items []int) persistent.List[int] {
-	builder := persistent.NewList[int]().Builder()
+	builder := persistent.ListOf[int]().Builder()
 	for _, v := range items {
 		if v%2 == 0 {
 			builder.Append(v)
@@ -126,6 +127,38 @@ returns an immutable `List`, and permanently disables the builder — every
 method on it, including a repeated `Build`, panics with
 `"persistent: builder used after Build"` from that point on. Never keep
 using a builder after calling `Build()`.
+
+Constructors are `ListOf` / `MapOf` / `SetOf` (not `New*`). Runnable
+godoc examples live in `persistent/example_test.go`.
+
+---
+
+## 5. `persistent.MapOf` / `SetOf` snapshots
+
+`MapOf` copies a `map[K]V` into a persistent HAMT; `SetOf` deduplicates
+variadic items. Both return immutable values: further `Set`/`Add` calls
+derive new collections.
+
+```go
+package catalog
+
+import "github.com/alvadorncorp/gopackages/functional/persistent"
+
+func scoreboard() (persistent.Map[string, int], persistent.Set[string]) {
+	scores := persistent.MapOf(map[string]int{
+		"alice": 10,
+		"bob":   7,
+	})
+	// Derive a new Map; scores is unchanged.
+	scores = scores.Set("carol", 12)
+
+	active := persistent.SetOf("alice", "bob", "bob")
+	return scores, active
+}
+```
+
+For bulk Map construction, prefer `MapOf[K,V](nil).Builder()` (or
+`var zero Map[K,V]; zero.Builder()`), then `Build()` once.
 
 ---
 

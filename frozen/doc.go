@@ -16,6 +16,6 @@
 // with optional.FromOK(m.Get(k)).
 //
 // Equal on both types delegates element-wise to functional/internal/eq.Equal,
-// the same three-tier equality (an Equal method, then ==, then
-// reflect.DeepEqual) the rest of the module uses.
+// the same equality resolution (an Equal method, then ==; non-comparable
+// types without Equal return false) the rest of the module uses.
 package frozen

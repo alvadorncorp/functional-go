@@ -3,10 +3,12 @@
 // has zero non-stdlib dependencies outside itself, no public subpackage
 // imports another (functional/internal/eq is the one shared exception every
 // public package may use), the internal/core DAG stays a star into ownership
-// with no peer edges and no reflect, and internal/engine packages obey their
-// own import allow-lists (keyhash: stdlib only; hamt: ownership/cow/sharing/
-// keyhash only among functional packages; vector: ownership/cow/sharing only
-// among functional packages).
+// with no peer edges and no reflect, internal/eq production code imports
+// neither reflect nor unsafe, persistent production code imports neither
+// reflect nor unsafe, and internal/engine packages obey their own import
+// allow-lists (keyhash: stdlib only; hamt: ownership/cow/sharing/keyhash only
+// among functional packages; vector: ownership/cow/sharing only among
+// functional packages).
 package archtest
 
 import (
@@ -27,16 +29,17 @@ import (
 const functionalModulePrefix = "github.com/alvadorncorp/gopackages/functional/"
 
 const (
-	pkgOwnership = "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
-	pkgCow       = "github.com/alvadorncorp/gopackages/functional/internal/core/cow"
-	pkgTransient = "github.com/alvadorncorp/gopackages/functional/internal/core/transient"
-	pkgSharing   = "github.com/alvadorncorp/gopackages/functional/internal/core/sharing"
-	pkgEq        = "github.com/alvadorncorp/gopackages/functional/internal/eq"
-	pkgKeyhash   = "github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
-	pkgHamt      = "github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
-	pkgVector    = "github.com/alvadorncorp/gopackages/functional/internal/engine/vector"
-	corePrefix   = "github.com/alvadorncorp/gopackages/functional/internal/core/"
-	enginePrefix = "github.com/alvadorncorp/gopackages/functional/internal/engine/"
+	pkgOwnership  = "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	pkgCow        = "github.com/alvadorncorp/gopackages/functional/internal/core/cow"
+	pkgTransient  = "github.com/alvadorncorp/gopackages/functional/internal/core/transient"
+	pkgSharing    = "github.com/alvadorncorp/gopackages/functional/internal/core/sharing"
+	pkgEq         = "github.com/alvadorncorp/gopackages/functional/internal/eq"
+	pkgKeyhash    = "github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
+	pkgHamt       = "github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
+	pkgVector     = "github.com/alvadorncorp/gopackages/functional/internal/engine/vector"
+	pkgPersistent = "github.com/alvadorncorp/gopackages/functional/persistent"
+	corePrefix    = "github.com/alvadorncorp/gopackages/functional/internal/core/"
+	enginePrefix  = "github.com/alvadorncorp/gopackages/functional/internal/engine/"
 )
 
 // publicPackages are every public subpackage of functional, by import path.
@@ -230,6 +233,52 @@ func TestCoreNoReflect(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestEqNoReflect proves no production file under internal/eq imports
+// "reflect". Equality is resolved via Equal methods and interface == only.
+func TestEqNoReflect(t *testing.T) {
+	t.Parallel()
+	for _, imp := range productionImports(t, pkgEq) {
+		if imp == "reflect" {
+			t.Errorf("%s must not import reflect", pkgEq)
+		}
+	}
+}
+
+// TestEqNoUnsafe proves no production file under internal/eq imports
+// "unsafe".
+func TestEqNoUnsafe(t *testing.T) {
+	t.Parallel()
+	for _, imp := range productionImports(t, pkgEq) {
+		if imp == "unsafe" {
+			t.Errorf("%s must not import unsafe", pkgEq)
+		}
+	}
+}
+
+// TestPersistentNoReflect proves no production file under persistent imports
+// "reflect". Public collection APIs stay free of reflection; tests may still
+// use reflect (e.g. comparability probes). This gate inspects production
+// Imports only (go list without -test).
+func TestPersistentNoReflect(t *testing.T) {
+	t.Parallel()
+	for _, imp := range productionImports(t, pkgPersistent) {
+		if imp == "reflect" {
+			t.Errorf("%s must not import reflect", pkgPersistent)
+		}
+	}
+}
+
+// TestPersistentNoUnsafe proves no production file under persistent imports
+// "unsafe".
+func TestPersistentNoUnsafe(t *testing.T) {
+	t.Parallel()
+	for _, imp := range productionImports(t, pkgPersistent) {
+		if imp == "unsafe" {
+			t.Errorf("%s must not import unsafe", pkgPersistent)
+		}
 	}
 }
 

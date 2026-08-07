@@ -11,8 +11,9 @@
 //
 // The module has zero dependencies outside the standard library, permanently.
 // No public subpackage imports another public subpackage. Shared internals
-// include functional/internal/eq (Equal resolution: method, then ==, then
-// reflect.DeepEqual), functional/internal/core (thin ownership / cow /
+// include functional/internal/eq (Equal resolution: method, then ==;
+// non-comparable types without Equal return false — no reflect),
+// functional/internal/core (thin ownership / cow /
 // sharing / transient substrate — laws, not engines), and
 // functional/internal/engine (hamt, vector, keyhash representations used by
 // persistent).

@@ -86,9 +86,11 @@ call site instead: `optional.FromOK(m.Get(k))`.
 | `MapEqualFunc[K, V1, V2](a Map[K,V1], b Map[K,V2], eq func(V1, V2) bool) bool` | Same length, and for every key in `a`, `b` has that key with an `eq`-equal value. |
 
 `Slice.Equal` and `Map.Equal` are implemented in terms of these, seeded with
-`functional/internal/eq.Equal[T]` — the same three-tier equality
-(`Equal` method, then `==`, then `reflect.DeepEqual`) used across the
-module.
+`functional/internal/eq.Equal[T]` — the same equality resolution
+(`Equal` method, then `==`; non-comparable types without `Equal` return
+false) used across the module. For deep element comparison of
+non-comparable `T`, pass a custom predicate to `SliceEqualFunc` /
+`MapEqualFunc`.
 
 ---
 

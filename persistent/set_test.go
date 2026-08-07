@@ -15,10 +15,10 @@ func sortedItems[T int | string](s persistent.Set[T]) []T {
 	return items
 }
 
-func TestNewSet(t *testing.T) {
+func TestSetOf(t *testing.T) {
 	t.Parallel()
 
-	s := persistent.NewSet(1, 2, 2, 3)
+	s := persistent.SetOf(1, 2, 2, 3)
 	if got, want := s.Len(), 3; got != want {
 		t.Fatalf("Len() = %d, want %d (duplicates must collapse)", got, want)
 	}
@@ -41,7 +41,7 @@ func TestCollectSet(t *testing.T) {
 func TestSetHas(t *testing.T) {
 	t.Parallel()
 
-	s := persistent.NewSet(1, 2, 3)
+	s := persistent.SetOf(1, 2, 3)
 
 	tests := []struct {
 		name string
@@ -64,7 +64,7 @@ func TestSetHas(t *testing.T) {
 func TestSetAdd(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.NewSet(1, 2)
+	base := persistent.SetOf(1, 2)
 	before := sortedItems(base)
 
 	added := base.Add(3, 4)
@@ -81,7 +81,7 @@ func TestSetAdd(t *testing.T) {
 func TestSetAddExistingIsNoOp(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.NewSet(1, 2)
+	base := persistent.SetOf(1, 2)
 	result := base.Add(1)
 
 	if !result.Equal(base) {
@@ -92,7 +92,7 @@ func TestSetAddExistingIsNoOp(t *testing.T) {
 func TestSetRemove(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.NewSet(1, 2, 3)
+	base := persistent.SetOf(1, 2, 3)
 	before := sortedItems(base)
 
 	removed := base.Remove(2)
@@ -109,7 +109,7 @@ func TestSetRemove(t *testing.T) {
 func TestSetRemoveAbsentIsNoOp(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.NewSet(1, 2)
+	base := persistent.SetOf(1, 2)
 	result := base.Remove(99)
 
 	if !result.Equal(base) {
@@ -120,7 +120,7 @@ func TestSetRemoveAbsentIsNoOp(t *testing.T) {
 func TestSetValues(t *testing.T) {
 	t.Parallel()
 
-	s := persistent.NewSet(1, 2, 3)
+	s := persistent.SetOf(1, 2, 3)
 	var got []int
 	for v := range s.Values() {
 		got = append(got, v)
@@ -134,12 +134,27 @@ func TestSetValues(t *testing.T) {
 func TestSetItemsCopies(t *testing.T) {
 	t.Parallel()
 
-	s := persistent.NewSet(1, 2, 3)
+	s := persistent.SetOf(1, 2, 3)
 	items := s.Items()
 	items[0] = 999
 
 	if got, want := sortedItems(s), []int{1, 2, 3}; !slices.Equal(got, want) {
 		t.Fatalf("Set changed after mutating Items() result: got %v, want %v", got, want)
+	}
+}
+
+func TestSetIsEmpty(t *testing.T) {
+	t.Parallel()
+
+	var zero persistent.Set[int]
+	if !zero.IsEmpty() {
+		t.Fatal("zero Set.IsEmpty() = false, want true")
+	}
+	if !persistent.SetOf[int]().IsEmpty() {
+		t.Fatal("empty SetOf.IsEmpty() = false, want true")
+	}
+	if persistent.SetOf(1).IsEmpty() {
+		t.Fatal("non-empty Set.IsEmpty() = true, want false")
 	}
 }
 
@@ -152,10 +167,10 @@ func TestSetEqual(t *testing.T) {
 		b    persistent.Set[int]
 		want bool
 	}{
-		{"both empty", persistent.NewSet[int](), persistent.NewSet[int](), true},
-		{"same elements different insertion order", persistent.NewSet(1, 2, 3), persistent.NewSet(3, 1, 2), true},
-		{"different length", persistent.NewSet(1, 2), persistent.NewSet(1, 2, 3), false},
-		{"different elements", persistent.NewSet(1, 2, 3), persistent.NewSet(1, 2, 4), false},
+		{"both empty", persistent.SetOf[int](), persistent.SetOf[int](), true},
+		{"same elements different insertion order", persistent.SetOf(1, 2, 3), persistent.SetOf(3, 1, 2), true},
+		{"different length", persistent.SetOf(1, 2), persistent.SetOf(1, 2, 3), false},
+		{"different elements", persistent.SetOf(1, 2, 3), persistent.SetOf(1, 2, 4), false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -170,9 +185,9 @@ func TestSetEqual(t *testing.T) {
 func TestSetAddPreservesOlderVersions(t *testing.T) {
 	t.Parallel()
 
-	v1 := persistent.NewSet(1)
+	v1 := persistent.SetOf(1)
 	v2 := v1.Add(2)
-	v3 := v2.Add(3)
+	v3 := v2.Add(3, 4)
 
 	if got, want := sortedItems(v1), []int{1}; !slices.Equal(got, want) {
 		t.Fatalf("v1 = %v, want %v", got, want)
@@ -180,7 +195,105 @@ func TestSetAddPreservesOlderVersions(t *testing.T) {
 	if got, want := sortedItems(v2), []int{1, 2}; !slices.Equal(got, want) {
 		t.Fatalf("v2 = %v, want %v", got, want)
 	}
-	if got, want := sortedItems(v3), []int{1, 2, 3}; !slices.Equal(got, want) {
+	if got, want := sortedItems(v3), []int{1, 2, 3, 4}; !slices.Equal(got, want) {
 		t.Fatalf("v3 = %v, want %v", got, want)
+	}
+}
+
+func TestSetRemovePreservesOlderVersions(t *testing.T) {
+	t.Parallel()
+
+	v1 := persistent.SetOf(1, 2, 3, 4)
+	v2 := v1.Remove(2)
+	v3 := v2.Remove(4).Add(5)
+
+	if got, want := sortedItems(v1), []int{1, 2, 3, 4}; !slices.Equal(got, want) {
+		t.Fatalf("v1 = %v, want %v", got, want)
+	}
+	if got, want := sortedItems(v2), []int{1, 3, 4}; !slices.Equal(got, want) {
+		t.Fatalf("v2 = %v, want %v", got, want)
+	}
+	if got, want := sortedItems(v3), []int{1, 3, 5}; !slices.Equal(got, want) {
+		t.Fatalf("v3 = %v, want %v", got, want)
+	}
+}
+
+func TestSetZeroValueAdd(t *testing.T) {
+	t.Parallel()
+
+	var s persistent.Set[string]
+	if got := s.Len(); got != 0 {
+		t.Fatalf("zero Set Len() = %d, want 0", got)
+	}
+	if s.Has("a") {
+		t.Fatal(`zero Set Has("a") = true, want false`)
+	}
+
+	s2 := s.Add("a")
+	if !s2.Has("a") {
+		t.Fatal(`Add from zero Has("a") = false, want true`)
+	}
+	if got := s2.Len(); got != 1 {
+		t.Fatalf("Add from zero Len() = %d, want 1", got)
+	}
+	if got := s.Len(); got != 0 {
+		t.Fatalf("zero Set mutated by Add: Len() = %d, want 0", got)
+	}
+	if s.Has("a") {
+		t.Fatal(`zero Set Has("a") = true after Add on result, want false`)
+	}
+}
+
+func TestSetZeroValueRemove(t *testing.T) {
+	t.Parallel()
+
+	var s persistent.Set[int]
+	// Remove on a zero Set must materialize a seeded empty root rather than
+	// freezing a zero seed into the lineage.
+	removed := s.Remove(99)
+	if removed.Len() != 0 {
+		t.Fatalf("Remove from zero Len() = %d, want 0", removed.Len())
+	}
+	if s.Len() != 0 {
+		t.Fatalf("zero Set mutated by Remove: Len() = %d, want 0", s.Len())
+	}
+	filled := removed.Add(1, 2)
+	if got, want := sortedItems(filled), []int{1, 2}; !slices.Equal(got, want) {
+		t.Fatalf("filled after Remove-from-zero = %v, want %v", got, want)
+	}
+}
+
+func TestSetZeroValueBuilder(t *testing.T) {
+	t.Parallel()
+
+	var s persistent.Set[string]
+	built := s.Builder().Add("a", "b").Build()
+
+	if got, want := built.Len(), 2; got != want {
+		t.Fatalf("Builder from zero Len() = %d, want %d", got, want)
+	}
+	if !built.Has("a") || !built.Has("b") {
+		t.Fatalf("Builder from zero Has(a)=%v Has(b)=%v, want both true", built.Has("a"), built.Has("b"))
+	}
+	if s.Len() != 0 {
+		t.Fatalf("zero Set mutated by Builder: Len() = %d, want 0", s.Len())
+	}
+}
+
+func TestSetIndependentZeroValues(t *testing.T) {
+	t.Parallel()
+
+	var a, b persistent.Set[string]
+	a1 := a.Add("x")
+	b1 := b.Add("y")
+
+	if !a1.Has("x") || a1.Has("y") {
+		t.Fatalf("a1 Has(x)=%v Has(y)=%v, want true/false", a1.Has("x"), a1.Has("y"))
+	}
+	if !b1.Has("y") || b1.Has("x") {
+		t.Fatalf("b1 Has(y)=%v Has(x)=%v, want true/false", b1.Has("y"), b1.Has("x"))
+	}
+	if a.Len() != 0 || b.Len() != 0 {
+		t.Fatalf("zero receivers mutated: a.Len=%d b.Len=%d", a.Len(), b.Len())
 	}
 }

@@ -132,10 +132,10 @@ Enforced by `functional/internal/archtest`
 
 ## Related internal package (outside core)
 
-`functional/internal/eq` resolves `Equal` in three tiers (method, `==`,
-`reflect.DeepEqual`). It is shared by public packages and **may** use
-`reflect`. It is deliberately **not** part of core so the mutation
-substrate stays free of reflection.
+`functional/internal/eq` resolves `Equal` without `reflect` (method, then
+`==`; non-comparable types without `Equal` return false). It is shared by
+public packages and is deliberately **not** part of core so the mutation
+substrate stays a pure ownership/COW/sharing layer.
 
 Engines live under `functional/internal/engine/` (`hamt`, `vector`,
 `keyhash`) — representation, not laws. See

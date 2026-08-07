@@ -14,11 +14,11 @@ import (
 // bound rather than today's constant.
 //
 // Representation: Set holds an unexported hamt.Root[T, struct{}]. The zero
-// Set is a valid empty set — it relies on the zero hamt.Root (nil node, zero
-// seed, size 0): Len is 0, Has misses, and Add starts a lineage from that
-// seed. Constructed Sets (NewSet, CollectSet, Builder.Build, and every
-// Add/Remove result) use a proper Empty-seeded root when they first
-// materialize entries.
+// Set is a valid empty set for reads (Len is 0, Has misses). The first write
+// (Add/Remove) or Builder() call materializes a proper Empty-seeded root so
+// the lineage never freezes a zero maphash.Seed. Constructed Sets
+// (SetOf, CollectSet, Builder.Build, and every Add/Remove result) already
+// hold an Empty-seeded root when they first materialize entries.
 //
 // The blank [0]func() field keeps Set deliberately not ==-comparable:
 // hamt.Root's fields are all comparable, so without this marker Set would
@@ -28,8 +28,18 @@ type Set[T comparable] struct {
 	root hamt.Root[T, struct{}]
 }
 
-// NewSet returns a Set holding items, deduplicated.
-func NewSet[T comparable](items ...T) Set[T] {
+// materialize returns s's root, replacing an unseeded zero hamt.Root with
+// hamt.Empty so the first write starts a properly seeded lineage.
+func (s Set[T]) materialize() hamt.Root[T, struct{}] {
+	var zero hamt.Root[T, struct{}]
+	if s.root == zero {
+		return hamt.Empty[T, struct{}]()
+	}
+	return s.root
+}
+
+// SetOf returns a Set holding items, deduplicated.
+func SetOf[T comparable](items ...T) Set[T] {
 	return Set[T]{root: valuesToRoot(items)}
 }
 
@@ -54,6 +64,9 @@ func valuesToRoot[T comparable](values []T) hamt.Root[T, struct{}] {
 // Len returns the number of elements in s.
 func (s Set[T]) Len() int { return s.root.Len() }
 
+// IsEmpty reports whether s holds no elements. The zero Set is empty.
+func (s Set[T]) IsEmpty() bool { return s.root.Len() == 0 }
+
 // Has reports whether v is a member of s.
 func (s Set[T]) Has(v T) bool {
 	_, ok := s.root.Get(v)
@@ -63,7 +76,7 @@ func (s Set[T]) Has(v T) bool {
 // Add returns a new Set with items added; items already present are a
 // no-op. s is unchanged.
 func (s Set[T]) Add(items ...T) Set[T] {
-	root := s.root
+	root := s.materialize()
 	for _, v := range items {
 		root = root.Set(v, struct{}{})
 	}
@@ -73,7 +86,7 @@ func (s Set[T]) Add(items ...T) Set[T] {
 // Remove returns a new Set without items; items not present are a no-op. s
 // is unchanged.
 func (s Set[T]) Remove(items ...T) Set[T] {
-	root := s.root
+	root := s.materialize()
 	for _, v := range items {
 		root = root.Delete(v)
 	}
@@ -120,10 +133,10 @@ func (s Set[T]) Equal(other Set[T]) bool {
 
 // Builder returns a SetBuilder seeded from s's root (same node graph; later
 // exclusive edits copy-on-write). s is not affected by any later operation
-// on the builder.
+// on the builder. A zero Set materializes an Empty-seeded root first.
 func (s Set[T]) Builder() *SetBuilder[T] {
 	return &SetBuilder[T]{
-		root: s.root,
+		root: s.materialize(),
 		win:  transient.Open(),
 	}
 }
@@ -173,6 +186,14 @@ func (b *SetBuilder[T]) Remove(items ...T) *SetBuilder[T] {
 func (b *SetBuilder[T]) Len() int {
 	b.checkNotBuilt()
 	return b.root.Len()
+}
+
+// Has reports whether v is a member of the builder. After Build, Has panics
+// with "persistent: builder used after Build".
+func (b *SetBuilder[T]) Has(v T) bool {
+	b.checkNotBuilt()
+	_, ok := b.root.Get(v)
+	return ok
 }
 
 // Build returns an immutable Set holding the builder's current root and

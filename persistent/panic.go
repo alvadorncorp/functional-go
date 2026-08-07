@@ -1,7 +1,8 @@
 package persistent
 
-// panicIndexOutOfRange is what List.At, List.Set, List.Delete, and their
-// ListBuilder equivalents panic with when the index is outside [0, Len).
+// panicIndexOutOfRange is what List.At, List.Set, List.Delete,
+// ListBuilder.At, ListBuilder.Set, and ListBuilder.Delete panic with when
+// the index is outside [0, Len).
 const panicIndexOutOfRange = "persistent: index out of range"
 
 // panicBuilderUsedAfterBuild is what any method on a ListBuilder, MapBuilder,

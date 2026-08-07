@@ -168,16 +168,19 @@ flowchart TB
 ```
 
 There is exactly **one** shared exception for equality: `functional/internal/eq`,
-a small package that resolves value equality in three tiers (an `Equal(T) bool`
+a small package that resolves value equality without `reflect` (an `Equal(T) bool`
 method on the dynamic value, then `==` when the dynamic values are
-comparable, then `reflect.DeepEqual`). `optional.Optional[T].Equal`,
+comparable; non-comparable types without `Equal` return false — never
+deep-compare). `optional.Optional[T].Equal`,
 `frozen.Slice[T].Equal`, `frozen.Map[K,V].Equal`, and
 `persistent.List[T].Equal` (and its `Map`/`Set` counterparts) all delegate to
 it, so every generic `Equal` in this module agrees on the answer for the same
-pair of values. It is safe as the one shared package specifically *because*
+pair of values. Callers that need structural equality for slices or maps
+should use an `Equal` method on the element type or an `EqualFunc` at their
+package. It is safe as the one shared package specifically *because*
 it is `internal`: nothing outside `functional` can import it, so it can never
 become a second public surface competing with the rule it is the exception
-to. **`eq` is outside core** and may use `reflect`; core may not.
+to. **`eq` is outside core** and, like core, must not use `reflect`.
 
 `valueobject` treats `frozen` and `persistent` as immutable leaves by
 default (see [patterns/value-objects.md](patterns/value-objects.md)), but it

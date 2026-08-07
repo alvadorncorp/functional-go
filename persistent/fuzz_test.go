@@ -39,7 +39,7 @@ func FuzzListOps(f *testing.F) {
 		}
 
 		var model []int
-		current := persistent.NewList[int]()
+		current := persistent.ListOf[int]()
 		versions := []version{{list: current, model: slices.Clone(model)}}
 
 		ops := 0
@@ -106,7 +106,7 @@ func FuzzMapOps(f *testing.F) {
 		}
 
 		model := map[int]int{}
-		current := persistent.NewMap[int, int](nil)
+		current := persistent.MapOf[int, int](nil)
 		versions := []version{{m: current, model: maps.Clone(model)}}
 
 		ops := 0

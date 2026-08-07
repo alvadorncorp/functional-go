@@ -105,10 +105,11 @@ Guards `T` inline, not behind a pointer:
 `Equal` is a **method**, not a function — `go-cmp` only consults a method
 named `Equal`, and without one `cmp.Diff` panics on a struct carrying
 unexported fields (`Optional[T]`'s `value`/`present` pair). It delegates
-element-wise to `functional/internal/eq.Equal`, the same three-tier
-resolution (an `Equal` method on the dynamic value, then `==` when
-comparable, then `reflect.DeepEqual`) every generic `Equal` in this module
-uses — so it works even when `T` carries no comparability constraint.
+element-wise to `functional/internal/eq.Equal`, the same resolution (an
+`Equal` method on the dynamic value, then `==` when comparable;
+non-comparable types without `Equal` return false — no `reflect`) every
+generic `Equal` in this module uses — so it works even when `T` carries no
+comparability constraint.
 
 `String() string` renders `"Some(<value>)"` or `"None"` via
 `fmt.Sprintf("%v", ...)`. It exists for readable test failures and `%v`; it

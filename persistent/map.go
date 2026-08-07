@@ -15,10 +15,11 @@ import (
 // a guarantee of today's constants.
 //
 // Representation: Map holds an unexported hamt.Root. The zero Map is a
-// valid empty map — it relies on the zero hamt.Root (nil node, zero seed,
-// size 0): Len is 0, Get misses, and Set starts a lineage from that seed.
-// Constructed Maps (NewMap, CollectMap, Builder.Build, and every Set/Delete
-// result) use a proper Empty-seeded root when they first materialize entries.
+// valid empty map for reads (Len is 0, Get misses). The first write
+// (Set/Delete) or Builder() call materializes a proper Empty-seeded root so
+// the lineage never freezes a zero maphash.Seed. Constructed Maps
+// (MapOf, CollectMap, Builder.Build, and every Set/Delete result) already
+// hold an Empty-seeded root when they first materialize entries.
 //
 // The blank [0]func() field keeps Map deliberately not ==-comparable:
 // hamt.Root's fields are all comparable, so without this marker Map would
@@ -28,10 +29,20 @@ type Map[K comparable, V any] struct {
 	root hamt.Root[K, V]
 }
 
-// NewMap returns a Map holding a copy of m. The caller's map is never
+// materialize returns m's root, replacing an unseeded zero hamt.Root with
+// hamt.Empty so the first write starts a properly seeded lineage.
+func (m Map[K, V]) materialize() hamt.Root[K, V] {
+	var zero hamt.Root[K, V]
+	if m.root == zero {
+		return hamt.Empty[K, V]()
+	}
+	return m.root
+}
+
+// MapOf returns a Map holding a copy of m. The caller's map is never
 // retained: later mutation of m through the caller's own reference does not
 // reach the returned Map.
-func NewMap[K comparable, V any](m map[K]V) Map[K, V] {
+func MapOf[K comparable, V any](m map[K]V) Map[K, V] {
 	return Map[K, V]{root: mapToRoot(m)}
 }
 
@@ -57,6 +68,9 @@ func mapToRoot[K comparable, V any](m map[K]V) hamt.Root[K, V] {
 // Len returns the number of entries in m.
 func (m Map[K, V]) Len() int { return m.root.Len() }
 
+// IsEmpty reports whether m holds no entries. The zero Map is empty.
+func (m Map[K, V]) IsEmpty() bool { return m.root.Len() == 0 }
+
 // Get returns the value stored for k and true, or the zero value of V and
 // false when k is absent.
 func (m Map[K, V]) Get(k K) (V, bool) {
@@ -72,12 +86,12 @@ func (m Map[K, V]) Has(k K) bool {
 // Set returns a new Map with k mapped to v, replacing any existing value for
 // k. m is unchanged.
 func (m Map[K, V]) Set(k K, v V) Map[K, V] {
-	return Map[K, V]{root: m.root.Set(k, v)}
+	return Map[K, V]{root: m.materialize().Set(k, v)}
 }
 
 // Delete returns a new Map without k. m is unchanged.
 func (m Map[K, V]) Delete(k K) Map[K, V] {
-	return Map[K, V]{root: m.root.Delete(k)}
+	return Map[K, V]{root: m.materialize().Delete(k)}
 }
 
 // All returns an iterator over m's (key, value) pairs. Iteration order is
@@ -134,12 +148,29 @@ func (m Map[K, V]) Equal(other Map[K, V]) bool {
 	return true
 }
 
+// EqualFunc reports whether m and other hold the same number of entries and
+// every key in m is present in other with a value for which equal returns true.
+// Keys present only in other are rejected by the length check. Comparison
+// stops at the first missing key or false result from equal.
+func (m Map[K, V]) EqualFunc(other Map[K, V], equal func(V, V) bool) bool {
+	if m.root.Len() != other.root.Len() {
+		return false
+	}
+	for k, v := range m.root.All() {
+		ov, ok := other.root.Get(k)
+		if !ok || !equal(v, ov) {
+			return false
+		}
+	}
+	return true
+}
+
 // Builder returns a MapBuilder seeded from m's root (same node graph; later
 // exclusive edits copy-on-write). m is not affected by any later operation
-// on the builder.
+// on the builder. A zero Map materializes an Empty-seeded root first.
 func (m Map[K, V]) Builder() *MapBuilder[K, V] {
 	return &MapBuilder[K, V]{
-		root: m.root,
+		root: m.materialize(),
 		win:  transient.Open(),
 	}
 }
@@ -183,6 +214,22 @@ func (b *MapBuilder[K, V]) Delete(k K) *MapBuilder[K, V] {
 func (b *MapBuilder[K, V]) Len() int {
 	b.checkNotBuilt()
 	return b.root.Len()
+}
+
+// Get returns the value stored for k in the builder and true, or the zero
+// value of V and false when k is absent. After Build, Get panics with
+// "persistent: builder used after Build".
+func (b *MapBuilder[K, V]) Get(k K) (V, bool) {
+	b.checkNotBuilt()
+	return b.root.Get(k)
+}
+
+// Has reports whether k is present in the builder. After Build, Has panics
+// with "persistent: builder used after Build".
+func (b *MapBuilder[K, V]) Has(k K) bool {
+	b.checkNotBuilt()
+	_, ok := b.root.Get(k)
+	return ok
 }
 
 // Build returns an immutable Map holding the builder's current root and

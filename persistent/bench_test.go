@@ -35,7 +35,7 @@ func makeBenchList(n int) persistent.List[int] {
 	for i := range items {
 		items[i] = i
 	}
-	return persistent.NewList(items...)
+	return persistent.ListOf(items...)
 }
 
 func makeBenchMap(n int) persistent.Map[int, int] {
@@ -43,7 +43,7 @@ func makeBenchMap(n int) persistent.Map[int, int] {
 	for i := range n {
 		m[i] = i
 	}
-	return persistent.NewMap(m)
+	return persistent.MapOf(m)
 }
 
 func makeBenchSet(n int) persistent.Set[int] {
@@ -51,7 +51,7 @@ func makeBenchSet(n int) persistent.Set[int] {
 	for i := range items {
 		items[i] = i
 	}
-	return persistent.NewSet(items...)
+	return persistent.SetOf(items...)
 }
 
 // BenchmarkListAppend measures a single Append against a List already holding
@@ -77,7 +77,7 @@ func BenchmarkListAppendLoop(b *testing.B) {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				l := persistent.NewList[int]()
+				l := persistent.ListOf[int]()
 				for i := range n {
 					l = l.Append(i)
 				}
@@ -94,7 +94,7 @@ func BenchmarkListBuilderAppendLoop(b *testing.B) {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				builder := persistent.NewList[int]().Builder()
+				builder := persistent.ListOf[int]().Builder()
 				for i := range n {
 					builder.Append(i)
 				}
@@ -169,7 +169,7 @@ func BenchmarkMapBuilderSet(b *testing.B) {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				builder := persistent.NewMap[int, int](nil).Builder()
+				builder := persistent.MapOf[int, int](nil).Builder()
 				for i := range n {
 					builder.Set(i, i)
 				}
@@ -254,6 +254,24 @@ func BenchmarkNativeMapSet(b *testing.B) {
 				for i := range n {
 					m[i] = i
 				}
+			}
+		})
+	}
+}
+
+// BenchmarkNativeMapGet is the native, mutable-map baseline for
+// BenchmarkMapGet: lookup on a plain map[int]int of size n.
+func BenchmarkNativeMapGet(b *testing.B) {
+	for _, n := range benchSizes {
+		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			m := make(map[int]int, n)
+			for i := range n {
+				m[i] = i
+			}
+			key := n / 2
+			for b.Loop() {
+				_ = m[key]
 			}
 		})
 	}

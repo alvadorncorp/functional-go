@@ -36,7 +36,7 @@ func TestListBuilderMethodsPanicAfterBuild(t *testing.T) {
 	// post-Build call left that List untouched (recover() only swallows the
 	// panic; it proves nothing about the collection captured earlier).
 	newBuilder := func() (*persistent.ListBuilder[int], persistent.List[int]) {
-		b := persistent.NewList(1, 2, 3).Builder()
+		b := persistent.ListOf(1, 2, 3).Builder()
 		built := b.Build()
 		return b, built
 	}
@@ -72,6 +72,12 @@ func TestListBuilderMethodsPanicAfterBuild(t *testing.T) {
 		expectPanic(t, wantBuilderUsedAfterBuildPanic, func() { b.Len() })
 		assertUnchanged(t, built)
 	})
+	t.Run("At", func(t *testing.T) {
+		t.Parallel()
+		b, built := newBuilder()
+		expectPanic(t, wantBuilderUsedAfterBuildPanic, func() { b.At(0) })
+		assertUnchanged(t, built)
+	})
 	t.Run("Build again", func(t *testing.T) {
 		t.Parallel()
 		b, built := newBuilder()
@@ -88,7 +94,7 @@ func TestMapBuilderMethodsPanicAfterBuild(t *testing.T) {
 	// post-Build call left that Map untouched (recover() only swallows the
 	// panic; it proves nothing about the collection captured earlier).
 	newBuilder := func() (*persistent.MapBuilder[string, int], persistent.Map[string, int]) {
-		b := persistent.NewMap(map[string]int{"a": 1}).Builder()
+		b := persistent.MapOf(map[string]int{"a": 1}).Builder()
 		built := b.Build()
 		return b, built
 	}
@@ -118,6 +124,18 @@ func TestMapBuilderMethodsPanicAfterBuild(t *testing.T) {
 		expectPanic(t, wantBuilderUsedAfterBuildPanic, func() { b.Len() })
 		assertUnchanged(t, built)
 	})
+	t.Run("Get", func(t *testing.T) {
+		t.Parallel()
+		b, built := newBuilder()
+		expectPanic(t, wantBuilderUsedAfterBuildPanic, func() { b.Get("a") })
+		assertUnchanged(t, built)
+	})
+	t.Run("Has", func(t *testing.T) {
+		t.Parallel()
+		b, built := newBuilder()
+		expectPanic(t, wantBuilderUsedAfterBuildPanic, func() { b.Has("a") })
+		assertUnchanged(t, built)
+	})
 	t.Run("Build again", func(t *testing.T) {
 		t.Parallel()
 		b, built := newBuilder()
@@ -134,7 +152,7 @@ func TestSetBuilderMethodsPanicAfterBuild(t *testing.T) {
 	// post-Build call left that Set untouched (recover() only swallows the
 	// panic; it proves nothing about the collection captured earlier).
 	newBuilder := func() (*persistent.SetBuilder[int], persistent.Set[int]) {
-		b := persistent.NewSet(1, 2, 3).Builder()
+		b := persistent.SetOf(1, 2, 3).Builder()
 		built := b.Build()
 		return b, built
 	}
@@ -164,6 +182,12 @@ func TestSetBuilderMethodsPanicAfterBuild(t *testing.T) {
 		expectPanic(t, wantBuilderUsedAfterBuildPanic, func() { b.Len() })
 		assertUnchanged(t, built)
 	})
+	t.Run("Has", func(t *testing.T) {
+		t.Parallel()
+		b, built := newBuilder()
+		expectPanic(t, wantBuilderUsedAfterBuildPanic, func() { b.Has(1) })
+		assertUnchanged(t, built)
+	})
 	t.Run("Build again", func(t *testing.T) {
 		t.Parallel()
 		b, built := newBuilder()
@@ -175,70 +199,70 @@ func TestSetBuilderMethodsPanicAfterBuild(t *testing.T) {
 func TestListBuilderDoesNotAffectSeed(t *testing.T) {
 	t.Parallel()
 
-	seed := persistent.NewList(1, 2, 3)
+	seed := persistent.ListOf(1, 2, 3)
+	wantSeed := []int{1, 2, 3}
 	b := seed.Builder()
 	b.Append(4).Set(0, 99).Delete(1)
 
-	if got, want := seed.Items(), []int{1, 2, 3}; !slices.Equal(got, want) {
-		t.Fatalf("seed List changed by builder operations: got %v, want %v", got, want)
+	if got := seed.Items(); !slices.Equal(got, wantSeed) {
+		t.Fatalf("seed List changed by builder operations: got %v, want %v", got, wantSeed)
 	}
 
 	built := b.Build()
 	if got, want := built.Items(), []int{99, 3, 4}; !slices.Equal(got, want) {
 		t.Fatalf("Build() result = %v, want %v", got, want)
 	}
+	if got := seed.Items(); !slices.Equal(got, wantSeed) {
+		t.Fatalf("seed List changed after Build: got %v, want %v", got, wantSeed)
+	}
 }
 
 func TestMapBuilderDoesNotAffectSeed(t *testing.T) {
 	t.Parallel()
 
-	seed := persistent.NewMap(map[string]int{"a": 1, "b": 2})
+	seed := persistent.MapOf(map[string]int{"a": 1, "b": 2})
+	wantSeed := map[string]int{"a": 1, "b": 2}
 	b := seed.Builder()
 	b.Set("a", 99).Set("c", 3).Delete("b")
 
-	if got, ok := seed.Get("a"); got != 1 || !ok {
-		t.Fatalf(`seed Map changed by builder operations: Get("a") = (%d,%v), want (1,true)`, got, ok)
-	}
-	if seed.Has("c") {
-		t.Fatal(`seed Map changed by builder operations: Has("c") = true, want false`)
-	}
-	if got, ok := seed.Get("b"); got != 2 || !ok {
-		t.Fatalf(`seed Map changed by builder operations: Get("b") = (%d,%v), want (2,true)`, got, ok)
+	if got := seed.Items(); !maps.Equal(got, wantSeed) {
+		t.Fatalf("seed Map changed by builder operations: got %v, want %v", got, wantSeed)
 	}
 
 	built := b.Build()
-	if got, ok := built.Get("a"); got != 99 || !ok {
-		t.Fatalf(`Build() Get("a") = (%d,%v), want (99,true)`, got, ok)
+	if got, want := built.Items(), map[string]int{"a": 99, "c": 3}; !maps.Equal(got, want) {
+		t.Fatalf("Build() result = %v, want %v", got, want)
 	}
-	if got, ok := built.Get("c"); got != 3 || !ok {
-		t.Fatalf(`Build() Get("c") = (%d,%v), want (3,true)`, got, ok)
-	}
-	if built.Has("b") {
-		t.Fatal(`Build() Has("b") = true, want false`)
+	if got := seed.Items(); !maps.Equal(got, wantSeed) {
+		t.Fatalf("seed Map changed after Build: got %v, want %v", got, wantSeed)
 	}
 }
 
 func TestSetBuilderDoesNotAffectSeed(t *testing.T) {
 	t.Parallel()
 
-	seed := persistent.NewSet(1, 2, 3)
+	seed := persistent.SetOf(1, 2, 3)
+	wantSeed := []int{1, 2, 3}
 	b := seed.Builder()
 	b.Add(4).Remove(2)
 
-	if got, want := sortedItems(seed), []int{1, 2, 3}; !slices.Equal(got, want) {
-		t.Fatalf("seed Set changed by builder operations: got %v, want %v", got, want)
+	if got := sortedItems(seed); !slices.Equal(got, wantSeed) {
+		t.Fatalf("seed Set changed by builder operations: got %v, want %v", got, wantSeed)
 	}
 
 	built := b.Build()
 	if got, want := sortedItems(built), []int{1, 3, 4}; !slices.Equal(got, want) {
 		t.Fatalf("Build() result = %v, want %v", got, want)
 	}
+	if got := sortedItems(seed); !slices.Equal(got, wantSeed) {
+		t.Fatalf("seed Set changed after Build: got %v, want %v", got, wantSeed)
+	}
 }
 
 func TestListBuilderLen(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.NewList(1, 2).Builder()
+	b := persistent.ListOf(1, 2).Builder()
 	if got, want := b.Len(), 2; got != want {
 		t.Fatalf("Len() = %d, want %d", got, want)
 	}
@@ -248,11 +272,38 @@ func TestListBuilderLen(t *testing.T) {
 	}
 }
 
+func TestListBuilderAt(t *testing.T) {
+	t.Parallel()
+
+	b := persistent.ListOf("x", "y", "z").Builder()
+	if got, want := b.At(0), "x"; got != want {
+		t.Fatalf("At(0) = %q, want %q", got, want)
+	}
+	if got, want := b.At(2), "z"; got != want {
+		t.Fatalf("At(2) = %q, want %q", got, want)
+	}
+	b.Set(1, "Y")
+	if got, want := b.At(1), "Y"; got != want {
+		t.Fatalf("At(1) after Set = %q, want %q", got, want)
+	}
+}
+
+func TestListBuilderAtPanicsOutOfRange(t *testing.T) {
+	t.Parallel()
+
+	b := persistent.ListOf(1, 2, 3).Builder()
+	for _, i := range []int{-1, 3, 100} {
+		expectPanic(t, "persistent: index out of range", func() { b.At(i) })
+	}
+	empty := persistent.ListOf[int]().Builder()
+	expectPanic(t, "persistent: index out of range", func() { empty.At(0) })
+}
+
 func TestListBuilderMultiAppend(t *testing.T) {
 	t.Parallel()
 
 	const n = 200
-	seed := persistent.NewList(0, 1, 2)
+	seed := persistent.ListOf(0, 1, 2)
 	b := seed.Builder()
 	for i := 3; i < n; i++ {
 		b.Append(i)
@@ -289,7 +340,7 @@ func TestListBuilderMultiAppend(t *testing.T) {
 func TestListBuilderEmptySeedAppend(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.NewList[int]().Builder()
+	b := persistent.ListOf[int]().Builder()
 	b.Append(10, 20, 30)
 	built := b.Build()
 	if got, want := built.Items(), []int{10, 20, 30}; !slices.Equal(got, want) {
@@ -300,7 +351,7 @@ func TestListBuilderEmptySeedAppend(t *testing.T) {
 func TestMapBuilderLen(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.NewMap(map[string]int{"a": 1}).Builder()
+	b := persistent.MapOf(map[string]int{"a": 1}).Builder()
 	if got, want := b.Len(), 1; got != want {
 		t.Fatalf("Len() = %d, want %d", got, want)
 	}
@@ -310,13 +361,58 @@ func TestMapBuilderLen(t *testing.T) {
 	}
 }
 
+func TestMapBuilderGetHas(t *testing.T) {
+	t.Parallel()
+
+	b := persistent.MapOf(map[string]int{"a": 1, "b": 2}).Builder()
+	if got, ok := b.Get("a"); got != 1 || !ok {
+		t.Fatalf(`Get("a") = (%d,%v), want (1,true)`, got, ok)
+	}
+	if !b.Has("b") {
+		t.Fatal(`Has("b") = false, want true`)
+	}
+	if got, ok := b.Get("missing"); got != 0 || ok {
+		t.Fatalf(`Get("missing") = (%d,%v), want (0,false)`, got, ok)
+	}
+	if b.Has("missing") {
+		t.Fatal(`Has("missing") = true, want false`)
+	}
+
+	b.Set("a", 99).Delete("b")
+	if got, ok := b.Get("a"); got != 99 || !ok {
+		t.Fatalf(`Get("a") after Set = (%d,%v), want (99,true)`, got, ok)
+	}
+	if b.Has("b") {
+		t.Fatal(`Has("b") after Delete = true, want false`)
+	}
+}
+
+func TestSetBuilderHas(t *testing.T) {
+	t.Parallel()
+
+	b := persistent.SetOf(1, 2, 3).Builder()
+	if !b.Has(2) {
+		t.Fatal("Has(2) = false, want true")
+	}
+	if b.Has(9) {
+		t.Fatal("Has(9) = true, want false")
+	}
+	b.Add(9).Remove(2)
+	if !b.Has(9) {
+		t.Fatal("Has(9) after Add = false, want true")
+	}
+	if b.Has(2) {
+		t.Fatal("Has(2) after Remove = true, want false")
+	}
+}
+
 // TestListBuilderMatchesPureModel drives a deterministic mix of Append/Set/Delete
 // on ListBuilder and on pure List ops; Build must equal the pure model.
 func TestListBuilderMatchesPureModel(t *testing.T) {
 	t.Parallel()
 
 	rng := rand.New(rand.NewPCG(0x1157_b01d, 0xc0ffee))
-	pure := persistent.NewList[int]()
+	pure := persistent.ListOf[int]()
 	b := pure.Builder()
 
 	const ops = 400
@@ -368,7 +464,7 @@ func TestMapBuilderMatchesPureModel(t *testing.T) {
 	t.Parallel()
 
 	rng := rand.New(rand.NewPCG(0x0a9_b01d, 0xf00d))
-	pure := persistent.NewMap[int, int](nil)
+	pure := persistent.MapOf[int, int](nil)
 	b := pure.Builder()
 
 	const ops = 400
@@ -401,7 +497,7 @@ func TestMapBuilderMatchesPureModel(t *testing.T) {
 func TestSetBuilderLen(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.NewSet(1, 2).Builder()
+	b := persistent.SetOf(1, 2).Builder()
 	if got, want := b.Len(), 2; got != want {
 		t.Fatalf("Len() = %d, want %d", got, want)
 	}
