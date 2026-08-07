@@ -291,6 +291,35 @@ func TestAllIteration(t *testing.T) {
 	}
 }
 
+func TestAllMatchesAtAcrossTrieAndTail(t *testing.T) {
+	t.Parallel()
+
+	// Sizes cover empty, tail-only, first trie push (32), multi-leaf, and a
+	// deeper root (past 1024) so All's sequential walk is checked against At.
+	for _, n := range []int{0, 1, 31, 32, 33, 64, 100, 1100} {
+		r := Empty[int]()
+		for i := 0; i < n; i++ {
+			r = r.Append(i * 3)
+		}
+		seen := 0
+		for i, v := range r.All() {
+			if i != seen {
+				t.Fatalf("n=%d: All index = %d, want sequential %d", n, i, seen)
+			}
+			if want := r.At(i); v != want {
+				t.Fatalf("n=%d: All(%d)=%d, At(%d)=%d", n, i, v, i, want)
+			}
+			if want := i * 3; v != want {
+				t.Fatalf("n=%d: All(%d)=%d, want %d", n, i, v, want)
+			}
+			seen++
+		}
+		if seen != n {
+			t.Fatalf("n=%d: All yielded %d pairs, want %d", n, seen, n)
+		}
+	}
+}
+
 func TestAppendAcrossTailPushAndLevelOverflow(t *testing.T) {
 	t.Parallel()
 

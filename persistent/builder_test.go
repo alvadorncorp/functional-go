@@ -2,6 +2,7 @@ package persistent_test
 
 import (
 	"maps"
+	"math/rand/v2"
 	"slices"
 	"testing"
 
@@ -306,6 +307,94 @@ func TestMapBuilderLen(t *testing.T) {
 	b.Set("b", 2)
 	if got, want := b.Len(), 2; got != want {
 		t.Fatalf("Len() after Set = %d, want %d", got, want)
+	}
+}
+
+// TestListBuilderMatchesPureModel drives a deterministic mix of Append/Set/Delete
+// on ListBuilder and on pure List ops; Build must equal the pure model.
+func TestListBuilderMatchesPureModel(t *testing.T) {
+	t.Parallel()
+
+	rng := rand.New(rand.NewPCG(0x1157_b01d, 0xc0ffee))
+	pure := persistent.NewList[int]()
+	b := pure.Builder()
+
+	const ops = 400
+	for i := 0; i < ops; i++ {
+		switch rng.IntN(5) {
+		case 0, 1, 2: // Append is the common case
+			v := rng.IntN(10_000)
+			pure = pure.Append(v)
+			b.Append(v)
+		case 3: // Set when non-empty
+			if pure.Len() == 0 {
+				v := rng.IntN(10_000)
+				pure = pure.Append(v)
+				b.Append(v)
+				continue
+			}
+			idx := rng.IntN(pure.Len())
+			v := rng.IntN(10_000)
+			pure = pure.Set(idx, v)
+			b.Set(idx, v)
+		default: // Delete when non-empty
+			if pure.Len() == 0 {
+				v := rng.IntN(10_000)
+				pure = pure.Append(v)
+				b.Append(v)
+				continue
+			}
+			idx := rng.IntN(pure.Len())
+			pure = pure.Delete(idx)
+			b.Delete(idx)
+		}
+		if b.Len() != pure.Len() {
+			t.Fatalf("op %d: builder Len=%d pure Len=%d", i, b.Len(), pure.Len())
+		}
+	}
+
+	built := b.Build()
+	if got, want := built.Items(), pure.Items(); !slices.Equal(got, want) {
+		t.Fatalf("Build() = %v\npure    = %v", got, want)
+	}
+	if !built.Equal(pure) {
+		t.Fatal("Build() Equal pure model = false")
+	}
+}
+
+// TestMapBuilderMatchesPureModel drives a deterministic mix of Set/Delete on
+// MapBuilder and pure Map ops; Build must equal the pure model.
+func TestMapBuilderMatchesPureModel(t *testing.T) {
+	t.Parallel()
+
+	rng := rand.New(rand.NewPCG(0x0a9_b01d, 0xf00d))
+	pure := persistent.NewMap[int, int](nil)
+	b := pure.Builder()
+
+	const ops = 400
+	for i := 0; i < ops; i++ {
+		switch rng.IntN(4) {
+		case 0, 1, 2: // Set is the common case
+			k := rng.IntN(80)
+			v := rng.IntN(10_000)
+			pure = pure.Set(k, v)
+			b.Set(k, v)
+		default: // Delete
+			k := rng.IntN(80)
+			pure = pure.Delete(k)
+			b.Delete(k)
+		}
+		if b.Len() != pure.Len() {
+			t.Fatalf("op %d: builder Len=%d pure Len=%d", i, b.Len(), pure.Len())
+		}
+	}
+
+	built := b.Build()
+	if got, want := built.Items(), pure.Items(); !maps.Equal(got, want) {
+		t.Fatalf("Build() = %v\npure    = %v", got, want)
+	}
+	if !built.Equal(pure) {
+		t.Fatal("Build() Equal pure model = false")
 	}
 }
 

@@ -9,8 +9,9 @@
 // The representation is the classic Clojure-style persistent vector: a dense
 // trie of 32-way nodes plus a tail array of up to 32 elements. Structural
 // sharing retains untouched sibling subtrees across Set/Append. Delete shifts
-// subsequent elements left and may be O(n) in this version (rebuild via
-// iteration); it is correct, not log-n path-aware.
+// subsequent elements left and is O(n) in this version (rebuild via sequential
+// walk); it is correct, not log-n path-aware. All is O(n) via the same
+// sequential trie+tail walk (not per-index At).
 //
 // This package does not implement RRB, concat, or split.
 //

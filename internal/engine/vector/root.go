@@ -103,8 +103,13 @@ func (r Root[T]) appendOne(v T) Root[T] {
 		newTail[len(r.tail)] = v
 		return Root[T]{count: r.count + 1, shift: r.shift, root: r.root, tail: newTail}
 	}
-
 	// Tail is full: push it into the trie and start a fresh tail with v.
+	return r.pushFullTail(v)
+}
+
+// pushFullTail pushes the full published tail into the trie and starts a new
+// one-element tail with v. Caller guarantees the tail is full.
+func (r Root[T]) pushFullTail(v T) Root[T] {
 	// The old tail slice is immutable and may be shared by the new leaf.
 	tailLeaf := &node[T]{values: r.tail}
 
@@ -140,9 +145,9 @@ func (r Root[T]) appendOne(v T) Root[T] {
 // Delete returns a new Root without the element at index i; subsequent
 // elements shift left by one. r is unchanged.
 //
-// Delete may be O(n): this version rebuilds by iteration rather than a
-// path-aware shift. It panics with "vector: index out of range" when i < 0
-// or i >= Len().
+// Delete is O(n): this version rebuilds via a sequential walk (All) rather
+// than a path-aware shift. It panics with "vector: index out of range" when
+// i < 0 or i >= Len().
 func (r Root[T]) Delete(i int) Root[T] {
 	if i < 0 || i >= r.count {
 		panic("vector: index out of range")
@@ -150,13 +155,14 @@ func (r Root[T]) Delete(i int) Root[T] {
 	if r.count == 1 {
 		return Empty[T]()
 	}
-	// O(n) rebuild: correct shift-left semantics without a specialized path.
+	// O(n) rebuild from sequential walk: correct shift-left semantics without
+	// a specialized path, and without O(log n) At per index.
 	vals := make([]T, 0, r.count-1)
-	for j := 0; j < r.count; j++ {
+	for j, v := range r.All() {
 		if j == i {
 			continue
 		}
-		vals = append(vals, r.At(j))
+		vals = append(vals, v)
 	}
 	return Empty[T]().Append(vals...)
 }
@@ -203,26 +209,37 @@ func (r Root[T]) TransientAppend(owner *ownership.Owner, items ...T) Root[T] {
 func (r Root[T]) transientAppendOne(owner *ownership.Owner, v T) Root[T] {
 	// Fast path: room remains in the tail.
 	if r.count-r.tailoff() < branching {
-		var newTail []T
-		if ownership.IsOwnedBy(r.tailOwner, owner) {
-			// Owned: append may grow the exclusive backing store in place.
-			newTail = r.tail
-			newTail = append(newTail, v)
-		} else {
-			newTail = make([]T, len(r.tail)+1, branching)
-			copy(newTail, r.tail)
-			newTail[len(r.tail)] = v
-		}
-		return Root[T]{
-			count:     r.count + 1,
-			shift:     r.shift,
-			root:      r.root,
-			tail:      newTail,
-			tailOwner: owner,
-		}
+		return r.transientAppendToTail(owner, v)
 	}
-
 	// Tail is full: push it into the trie and start a fresh exclusive tail.
+	return r.transientPushFullTail(owner, v)
+}
+
+// transientAppendToTail appends v into a non-full tail under owner.
+func (r Root[T]) transientAppendToTail(owner *ownership.Owner, v T) Root[T] {
+	var newTail []T
+	if ownership.IsOwnedBy(r.tailOwner, owner) {
+		// Owned: append may grow the exclusive backing store in place.
+		newTail = r.tail
+		newTail = append(newTail, v)
+	} else {
+		newTail = make([]T, len(r.tail)+1, branching)
+		copy(newTail, r.tail)
+		newTail[len(r.tail)] = v
+	}
+	return Root[T]{
+		count:     r.count + 1,
+		shift:     r.shift,
+		root:      r.root,
+		tail:      newTail,
+		tailOwner: owner,
+	}
+}
+
+// transientPushFullTail pushes the full tail into the trie under owner and
+// starts a fresh exclusive one-element tail with v. Caller guarantees the
+// tail is full.
+func (r Root[T]) transientPushFullTail(owner *ownership.Owner, v T) Root[T] {
 	// When the tail is exclusively owned, stamp the leaf; otherwise share the
 	// published values with a nil-owner leaf so later edits still COW.
 	var tailLeaf *node[T]
@@ -264,9 +281,9 @@ func (r Root[T]) transientAppendOne(owner *ownership.Owner, v T) Root[T] {
 }
 
 // TransientDelete returns a Root without the element at index i, editing
-// under owner. Like Delete, this version rebuilds by iteration (O(n)) but
-// uses TransientAppend so the result is exclusively owned for further edits.
-// It panics with "vector: index out of range" when i < 0 or i >= Len().
+// under owner. Like Delete, this version rebuilds via sequential walk (O(n))
+// but uses TransientAppend so the result is exclusively owned for further
+// edits. It panics with "vector: index out of range" when i < 0 or i >= Len().
 func (r Root[T]) TransientDelete(owner *ownership.Owner, i int) Root[T] {
 	if i < 0 || i >= r.count {
 		panic("vector: index out of range")
@@ -275,11 +292,11 @@ func (r Root[T]) TransientDelete(owner *ownership.Owner, i int) Root[T] {
 		return Empty[T]()
 	}
 	out := Empty[T]()
-	for j := 0; j < r.count; j++ {
+	for j, v := range r.All() {
 		if j == i {
 			continue
 		}
-		out = out.TransientAppend(owner, r.At(j))
+		out = out.TransientAppend(owner, v)
 	}
 	return out
 }
@@ -301,12 +318,44 @@ func (r Root[T]) editableTail(owner *ownership.Owner) []T {
 }
 
 // All yields every (index, value) pair in ascending index order.
+// The walk is sequential over the trie leaves then the tail (O(n)), not a
+// per-index At (which would be O(n log n)).
 func (r Root[T]) All() iter.Seq2[int, T] {
 	return func(yield func(int, T) bool) {
-		for i := 0; i < r.count; i++ {
-			if !yield(i, r.At(i)) {
+		idx := 0
+		if r.root != nil {
+			if !walkAll(r.root, r.shift, &idx, yield) {
 				return
 			}
 		}
+		for _, v := range r.tail {
+			if !yield(idx, v) {
+				return
+			}
+			idx++
+		}
 	}
+}
+
+// walkAll yields trie-resident values left-to-right, advancing *idx for each.
+// Returns false when yield requests an early stop.
+func walkAll[T any](n *node[T], level uint, idx *int, yield func(int, T) bool) bool {
+	if level == 0 {
+		for _, v := range n.values {
+			if !yield(*idx, v) {
+				return false
+			}
+			*idx++
+		}
+		return true
+	}
+	for _, ch := range n.children {
+		if ch == nil {
+			continue
+		}
+		if !walkAll(ch, level-bitsPerLevel, idx, yield) {
+			return false
+		}
+	}
+	return true
 }

@@ -298,36 +298,98 @@ func TestOwnerNilOnPublishedNodes(t *testing.T) {
 func TestPathCompressionDoesNotElevateBitmap(t *testing.T) {
 	t.Parallel()
 
-	// Retry across seeds until a and c share the root 5-bit index while b differs.
-	for trial := 0; trial < 200; trial++ {
-		r := Empty[string, int]().Set("a", 1).Set("b", 2).Set("c", 3)
-		// After three inserts, if a and c share an index, root has a nested child.
-		rootBM, ok := r.node.(*bitmapNode[string, int])
-		if !ok {
+	// Force a nested two-child shape: nestA/nestB share the root 5-bit index
+	// (so they live under an internal bitmap), while sibling sits in a different
+	// root slot as a leaf. Deleting sibling must NOT elevate the nested bitmap.
+	const keyLimit = 2000
+	for trial := 0; trial < 64; trial++ {
+		r0 := Empty[int, int]()
+		seed := r0.seed
+
+		var nestA, nestB, sibling int
+		var found bool
+		for a := 0; a < keyLimit && !found; a++ {
+			ha := keyhash.Hash(seed, a)
+			ia := ha & levelMask
+			for b := a + 1; b < keyLimit && !found; b++ {
+				hb := keyhash.Hash(seed, b)
+				if hb&levelMask != ia || ha == hb {
+					continue
+				}
+				for s := 0; s < keyLimit; s++ {
+					if s == a || s == b {
+						continue
+					}
+					if keyhash.Hash(seed, s)&levelMask != ia {
+						nestA, nestB, sibling = a, b, s
+						found = true
+						break
+					}
+				}
+			}
+		}
+		if !found {
 			continue
 		}
-		// Delete the sibling of the nested branch (key "b") when structure matches.
-		d := r.Delete("b")
-		if d.Len() != 2 {
-			t.Fatalf("Len after delete b = %d", d.Len())
+
+		r := r0.Set(nestA, 1).Set(nestB, 2).Set(sibling, 3)
+
+		// Pre-delete shape: root bitmap with exactly two children — one nested
+		// bitmap (the nestA/nestB branch) and one leaf (sibling).
+		rootBM, ok := r.node.(*bitmapNode[int, int])
+		if !ok || len(rootBM.children) != 2 {
+			t.Fatalf("pre-delete root: want 2-child bitmap, got %T children=%v",
+				r.node, childrenLen(r.node))
 		}
-		assertGet(t, d, "a", 1)
-		assertGet(t, d, "c", 3)
-		if _, ok := d.Get("b"); ok {
-			t.Fatal("b still present")
-		}
-		// If compression wrongly elevated an internal bitmap, Get would miss.
-		// Also require that when the post-delete root is a bitmap with one child,
-		// that child is itself a bitmap (nested), not elevated away.
-		if bm, ok := d.node.(*bitmapNode[string, int]); ok && len(bm.children) == 1 {
-			if _, isBM := bm.children[0].(*bitmapNode[string, int]); !isBM {
-				// Single child may be leaf only if a and c did not nest — skip.
-				_ = rootBM
+		var nestedCount, leafCount int
+		for _, ch := range rootBM.children {
+			switch ch.(type) {
+			case *bitmapNode[int, int]:
+				nestedCount++
+			case *leaf[int, int]:
+				leafCount++
+			default:
+				t.Fatalf("pre-delete unexpected child type %T", ch)
 			}
+		}
+		if nestedCount != 1 || leafCount != 1 {
+			t.Fatalf("pre-delete shape: nested=%d leaf=%d want 1 each", nestedCount, leafCount)
+		}
+
+		d := r.Delete(sibling)
+		if d.Len() != 2 {
+			t.Fatalf("Len after delete sibling = %d", d.Len())
+		}
+		assertGet(t, d, nestA, 1)
+		assertGet(t, d, nestB, 2)
+		if _, present := d.Get(sibling); present {
+			t.Fatal("sibling still present after Delete")
+		}
+
+		// Remaining root must still be a single-child *bitmapNode wrapping the
+		// nested *bitmapNode. Elevating the nested bitmap to root would keep
+		// Get working only by accident for some keys; the shape is the real
+		// regression signal.
+		bm, ok := d.node.(*bitmapNode[int, int])
+		if !ok {
+			t.Fatalf("post-delete root elevated away from bitmap: got %T", d.node)
+		}
+		if len(bm.children) != 1 {
+			t.Fatalf("post-delete root children = %d, want 1", len(bm.children))
+		}
+		if _, isBM := bm.children[0].(*bitmapNode[int, int]); !isBM {
+			t.Fatalf("post-delete nested child elevated: got %T, want *bitmapNode", bm.children[0])
 		}
 		return
 	}
-	t.Fatal("could not exercise delete path across seeds")
+	t.Fatal("could not find nestA/nestB/sibling key triple under any seed")
+}
+
+func childrenLen[K comparable, V any](n node[K, V]) int {
+	if bm, ok := n.(*bitmapNode[K, V]); ok {
+		return len(bm.children)
+	}
+	return -1
 }
 
 func assertGet[K, V comparable](t *testing.T, r Root[K, V], key K, want V) {
