@@ -18,6 +18,6 @@
 // This package does not implement RRB, concat, or split.
 //
 // Allowed non-stdlib imports (when needed): ownership, cow, sharing.
-// Must not import transient, eq, optional, frozen, persistent, valueobject,
+// Must not import transient, eq, optional, persistent, valueobject,
 // keyhash, or hamt.
 package vector

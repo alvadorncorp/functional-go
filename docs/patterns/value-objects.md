@@ -34,10 +34,12 @@ included answer, and this module fills exactly those two:
    constructor and unexported fields, `Tags()` returning the raw slice hands
    the backing array to every caller, who can then mutate it and silently
    corrupt every other holder of the "same" value object. Use
-   [`frozen.Slice[T]`](../packages/frozen.md) or
-   [`frozen.Map[K,V]`](../packages/frozen.md) for a collection field instead
-   — both copy on construction and copy again on every read that could leak
-   the backing storage, so the field is safe to expose directly.
+   [`persistent.List[T]`](../packages/persistent.md),
+   [`persistent.Map[K,V]`](../packages/persistent.md), or
+   [`persistent.Set[T]`](../packages/persistent.md) for a collection field
+   instead — construction copies into an engine-backed structure, and
+   `Items()` is the only egress that materializes a conventional mutable
+   collection, so the field is safe to expose for iteration via `Values()`.
 2. **Mechanical verification that you actually did it right.**
    [`valueobject.Check[T]`](../packages/valueobject.md) is a reflective test
    helper that walks a type's fields and reports every one an external
@@ -53,7 +55,7 @@ included answer, and this module fills exactly those two:
 ## A canonical value object
 
 The shape below uses every piece this pattern calls for: unexported fields,
-a validating constructor, `With*`, `Equal`, and a `frozen.Slice[string]`
+a validating constructor, `With*`, `Equal`, and a `persistent.List[string]`
 field for the one thing plain Go cannot make safe on its own.
 
 ```go
@@ -62,7 +64,7 @@ package catalog
 import (
 	"errors"
 
-	"github.com/alvadorncorp/gopackages/functional/frozen"
+	"github.com/alvadorncorp/gopackages/functional/persistent"
 )
 
 // Money is a value object: an amount in cents plus a set of tags, both
@@ -70,7 +72,7 @@ import (
 type Money struct {
 	amountCents int64
 	currency    string
-	tags        frozen.Slice[string]
+	tags        persistent.List[string]
 }
 
 // NewMoney validates and constructs. It is the only way to obtain a
@@ -85,16 +87,16 @@ func NewMoney(amountCents int64, currency string, tags ...string) (Money, error)
 	return Money{
 		amountCents: amountCents,
 		currency:    currency,
-		tags:        frozen.NewSlice(tags...),
+		tags:        persistent.ListOf(tags...),
 	}, nil
 }
 
 // AmountCents, Currency, and Tags are read-only accessors. Tags returns the
-// frozen.Slice value itself, not a copied []string — the type is already
-// safe to hand out.
-func (m Money) AmountCents() int64            { return m.amountCents }
-func (m Money) Currency() string              { return m.currency }
-func (m Money) Tags() frozen.Slice[string]    { return m.tags }
+// persistent.List value itself, not a copied []string — the type is already
+// safe to hand out for iteration.
+func (m Money) AmountCents() int64                 { return m.amountCents }
+func (m Money) Currency() string                   { return m.currency }
+func (m Money) Tags() persistent.List[string]      { return m.tags }
 
 // WithAmountCents returns a copy of m with a different amount. Value
 // receivers already copy m on entry; there is nothing further to do.
@@ -106,7 +108,7 @@ func (m Money) WithAmountCents(amountCents int64) (Money, error) {
 	return m, nil
 }
 
-// Equal compares two Money values field by field. frozen.Slice is not
+// Equal compares two Money values field by field. persistent.List is not
 // ==-comparable, so its own Equal is used for the tags field.
 func (m Money) Equal(other Money) bool {
 	return m.amountCents == other.amountCents &&
@@ -124,14 +126,13 @@ Notes on this example:
   — a `With*` method is still a construction path.
 - `Equal` is hand-written here, field by field, which is the normal shape
   for a value object with a small, fixed field set. `functional`'s own
-  types (`optional`, `frozen`, `persistent`) resolve their `Equal` through
-  the shared internal package `functional/internal/eq`, but that package
-  is `internal` and cannot be imported from outside `functional` — a value
-  object outside this module writes its own `Equal` by hand, as `Money`
-  does above.
-- `frozen.Slice[string]` is exposed directly by `Tags()`, not copied into a
-  `[]string` first — that is the entire benefit of using `frozen` here
-  instead of a plain slice field.
+  types (`optional`, `persistent`) resolve their `Equal` through the shared
+  internal package `functional/internal/eq`, but that package is `internal`
+  and cannot be imported from outside `functional` — a value object outside
+  this module writes its own `Equal` by hand, as `Money` does above.
+- `persistent.List[string]` is exposed directly by `Tags()`, not copied into
+  a `[]string` first — that is the entire benefit of using `persistent`
+  here instead of a plain slice field.
 
 Verify the structural half of this contract mechanically:
 
@@ -143,7 +144,7 @@ func TestMoney_ValueObject(t *testing.T) {
 }
 ```
 
-`Check[Money]()` passes because `tags` is a `frozen.Slice[string]`, one of
+`Check[Money]()` passes because `tags` is a `persistent.List[string]`, one of
 `valueobject`'s default immutable leaves — see
 [the valueobject package reference](../packages/valueobject.md#leaves-what-inspect-stops-descending-into).
 Had `tags` instead been a plain `[]string`, `Check` would report exactly the
@@ -157,6 +158,6 @@ Money.tags: field can be mutated through a pointer/slice/map/chan/func alias reg
 
 ## Related documents
 
-- [Package API: frozen](../packages/frozen.md)
+- [Package API: persistent](../packages/persistent.md)
 - [Package API: valueobject](../packages/valueobject.md)
 - [Examples](../examples.md)

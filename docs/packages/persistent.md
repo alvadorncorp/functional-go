@@ -219,6 +219,5 @@ itself when linear bulk construction is the goal.
 - [Overview](../overview.md)
 - [Examples](../examples.md)
 - [Internal: core](core.md)
-- [Package API: frozen](frozen.md) (the read-only sibling)
 - [ADR-004 — Thin immutability core](../adr/functional/adr-004-thin-immutability-core.md)
 - [ADR-005 — Persistent engine family](../adr/functional/adr-005-persistent-engine-family.md)

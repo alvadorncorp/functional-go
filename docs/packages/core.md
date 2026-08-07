@@ -119,7 +119,7 @@ cow · transient · sharing
 - Star into `ownership` only — no peer edges among cow/transient/sharing.
 - No `reflect` in production files under `internal/core`.
 - Core must not import `internal/eq` or any public subpackage.
-- `optional`, `frozen`, and `valueobject` must not import core.
+- `optional` and `valueobject` must not import core.
 - `persistent` may import core (Builders use `transient`).
 - Engines may import `ownership` / `cow` / `sharing` but **not** `transient`
   (callers pass an owner from a window).

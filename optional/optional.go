@@ -23,7 +23,7 @@ const panicMessage = "functional/optional: Optional has no value"
 //     alias;
 //   - immutability is SHALLOW: Optional[[]byte] shares the slice's backing
 //     array. For an element that must not be mutable, compose with an
-//     immutable type (e.g. functional/frozen.Slice) as T.
+//     immutable type (e.g. functional/persistent.List) as T.
 //
 // The internal representation is frozen at exactly {value T; present bool}.
 // Adding any non-comparable field would silently remove ==-comparability

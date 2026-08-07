@@ -55,7 +55,7 @@ Guards `T` inline, not behind a pointer:
 - the held value is a copy — it cannot be mutated through an external alias;
 - immutability is **shallow**: `Optional[[]byte]` shares the slice's backing
   array. Compose with an immutable element type (e.g.
-  [`frozen.Slice`](frozen.md)) when the element itself must not be mutable.
+  [`persistent.List`](persistent.md)) when the element itself must not be mutable.
 
 ---
 

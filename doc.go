@@ -3,11 +3,10 @@
 // package, which exports nothing.
 //
 // Each concept lives in its own subpackage: optional (Optional[T] and its
-// combinators), frozen (immutable snapshots — Slice and Map — with no write
-// operation), persistent (collections with functional writes: HAMT Map/Set
-// and a 32-way vector List; Builders use an exclusive-owner transient window
-// with O(1) Freeze), and valueobject (reflective verification of structural
-// immutability, a test helper).
+// combinators), persistent (immutable collections with functional writes:
+// HAMT Map/Set and a 32-way vector List; Builders use an exclusive-owner
+// transient window with O(1) Freeze), and valueobject (reflective
+// verification of structural immutability, a test helper).
 //
 // The module has zero dependencies outside the standard library, permanently.
 // No public subpackage imports another public subpackage. Shared internals

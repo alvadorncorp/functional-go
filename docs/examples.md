@@ -9,7 +9,7 @@ Illustrative sketches for common uses. For API contracts see
 
 1. [Config precedence with `Or`](#1-config-precedence-with-or)
 2. [Fallible parse with `MapErr`](#2-fallible-parse-with-maperr)
-3. [Immutable collection field with `frozen.Slice`](#3-immutable-collection-field-with-frozenslice)
+3. [Immutable collection field with `persistent.List`](#3-immutable-collection-field-with-persistentlist)
 4. [Building a `persistent.List` in a loop](#4-building-a-persistentlist-in-a-loop)
 5. [`persistent.MapOf` / `SetOf` snapshots](#5-persistentmapof--setof-snapshots)
 
@@ -64,33 +64,34 @@ the caller: the first is `(None, nil)`, the second is `(None, someError)`.
 
 ---
 
-## 3. Immutable collection field with `frozen.Slice`
+## 3. Immutable collection field with `persistent.List`
 
-A value object with a collection field should use `frozen.Slice[T]` (or
-`frozen.Map[K,V]`), not a plain `[]T`. The zero `Slice` is already a valid,
-empty collection, so the field never needs a nil check, and no caller —
-inside or outside the package — can reach the backing array.
+A value object with a collection field should use `persistent.List[T]` (or
+`persistent.Map[K,V]` / `Set[T]`), not a plain `[]T`. The zero `List` is
+already a valid empty collection, so the field never needs a nil check, and
+no caller can reach the internal engine storage. Prefer not calling write
+methods on a field you intend as a pure snapshot.
 
 ```go
 package catalog
 
-import "github.com/alvadorncorp/gopackages/functional/frozen"
+import "github.com/alvadorncorp/gopackages/functional/persistent"
 
 type Product struct {
 	sku  string
-	tags frozen.Slice[string]
+	tags persistent.List[string]
 }
 
 func NewProduct(sku string, tags ...string) Product {
-	return Product{sku: sku, tags: frozen.NewSlice(tags...)}
+	return Product{sku: sku, tags: persistent.ListOf(tags...)}
 }
 
-func (p Product) Tags() frozen.Slice[string] { return p.tags }
+func (p Product) Tags() persistent.List[string] { return p.tags }
 ```
 
-`NewSlice` copies `tags` on the way in; `Product.Tags` hands back the
-`Slice` value itself (not `Items()`), so a caller can iterate with
-`Values()` at zero extra allocation, or call `.Items()` only when it
+`ListOf` copies `tags` into the persistent vector; `Product.Tags` hands
+back the `List` value itself (not `Items()`), so a caller can iterate with
+`Values()` without materializing a slice, or call `.Items()` only when it
 actually needs an owned, mutable `[]string`. See
 [patterns/value-objects.md](patterns/value-objects.md) for the full value
 object shape this fits into.
@@ -166,7 +167,6 @@ For bulk Map construction, prefer `MapOf[K,V](nil).Builder()` (or
 
 - [overview](overview.md)
 - [package API: optional](packages/optional.md)
-- [package API: frozen](packages/frozen.md)
 - [package API: persistent](packages/persistent.md)
 - [package API: valueobject](packages/valueobject.md)
 - [pattern: value objects](patterns/value-objects.md)

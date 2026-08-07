@@ -46,7 +46,6 @@ const (
 // None of these may depend on another.
 var publicPackages = []string{
 	"github.com/alvadorncorp/gopackages/functional/optional",
-	"github.com/alvadorncorp/gopackages/functional/frozen",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
@@ -56,7 +55,6 @@ var publicPackages = []string{
 // later for the engine contract.
 var publicPackagesNoCore = []string{
 	"github.com/alvadorncorp/gopackages/functional/optional",
-	"github.com/alvadorncorp/gopackages/functional/frozen",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
 
@@ -80,7 +78,6 @@ var enginePackages = []string{
 // internal/core, and internal/engine packages.
 var allPackages = []string{
 	"github.com/alvadorncorp/gopackages/functional/optional",
-	"github.com/alvadorncorp/gopackages/functional/frozen",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
 	pkgEq,
@@ -110,7 +107,6 @@ var coreForbiddenTargets = []string{
 	pkgHamt,
 	pkgVector,
 	"github.com/alvadorncorp/gopackages/functional/optional",
-	"github.com/alvadorncorp/gopackages/functional/frozen",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
@@ -141,7 +137,6 @@ var engineForbiddenTargets = []string{
 	pkgTransient,
 	pkgEq,
 	"github.com/alvadorncorp/gopackages/functional/optional",
-	"github.com/alvadorncorp/gopackages/functional/frozen",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
@@ -165,8 +160,8 @@ func TestNoNonStdlibDependencies(t *testing.T) {
 
 // TestNoPublicSiblingDependencies proves "no public subpackage imports
 // another" as a tested invariant, not just a documented one. It is what
-// guarantees, for example, that frozen.Map.Get returns comma-ok instead of
-// optional.Optional by design, not by oversight: if it ever imported
+// guarantees, for example, that persistent.Map.Get returns comma-ok instead
+// of optional.Optional by design, not by oversight: if it ever imported
 // optional to do so, this test would fail.
 //
 // Scope, by design: this only ever sees PRODUCTION imports, because deps
@@ -174,14 +169,14 @@ func TestNoNonStdlibDependencies(t *testing.T) {
 // `_test.go` files. That is deliberate, not a blind spot in this test: a
 // public subpackage's test code MAY legitimately import a sibling public
 // package to exercise or demonstrate cross-package behavior — e.g.
-// valueobject/check_test.go imports functional/frozen to prove
-// AllowPackage's default leaf list actually frees frozen fields, not merely
-// that the code compiles. That is a real, intentional dependency between
-// test binaries, and it does not violate the architectural boundary this
-// test protects (production code never importing a public sibling). Adding
-// `-test` here would make that legitimate test import fail this test; do
-// not do that. See docs/overview.md, "No public subpackage imports another
-// (in production code)", for the full rationale.
+// valueobject/check_test.go imports functional/persistent to prove
+// AllowPackage's default leaf list actually frees persistent fields, not
+// merely that the code compiles. That is a real, intentional dependency
+// between test binaries, and it does not violate the architectural boundary
+// this test protects (production code never importing a public sibling).
+// Adding `-test` here would make that legitimate test import fail this
+// test; do not do that. See docs/overview.md, "No public subpackage imports
+// another (in production code)", for the full rationale.
 func TestNoPublicSiblingDependencies(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range publicPackages {
@@ -316,9 +311,9 @@ func TestCoreDependencyDAG(t *testing.T) {
 	}
 }
 
-// TestPublicPackagesDoNotImportCore proves optional, frozen, and
-// valueobject production code never reach into internal/core. persistent is
-// allowed to import core (engine contract) and is not checked here.
+// TestPublicPackagesDoNotImportCore proves optional and valueobject
+// production code never reach into internal/core. persistent is allowed to
+// import core (engine contract) and is not checked here.
 func TestPublicPackagesDoNotImportCore(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range publicPackagesNoCore {
@@ -354,8 +349,7 @@ func TestEngineNoReflect(t *testing.T) {
 //   - keyhash: standard library only (no functional packages)
 //   - hamt: among functional packages, only ownership, cow, sharing, keyhash
 //   - vector: among functional packages, only ownership, cow, sharing
-//   - no engine may import transient, eq, optional, frozen, persistent,
-//     or valueobject
+//   - no engine may import transient, eq, optional, persistent, or valueobject
 //   - hamt ↛ vector and vector ↛ hamt (peer engines stay disconnected)
 //
 // Core packages already cannot import engines via TestCoreDependencyDAG

@@ -17,6 +17,6 @@
 // the new value equals the old one (V is not comparable; no reflect equality).
 //
 // Allowed non-stdlib imports (when needed): ownership, cow, sharing, keyhash.
-// Must not import transient, eq, optional, frozen, persistent, valueobject,
+// Must not import transient, eq, optional, persistent, valueobject,
 // or vector.
 package hamt

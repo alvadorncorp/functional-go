@@ -6,16 +6,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alvadorncorp/gopackages/functional/frozen"
+	"github.com/alvadorncorp/gopackages/functional/persistent"
 	"github.com/alvadorncorp/gopackages/functional/valueobject"
 )
 
 // Good is a well-formed value object: every field unexported, one plain
-// string, and one frozen.Slice[string] — proving that functional/frozen is
-// allowed by default without valueobject importing it.
+// string, and one persistent.List[string] — proving that functional/persistent
+// is allowed by default without valueobject importing it.
 type Good struct {
 	name string
-	tags frozen.Slice[string]
+	tags persistent.List[string]
 }
 
 // Bad has one exported field and one unallowed slice field: two distinct,
@@ -61,8 +61,7 @@ type HasTimes struct {
 }
 
 // MutableBox and HasBox exist only to prove AllowPackage frees an entire
-// package by import-path string, independent of the frozen/persistent
-// defaults.
+// package by import-path string, independent of the persistent default.
 type MutableBox struct {
 	data []string
 }
@@ -281,35 +280,35 @@ func TestInspectArrayOfStructPath(t *testing.T) {
 	}
 }
 
-// FrozenPointerElement documents Inspect's known structural gap: frozen
-// (and persistent) are treated as immutable leaves by PkgPath alone,
+// PersistentPointerElement documents Inspect's known structural gap:
+// persistent types are treated as immutable leaves by PkgPath alone,
 // without regard to their type parameter, because reflect exposes no API
 // to inspect a generic instantiation's type arguments. See Inspect's doc
 // comment for the full explanation.
-type FrozenPointerElement struct {
-	items frozen.Slice[*int]
+type PersistentPointerElement struct {
+	items persistent.List[*int]
 }
 
-// TestInspectKnownGap_FrozenElementMutability pins a documented, permanent
-// limitation of Inspect (see its doc comment): the frozen/persistent leaf
-// check ignores the element type parameter entirely. A
-// frozen.Slice[*int] field therefore passes Check with zero violations even
-// though the *int elements obtained through Values()/Items() remain mutable
-// through the pointer from outside the value object — the same underlying
-// problem that IS correctly caught for optional.Optional[*Widget]
-// (RuleReferenceField), because Optional holds its type parameter inline
-// instead of behind a leaf-by-package check.
+// TestInspectKnownGap_PersistentElementMutability pins a documented, permanent
+// limitation of Inspect (see its doc comment): the persistent leaf check
+// ignores the element type parameter entirely. A persistent.List[*int]
+// field therefore passes Check with zero violations even though the *int
+// elements obtained through Values()/Items() remain mutable through the
+// pointer from outside the value object — the same underlying problem that
+// IS correctly caught for optional.Optional[*Widget] (RuleReferenceField),
+// because Optional holds its type parameter inline instead of behind a
+// leaf-by-package check.
 //
 // This is NOT a bug: reflect has no API to inspect a generic
 // instantiation's type arguments (no reflect.Type.TypeArgs()), so Inspect
-// cannot discover that Slice was instantiated with *int and recurse into
+// cannot discover that List was instantiated with *int and recurse into
 // it. This test exists so the asymmetry never silently regresses further.
-func TestInspectKnownGap_FrozenElementMutability(t *testing.T) {
+func TestInspectKnownGap_PersistentElementMutability(t *testing.T) {
 	t.Parallel()
 
-	if err := valueobject.Check[FrozenPointerElement](); err != nil {
-		t.Fatalf("Check[FrozenPointerElement]() = %v, want nil (documented gap: "+
-			"the frozen/persistent leaf check ignores the element type parameter)", err)
+	if err := valueobject.Check[PersistentPointerElement](); err != nil {
+		t.Fatalf("Check[PersistentPointerElement]() = %v, want nil (documented gap: "+
+			"the persistent leaf check ignores the element type parameter)", err)
 	}
 }
 

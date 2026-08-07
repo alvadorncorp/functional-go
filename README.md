@@ -11,8 +11,8 @@ go      1.26+
 
 **The root package exports nothing.** `functional` is documentation only —
 this README and the file it mirrors, [`doc.go`](doc.go). Each concept lives
-in its own subpackage: [`optional`](optional/), [`frozen`](frozen/),
-[`persistent`](persistent/), [`valueobject`](valueobject/).
+in its own subpackage: [`optional`](optional/), [`persistent`](persistent/),
+[`valueobject`](valueobject/).
 
 This README is the **documentation index**. Guides live under
 [`docs/`](docs/).
@@ -33,7 +33,6 @@ This README is the **documentation index**. Guides live under
 | Document | Package |
 |---|---|
 | [docs/packages/optional.md](docs/packages/optional.md) | `github.com/alvadorncorp/gopackages/functional/optional` |
-| [docs/packages/frozen.md](docs/packages/frozen.md) | `github.com/alvadorncorp/gopackages/functional/frozen` |
 | [docs/packages/persistent.md](docs/packages/persistent.md) | `github.com/alvadorncorp/gopackages/functional/persistent` |
 | [docs/packages/valueobject.md](docs/packages/valueobject.md) | `github.com/alvadorncorp/gopackages/functional/valueobject` |
 | [docs/packages/core.md](docs/packages/core.md) | `internal/core` (ownership, cow, sharing, transient) — maintainers |
@@ -60,8 +59,7 @@ This README is the **documentation index**. Guides live under
 | Package | Role | Core types |
 |---|---|---|
 | [`optional`](optional/) | Explicit absence: an operation that may or may not produce a value | `optional.Optional[T]` |
-| [`frozen`](frozen/) | Immutable snapshot of a slice or map — no write operation, ever | `frozen.Slice[T]`, `frozen.Map[K,V]` |
-| [`persistent`](persistent/) | Functional-write collections (HAMT Map/Set, 32-way vector List; Builders use exclusive-owner transient + O(1) Freeze) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |
+| [`persistent`](persistent/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List; Builders use exclusive-owner transient + O(1) Freeze) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |
 | [`valueobject`](valueobject/) | Reflective verification that a type is structurally immutable (test helper) | `valueobject.Check[T]` |
 
 ---
@@ -71,13 +69,13 @@ This README is the **documentation index**. Guides live under
 ```go
 import (
     "github.com/alvadorncorp/gopackages/functional/optional"
-    "github.com/alvadorncorp/gopackages/functional/frozen"
+    "github.com/alvadorncorp/gopackages/functional/persistent"
 )
 
 port := optional.Some("8080")
 n, err := optional.Map(port, len) // optional.Optional[int]{...}, no error path
 
-tags := frozen.NewSlice("prod", "us-east") // frozen.Slice[string]
+tags := persistent.ListOf("prod", "us-east") // persistent.List[string]
 ```
 
 See **[docs/examples.md](docs/examples.md)** for more sketches.
@@ -103,10 +101,9 @@ cd functional && go test ./... -count=1
   marshal without writing your own `MarshalJSON`/`Scan` bridge.
 - **No monad zoo.** No `IO`, `Task`, `Reader`, `State`, or any other
   effect/context type — `optional` stops at explicit absence.
-- **`frozen` and `persistent` collections are SHALLOW, not transitively
-  immutable.** `frozen.Slice[[]byte]` still shares each element's backing
-  array; nothing in this module makes an element type immutable on your
-  behalf.
+- **`persistent` collections are SHALLOW, not transitively immutable.**
+  `persistent.List[[]byte]` still shares each element's backing array;
+  nothing in this module makes an element type immutable on your behalf.
 - **`persistent` engines are path-copy structure sharing, not full-copy
   COW.** Map/Set use a HAMT; List uses a 32-way vector. Documented log-n
   complexity bounds are public-API upper bounds. `List.Delete` is currently

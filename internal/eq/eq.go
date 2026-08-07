@@ -12,7 +12,7 @@ package eq
 //
 // Callers that need structural equality for non-comparable types should
 // implement Equal(T) bool on the type or use an EqualFunc at their package
-// (for example frozen.SliceEqualFunc).
+// (for example a package-level EqualFunc).
 func Equal[T any](a, b T) bool {
 	type equaler interface{ Equal(T) bool }
 	if ea, ok := any(a).(equaler); ok {

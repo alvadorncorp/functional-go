@@ -43,7 +43,7 @@ shared core would couple every engine to one representation strategy.
 - Builders need a real mutation window that freezes on `Build` without
   walking nodes.
 - Archtests must enforce: zero non-stdlib deps; core DAG is a star into
-  `ownership`; no `reflect` in core; `optional`/`frozen`/`valueobject` do
+  `ownership`; no `reflect` in core; `optional`/`valueobject` do
   not import core.
 - Public panic strings stay `"persistent: ..."`; transient's own panic is
   an internal detail builders must not leak.
@@ -104,7 +104,7 @@ No peer edges among cow/transient/sharing. Core imports neither
   implementation.
 - Not the home of `Equal` (that remains `internal/eq`, which may use
   `reflect` and is outside core).
-- Not used by `optional`, `frozen`, or `valueobject` (archtested).
+- Not used by `optional` or `valueobject` (archtested).
 
 ### Builder ↔ transient wiring (today)
 

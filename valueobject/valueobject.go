@@ -106,9 +106,9 @@ func AllowType[T any]() Option {
 // immutable leaf. The comparison is by STRING against the type's
 // reflect.Type.PkgPath() — it creates no real import edge between
 // valueobject and the named package. That string comparison is exactly how
-// functional/frozen and functional/persistent are allowed by default
-// without this package importing either: a real import would break "no
-// public subpackage of functional imports another."
+// functional/persistent is allowed by default without this package importing
+// it: a real import would break "no public subpackage of functional imports
+// another."
 func AllowPackage(importPath string) Option {
 	return func(c *config) {
 		c.packages = append(c.packages, importPath)
@@ -116,10 +116,9 @@ func AllowPackage(importPath string) Option {
 }
 
 // defaultLeafPackages are treated as immutable leaves without any Option:
-// both collections already guarantee their own copy on entry and exit, so
-// structural inspection has nothing to add.
+// persistent collections already guarantee structural immutability of the
+// collection itself, so structural inspection has nothing to add.
 var defaultLeafPackages = []string{
-	"github.com/alvadorncorp/gopackages/functional/frozen",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 }
 
@@ -130,7 +129,7 @@ var (
 )
 
 // isLeaf reports whether t must not be descended into or reported as a
-// violation: a default leaf (time.Time, time.Duration, frozen, persistent),
+// violation: a default leaf (time.Time, time.Duration, persistent),
 // an AllowType match, or a type declared under an AllowPackage import path.
 func (c *config) isLeaf(t reflect.Type) bool {
 	if t == timeTimeType || t == timeDurationType {
@@ -158,7 +157,7 @@ func (c *config) isLeaf(t reflect.Type) bool {
 
 // underPackage reports whether pkgPath is prefix itself or a subpackage of
 // it, guarding against a naive strings.HasPrefix false positive such as
-// "…/frozenish" matching prefix "…/frozen".
+// "…/persistentish" matching prefix "…/persistent".
 func underPackage(pkgPath, prefix string) bool {
 	return pkgPath == prefix || strings.HasPrefix(pkgPath, prefix+"/")
 }
@@ -176,27 +175,27 @@ func underPackage(pkgPath, prefix string) bool {
 // ...); reflect.TypeOf on a concrete value reaches the same reflect.Type
 // without going through that code path.
 //
-// Known gap — frozen/persistent leaves ignore their element type: a field
-// whose type is declared in functional/frozen or functional/persistent is
-// treated as an immutable leaf unconditionally (see isLeaf and
-// defaultLeafPackages), by matching the field's own PkgPath, WITHOUT
-// looking at that generic type's type parameter. That correctly captures
-// that the COLLECTION itself cannot be mutated from outside — Values() and
-// Items() never leak a reference to the internal slice or map — but it does
-// NOT verify that the element type is itself immutable. A
-// frozen.Slice[*Widget] field is treated as a leaf and reported with zero
-// violations even though every *Widget obtained through Values()/Items()
-// remains mutable through the pointer. This is a structural limitation of
-// the reflect package, not an omission of this code: reflect exposes no API
-// to inspect the type arguments of a generic instantiation (there is no
-// reflect.Type.TypeArgs()), so Inspect has no way to discover that Slice
-// was instantiated with *Widget and recurse into it. Contrast with
-// optional.Optional[*Widget], which holds its type parameter inline rather
-// than behind a leaf-by-package check, so Inspect DOES recurse into it and
-// correctly reports RuleReferenceField. When a frozen/persistent element
-// type is itself a pointer, slice, map, chan, func, or interface, combine
-// AllowType or a manual review of that element type, or prefer
-// optional.Optional[T] or a scalar field for that element instead.
+// Known gap — persistent leaves ignore their element type: a field whose
+// type is declared in functional/persistent is treated as an immutable leaf
+// unconditionally (see isLeaf and defaultLeafPackages), by matching the
+// field's own PkgPath, WITHOUT looking at that generic type's type
+// parameter. That correctly captures that the COLLECTION structure cannot
+// be mutated from outside — Values() and Items() never leak a reference to
+// the internal engine storage — but it does NOT verify that the element
+// type is itself immutable. A persistent.List[*Widget] field is treated as
+// a leaf and reported with zero violations even though every *Widget
+// obtained through Values()/Items() remains mutable through the pointer.
+// This is a structural limitation of the reflect package, not an omission
+// of this code: reflect exposes no API to inspect the type arguments of a
+// generic instantiation (there is no reflect.Type.TypeArgs()), so Inspect
+// has no way to discover that List was instantiated with *Widget and
+// recurse into it. Contrast with optional.Optional[*Widget], which holds
+// its type parameter inline rather than behind a leaf-by-package check, so
+// Inspect DOES recurse into it and correctly reports RuleReferenceField.
+// When a persistent element type is itself a pointer, slice, map, chan,
+// func, or interface, combine AllowType or a manual review of that element
+// type, or prefer optional.Optional[T] or a scalar field for that element
+// instead.
 //
 // A non-struct T is treated as a leaf: this package exists to verify value
 // objects, which are structs.

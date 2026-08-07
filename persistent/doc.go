@@ -19,7 +19,7 @@
 // copy them. If T or V is a pointer, slice, map, or other shared reference,
 // a caller that mutates the referent can still observe that change through
 // every collection version that holds the same reference. Prefer immutable
-// element types (or frozen / value-object wrappers) when deep immutability
+// element types (or value-object wrappers) when deep immutability
 // of values is required.
 //
 // # Engines and structural sharing

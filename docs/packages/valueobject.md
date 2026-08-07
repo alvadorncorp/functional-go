@@ -109,23 +109,22 @@ Default immutable leaves, with no `Option` needed:
 | Leaf | Why |
 |---|---|
 | `time.Time`, `time.Duration` | Stdlib value types treated as opaque. |
-| Any type declared in [`functional/frozen`](frozen.md) | Already guarantees its own copy on entry and exit. |
-| Any type declared in [`functional/persistent`](persistent.md) | Same guarantee. |
+| Any type declared in [`functional/persistent`](persistent.md) | Structure is semantically immutable; copy-on-boundary via constructors/`Items`. |
 
-The `frozen`/`persistent` leaf check is a **string comparison** against
+The `persistent` leaf check is a **string comparison** against
 `reflect.Type.PkgPath()`, not a real import — `valueobject` does not import
-either package. See the module [overview](../overview.md#no-public-subpackage-imports-another)
+`persistent`. See the module [overview](../overview.md#no-public-subpackage-imports-another)
 for why that matters.
 
-**Known gap:** the `frozen`/`persistent` leaf check considers only the
-container's own package, never its type parameter. `frozen.Slice[*Widget]`
-is treated as a leaf and reports zero violations even though the `*Widget`
-elements obtained through `Values()`/`Items()` remain mutable through the
-pointer — `reflect` exposes no API to inspect a generic instantiation's type
+**Known gap:** the `persistent` leaf check considers only the container's
+own package, never its type parameter. `persistent.List[*Widget]` is treated
+as a leaf and reports zero violations even though the `*Widget` elements
+obtained through `Values()`/`Items()` remain mutable through the pointer —
+`reflect` exposes no API to inspect a generic instantiation's type
 arguments, so `Inspect` cannot discover the element type and recurse into
 it. Contrast with `optional.Optional[*Widget]`, which holds its type
 parameter inline and so IS correctly flagged with `RuleReferenceField`. When
-a `frozen`/`persistent` element type is itself a
+a `persistent` element type is itself a
 pointer/slice/map/chan/func/interface, combine `AllowType`/manual review for
 that element, or prefer `optional.Optional[T]`/a scalar field instead. See
 `Inspect`'s doc comment for the full explanation.
@@ -133,7 +132,7 @@ that element, or prefer `optional.Optional[T]`/a scalar field instead. See
 | Option | Effect |
 |---|---|
 | `AllowType[T]() Option` | Marks the concrete type `T` as an immutable leaf. |
-| `AllowPackage(importPath string) Option` | Marks every type declared under `importPath` (by `PkgPath()` prefix) as an immutable leaf. Creates no import edge — same string-comparison mechanism as the default `frozen`/`persistent` leaves. |
+| `AllowPackage(importPath string) Option` | Marks every type declared under `importPath` (by `PkgPath()` prefix) as an immutable leaf. Creates no import edge — same string-comparison mechanism as the default `persistent` leaf. |
 
 `AllowPackage`'s naming follows the functional-options convention used
 elsewhere in this repository (`eventbus.Option`, the workopher engine and
@@ -146,5 +145,4 @@ adapter packages) — a different concept from the sibling package
 
 - [Overview](../overview.md)
 - [Value object pattern](../patterns/value-objects.md)
-- [Package API: frozen](frozen.md)
 - [Package API: persistent](persistent.md)

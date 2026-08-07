@@ -15,9 +15,9 @@
 // alias, or an interface whose dynamic type cannot be proven immutable by
 // structural inspection alone.
 //
-// time.Time, time.Duration, and any type declared in functional/frozen or
-// functional/persistent are treated as immutable leaves by default: those
-// collections already guarantee their own copy on entry and exit. AllowType
-// and AllowPackage extend that leaf set for a type this package has no other
+// time.Time, time.Duration, and any type declared in functional/persistent
+// are treated as immutable leaves by default: those collections already
+// guarantee structural immutability of the collection itself. AllowType and
+// AllowPackage extend that leaf set for a type this package has no other
 // way to know is safe.
 package valueobject

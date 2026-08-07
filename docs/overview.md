@@ -15,29 +15,27 @@ dependencies outside the standard library, permanently**:
 
 - **`optional`** — `Optional[T]`, a value type for an operation that may or
   may not produce a `T`. Explicit absence, not a nil check.
-- **`frozen`** — `Slice[T]` and `Map[K,V]`, read-only snapshots that copy on
-  every boundary crossing. No write operation exists, or ever will.
-- **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: collections that write
-  functionally (every update returns a new value). Engines use path-copy
-  structural sharing: Map/Set are a HAMT; List is a 32-way persistent
-  vector. Builders open an exclusive transient window and `Freeze` in O(1)
-  via owner invalidation.
+- **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
+  that write functionally (every update returns a new value). Engines use
+  path-copy structural sharing: Map/Set are a HAMT; List is a 32-way
+  persistent vector. Builders open an exclusive transient window and
+  `Freeze` in O(1) via owner invalidation. Use the same types for
+  read-only snapshots (never call write methods) and for versioned state.
 - **`valueobject`** — `Check[T]`, a reflective test helper that verifies a
   type is structurally immutable.
 
 ## Why the root package is doc-only
 
 `functional` itself (the root package, [`doc.go`](../doc.go)) exports
-nothing. That is deliberate, not an oversight: the four concepts above do not
+nothing. That is deliberate, not an oversight: the three concepts above do not
 share a common supertype, a common constructor, or any runtime behavior — the
 only thing they share is "small, dependency-free, functional in spirit." A
-root package that re-exported all four (type aliases, or worse, a grab-bag of
+root package that re-exported all three (type aliases, or worse, a grab-bag of
 helpers) would give every consumer of any one concept a compile-time
-dependency on the other three, defeating the point of splitting them into
+dependency on the other two, defeating the point of splitting them into
 subpackages in the first place. So the root package carries only the
 module-level doc comment, and every concept lives one import path down:
-`functional/optional`, `functional/frozen`, `functional/persistent`,
-`functional/valueobject`.
+`functional/optional`, `functional/persistent`, `functional/valueobject`.
 
 ## The constraint that shapes the whole API: no type parameters on methods
 
@@ -110,11 +108,11 @@ proves it mechanically on every test run:
 
 Additional core gates: `TestCoreNoReflect`, `TestCoreDependencyDAG` (star
 into `ownership`), and `TestPublicPackagesDoNotImportCore` (`optional` /
-`frozen` / `valueobject` must not import core; `persistent` may).
+`valueobject` must not import core; `persistent` may).
 
 ## No public subpackage imports another (in production code)
 
-`optional`, `frozen`, `persistent`, and `valueobject` do not import each
+`optional`, `persistent`, and `valueobject` do not import each
 other **in production code**. This is also proven, not just documented:
 `TestNoPublicSiblingDependencies` in `functional/internal/archtest` walks
 each public subpackage's dependency list, via `go list -deps -json` without
@@ -125,9 +123,9 @@ import a sibling public package to exercise or demonstrate cross-package
 behavior — that is a legitimate use of a real dependency between test
 binaries, not a violation of the architectural boundary the mechanism above
 protects. The concrete example in this module is
-`valueobject/check_test.go`, which imports `functional/frozen` directly to
-build a `Good` fixture whose one collection field is a `frozen.Slice[string]`
-— proving that `AllowPackage`'s default leaf list actually frees `frozen`
+`valueobject/check_test.go`, which imports `functional/persistent` directly to
+build a `Good` fixture whose one collection field is a `persistent.List[string]`
+— proving that `AllowPackage`'s default leaf list actually frees `persistent`
 fields, not just that the code compiles. `go list -deps -json` without
 `-test` never sees that import, because it does not inspect `_test.go`
 files; `TestNoPublicSiblingDependencies` would need `-test` to catch it, and
@@ -136,7 +134,6 @@ deliberately does not pass it, for exactly this reason.
 ```mermaid
 flowchart TB
   optional[optional]
-  frozen[frozen]
   persistent[persistent]
   valueobject[valueobject]
   eq["internal/eq (internal)"]
@@ -149,7 +146,6 @@ flowchart TB
   keyhash["internal/engine/keyhash"]
 
   optional --> eq
-  frozen --> eq
   persistent --> eq
   persistent --> transient
   persistent --> hamt
@@ -163,7 +159,6 @@ flowchart TB
   cow --> ownership
   sharing --> ownership
   transient --> ownership
-  valueobject -.->|no import; string-compares PkgPath instead| frozen
   valueobject -.->|no import; string-compares PkgPath instead| persistent
 ```
 
@@ -171,30 +166,28 @@ There is exactly **one** shared exception for equality: `functional/internal/eq`
 a small package that resolves value equality without `reflect` (an `Equal(T) bool`
 method on the dynamic value, then `==` when the dynamic values are
 comparable; non-comparable types without `Equal` return false — never
-deep-compare). `optional.Optional[T].Equal`,
-`frozen.Slice[T].Equal`, `frozen.Map[K,V].Equal`, and
-`persistent.List[T].Equal` (and its `Map`/`Set` counterparts) all delegate to
-it, so every generic `Equal` in this module agrees on the answer for the same
-pair of values. Callers that need structural equality for slices or maps
-should use an `Equal` method on the element type or an `EqualFunc` at their
-package. It is safe as the one shared package specifically *because*
-it is `internal`: nothing outside `functional` can import it, so it can never
-become a second public surface competing with the rule it is the exception
-to. **`eq` is outside core** and, like core, must not use `reflect`.
+deep-compare). `optional.Optional[T].Equal` and `persistent.List[T].Equal` (and its
+`Map`/`Set` counterparts) all delegate to it, so every generic `Equal` in
+this module agrees on the answer for the same pair of values. Callers that
+need structural equality for slices or maps should use an `Equal` method on
+the element type or an `EqualFunc` at their package. It is safe as the one
+shared package specifically *because* it is `internal`: nothing outside
+`functional` can import it, so it can never become a second public surface
+competing with the rule it is the exception to. **`eq` is outside core**
+and, like core, must not use `reflect`.
 
-`valueobject` treats `frozen` and `persistent` as immutable leaves by
-default (see [patterns/value-objects.md](patterns/value-objects.md)), but it
-does this **without importing either**: `AllowPackage`'s default leaf list
-compares a candidate field's `reflect.Type.PkgPath()` against the string
-`"github.com/alvadorncorp/gopackages/functional/frozen"` (and the
-`persistent` equivalent). A string comparison creates no import edge, so
-`valueobject` stays sibling-independent while still knowing that a
-`frozen.Slice[string]` field needs no further descent.
+`valueobject` treats `persistent` as an immutable leaf by default (see
+[patterns/value-objects.md](patterns/value-objects.md)), but it does this
+**without importing it**: the default leaf list compares a candidate field's
+`reflect.Type.PkgPath()` against the string
+`"github.com/alvadorncorp/gopackages/functional/persistent"`. A string
+comparison creates no import edge, so `valueobject` stays sibling-independent
+while still knowing that a `persistent.List[string]` field needs no further
+descent.
 
 ## Related documents
 
 - [Package API: optional](packages/optional.md)
-- [Package API: frozen](packages/frozen.md)
 - [Package API: persistent](packages/persistent.md)
 - [Package API: valueobject](packages/valueobject.md)
 - [Internal: core](packages/core.md)

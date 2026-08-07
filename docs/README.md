@@ -7,7 +7,6 @@ The module root [README](../README.md) is a short **index**. Content lives here.
 | [overview.md](overview.md) | Purpose, the language constraint that shapes the API, the immutability core, the zero-dependency boundary, the sibling-import rule |
 | [examples.md](examples.md) | Usage sketches (config precedence, fallible parse, immutable collection field, loop-building) |
 | [packages/optional.md](packages/optional.md) | Public API of `github.com/alvadorncorp/gopackages/functional/optional` |
-| [packages/frozen.md](packages/frozen.md) | Public API of `github.com/alvadorncorp/gopackages/functional/frozen` |
 | [packages/persistent.md](packages/persistent.md) | Public API of `github.com/alvadorncorp/gopackages/functional/persistent`, including measured Append-loop vs. Builder benchmarks |
 | [packages/valueobject.md](packages/valueobject.md) | Public API of `github.com/alvadorncorp/gopackages/functional/valueobject` |
 | [packages/core.md](packages/core.md) | Maintainer guide for `internal/core` (ownership, cow, sharing, transient) |
