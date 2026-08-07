@@ -25,7 +25,7 @@ This README is the **documentation index**. Guides live under
 
 | Document | Description |
 |---|---|
-| [**docs/overview.md**](docs/overview.md) | Purpose, the Go language constraint that shapes the API, the zero-dependency boundary, the sibling-import rule |
+| [**docs/overview.md**](docs/overview.md) | Purpose, the Go language constraint that shapes the API, the immutability core, the zero-dependency boundary, the sibling-import rule |
 | [**docs/examples.md**](docs/examples.md) | Usage sketches (config precedence, fallible parse, immutable collection field, loop-building) |
 
 ### Package (micro view)
@@ -36,6 +36,7 @@ This README is the **documentation index**. Guides live under
 | [docs/packages/frozen.md](docs/packages/frozen.md) | `github.com/alvadorncorp/gopackages/functional/frozen` |
 | [docs/packages/persistent.md](docs/packages/persistent.md) | `github.com/alvadorncorp/gopackages/functional/persistent` |
 | [docs/packages/valueobject.md](docs/packages/valueobject.md) | `github.com/alvadorncorp/gopackages/functional/valueobject` |
+| [docs/packages/core.md](docs/packages/core.md) | `internal/core` (ownership, cow, sharing, transient) — maintainers |
 
 ### Patterns
 
@@ -48,8 +49,8 @@ This README is the **documentation index**. Guides live under
 | Document | ID |
 |---|---|
 | [docs/adr/functional/adr-001-optional-representation-and-zero-value.md](docs/adr/functional/adr-001-optional-representation-and-zero-value.md) | `adr:functional:001` |
-| [docs/adr/functional/adr-002-persistent-engine-swap-contract.md](docs/adr/functional/adr-002-persistent-engine-swap-contract.md) | `adr:functional:002` |
 | [docs/adr/functional/adr-003-zero-dependency-boundary.md](docs/adr/functional/adr-003-zero-dependency-boundary.md) | `adr:functional:003` |
+| [docs/adr/functional/adr-004-thin-immutability-core.md](docs/adr/functional/adr-004-thin-immutability-core.md) | `adr:functional:004` |
 
 ---
 
@@ -59,7 +60,7 @@ This README is the **documentation index**. Guides live under
 |---|---|---|
 | [`optional`](optional/) | Explicit absence: an operation that may or may not produce a value | `optional.Optional[T]` |
 | [`frozen`](frozen/) | Immutable snapshot of a slice or map — no write operation, ever | `frozen.Slice[T]`, `frozen.Map[K,V]` |
-| [`persistent`](persistent/) | Collection with functional writes (copy-on-write today, behind a swappable engine) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |
+| [`persistent`](persistent/) | Collection with functional writes (full-copy COW today; Builders use an internal transient window) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |
 | [`valueobject`](valueobject/) | Reflective verification that a type is structurally immutable (test helper) | `valueobject.Check[T]` |
 
 ---
@@ -105,11 +106,12 @@ cd functional && go test ./... -count=1
   immutable.** `frozen.Slice[[]byte]` still shares each element's backing
   array; nothing in this module makes an element type immutable on your
   behalf.
-- **`persistent` is not a HAMT or RRB tree today.** The engine underneath is
-  copy-on-write over a stdlib slice/map. Every complexity bound documented on
-  `persistent` is an upper bound the API contract makes room for, not a
-  description of the current engine's actual constant — see
-  [ADR-002](docs/adr/functional/adr-002-persistent-engine-swap-contract.md).
+- **`persistent` is not a HAMT or RRB tree today.** Updates full-copy a
+  stdlib slice or map. Documented log-n complexity bounds are public-API
+  headroom for a possible future engine, not a description of the current
+  implementation or of the thin `internal/core` packages. See
+  [ADR-004](docs/adr/functional/adr-004-thin-immutability-core.md) and
+  [docs/packages/core.md](docs/packages/core.md).
 
 ---
 

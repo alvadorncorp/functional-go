@@ -1,9 +1,9 @@
 # functional module overview
 
-High-level purpose, the language constraint that shapes the whole API, and
-the dependency rules that keep this module small and swappable. For
-package-level API detail see [packages/](packages/); for runnable sketches
-see [examples.md](examples.md).
+High-level purpose, the language constraint that shapes the whole API, the
+internal immutability core, and the dependency rules that keep this module
+small and auditable. For package-level API detail see [packages/](packages/);
+for runnable sketches see [examples.md](examples.md).
 
 ---
 
@@ -18,8 +18,9 @@ dependencies outside the standard library, permanently**:
 - **`frozen`** — `Slice[T]` and `Map[K,V]`, read-only snapshots that copy on
   every boundary crossing. No write operation exists, or ever will.
 - **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: collections that write
-  functionally (every update returns a new value) over a swappable engine —
-  copy-on-write today.
+  functionally (every update returns a new value). Today's engines full-copy
+  a stdlib slice or map; Builders use the internal transient window for a
+  linear build path.
 - **`valueobject`** — `Check[T]`, a reflective test helper that verifies a
   type is structurally immutable.
 
@@ -63,6 +64,27 @@ It is not a style preference; it is the only shape the language permits for
 for how this interacts with `Optional`'s representation and its `Equal`
 method.
 
+## Internal immutability core
+
+Under `functional/internal/core/` lives a thin substrate for exclusive
+mutation and batch edit windows. It is **not** a public package and **not**
+a shipped HAMT/RRB engine. Core answers only "may I mutate?"; concrete
+structures own how they clone. See
+[packages/core.md](packages/core.md) and
+[ADR-004](adr/functional/adr-004-thin-immutability-core.md).
+
+| Package | Role |
+|---|---|
+| `ownership` | Pointer-identity `*Owner` token; nil stamp = published |
+| `cow` | `NeedsCopy` / `EnsureEditable` — caller supplies clone; no `Clone[T]`, no reflect |
+| `sharing` | `Detach` / `Published` — clear exclusive stamps |
+| `transient` | `Window` Open / Owner / Freeze (open iff non-nil owner) |
+
+`persistent` Builders already open a `transient.Window` and `Freeze` on
+`Build`. List/Map/Set themselves still full-copy on immutable updates.
+Documented O(log n) complexity on the public API is **aspirational headroom**
+for a future structure-sharing engine, not a claim that core implements one.
+
 ## The zero-dependency boundary
 
 `functional` depends on nothing outside the standard library, and this is
@@ -76,6 +98,10 @@ proves it mechanically on every test run:
 - `TestGoModHasNoRequirements` reads `go.mod` directly and fails if a
   `require` or `replace` line ever appears — catching an accidental `go get`
   at the source, before it needs a stray import to surface.
+
+Additional core gates: `TestCoreNoReflect`, `TestCoreDependencyDAG` (star
+into `ownership`), and `TestPublicPackagesDoNotImportCore` (`optional` /
+`frozen` / `valueobject` must not import core; `persistent` may).
 
 ## No public subpackage imports another (in production code)
 
@@ -105,16 +131,24 @@ flowchart TB
   persistent[persistent]
   valueobject[valueobject]
   eq["internal/eq (internal)"]
+  ownership["internal/core/ownership"]
+  cow["internal/core/cow"]
+  sharing["internal/core/sharing"]
+  transient["internal/core/transient"]
 
   optional --> eq
   frozen --> eq
   persistent --> eq
+  persistent --> transient
+  cow --> ownership
+  sharing --> ownership
+  transient --> ownership
   valueobject -.->|no import; string-compares PkgPath instead| frozen
   valueobject -.->|no import; string-compares PkgPath instead| persistent
 ```
 
-There is exactly **one** shared exception: `functional/internal/eq`, a small
-package that resolves value equality in three tiers (an `Equal(T) bool`
+There is exactly **one** shared exception for equality: `functional/internal/eq`,
+a small package that resolves value equality in three tiers (an `Equal(T) bool`
 method on the dynamic value, then `==` when the dynamic values are
 comparable, then `reflect.DeepEqual`). `optional.Optional[T].Equal`,
 `frozen.Slice[T].Equal`, `frozen.Map[K,V].Equal`, and
@@ -123,7 +157,7 @@ it, so every generic `Equal` in this module agrees on the answer for the same
 pair of values. It is safe as the one shared package specifically *because*
 it is `internal`: nothing outside `functional` can import it, so it can never
 become a second public surface competing with the rule it is the exception
-to.
+to. **`eq` is outside core** and may use `reflect`; core may not.
 
 `valueobject` treats `frozen` and `persistent` as immutable leaves by
 default (see [patterns/value-objects.md](patterns/value-objects.md)), but it
@@ -140,8 +174,9 @@ compares a candidate field's `reflect.Type.PkgPath()` against the string
 - [Package API: frozen](packages/frozen.md)
 - [Package API: persistent](packages/persistent.md)
 - [Package API: valueobject](packages/valueobject.md)
+- [Internal: core](packages/core.md)
 - [Examples](examples.md)
 - [Value object pattern](patterns/value-objects.md)
 - [ADR-001 — Optional representation and zero value](adr/functional/adr-001-optional-representation-and-zero-value.md)
-- [ADR-002 — Persistent engine swap contract](adr/functional/adr-002-persistent-engine-swap-contract.md)
 - [ADR-003 — Zero-dependency boundary](adr/functional/adr-003-zero-dependency-boundary.md)
+- [ADR-004 — Thin immutability core](adr/functional/adr-004-thin-immutability-core.md)

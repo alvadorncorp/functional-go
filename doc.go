@@ -4,16 +4,16 @@
 //
 // Each concept lives in its own subpackage: optional (Optional[T] and its
 // combinators), frozen (immutable snapshots — Slice and Map — with no write
-// operation), persistent (collections with functional writes, copy-on-write
-// today behind a swappable engine), and valueobject (reflective verification
-// of structural immutability, a test helper).
+// operation), persistent (collections with functional writes; full-copy
+// today, with Builders over an internal transient window), and valueobject
+// (reflective verification of structural immutability, a test helper).
 //
 // The module has zero dependencies outside the standard library, permanently.
-// No public subpackage imports another public subpackage, with one
-// exception: the internal equality package functional/internal/eq, which
-// optional, frozen, and persistent each import to resolve their Equal
-// method (an Equal method on the value, then ==, then reflect.DeepEqual) —
-// an internal import, not one public subpackage depending on another.
+// No public subpackage imports another public subpackage. Shared internals
+// include functional/internal/eq (Equal resolution: method, then ==, then
+// reflect.DeepEqual) and functional/internal/core (thin ownership / cow /
+// sharing / transient substrate used by persistent Builders; not a public
+// API and not a HAMT/RRB engine).
 //
 // The exported type is always Optional, never Option: Option already names
 // the functional-options pattern elsewhere in this repository (eventbus,
