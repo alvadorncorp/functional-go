@@ -6,7 +6,7 @@ import (
 	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
 )
 
-func TestNewReturnsNonNilDistinct(t *testing.T) {
+func TestNewReturnsNonNilDistinctActive(t *testing.T) {
 	t.Parallel()
 
 	a := ownership.New()
@@ -17,14 +17,17 @@ func TestNewReturnsNonNilDistinct(t *testing.T) {
 	if a == b {
 		t.Fatal("two New() calls returned the same pointer")
 	}
+	if !a.Active() || !b.Active() {
+		t.Fatal("New must return an active owner")
+	}
 }
 
-func TestIsOwnedBySamePointer(t *testing.T) {
+func TestIsOwnedBySameActivePointer(t *testing.T) {
 	t.Parallel()
 
 	o := ownership.New()
 	if !ownership.IsOwnedBy(o, o) {
-		t.Fatal("same pointer must be owned")
+		t.Fatal("same active pointer must be owned")
 	}
 }
 
@@ -56,5 +59,87 @@ func TestIsOwnedByNilCases(t *testing.T) {
 				t.Fatal("nil involvement must not be owned")
 			}
 		})
+	}
+}
+
+func TestInvalidateDeactivatesIdempotent(t *testing.T) {
+	t.Parallel()
+
+	o := ownership.New()
+	if !o.Active() {
+		t.Fatal("expected active before Invalidate")
+	}
+	o.Invalidate()
+	if o.Active() {
+		t.Fatal("expected inactive after Invalidate")
+	}
+	// Idempotent.
+	o.Invalidate()
+	if o.Active() {
+		t.Fatal("second Invalidate must leave owner inactive")
+	}
+}
+
+func TestInvalidateNilReceiverNoOp(t *testing.T) {
+	t.Parallel()
+
+	var o *ownership.Owner
+	o.Invalidate() // must not panic
+	if o.Active() {
+		t.Fatal("nil owner is never active")
+	}
+}
+
+func TestActiveNilFalse(t *testing.T) {
+	t.Parallel()
+
+	var o *ownership.Owner
+	if o.Active() {
+		t.Fatal("nil owner must not be active")
+	}
+}
+
+func TestIsOwnedByFalseAfterInvalidate(t *testing.T) {
+	t.Parallel()
+
+	o := ownership.New()
+	// Node still stamped with o after a freeze-like invalidation.
+	nodeStamp := o
+	o.Invalidate()
+
+	if ownership.IsOwnedBy(nodeStamp, o) {
+		t.Fatal("inactive owner must not grant in-place edit even for same pointer")
+	}
+	if o.Active() {
+		t.Fatal("owner must be inactive")
+	}
+}
+
+func TestIsOwnedByPointerEqualityInsufficientAfterInvalidate(t *testing.T) {
+	t.Parallel()
+
+	// Retained pointer from before Freeze: identity alone is not enough.
+	o := ownership.New()
+	retained := o
+	if retained != o {
+		t.Fatal("sanity: same pointer")
+	}
+	o.Invalidate()
+	if ownership.IsOwnedBy(retained, retained) {
+		t.Fatal("same pointer after Invalidate must not be IsOwnedBy")
+	}
+}
+
+func TestNewOwnerAfterInvalidateIsIndependent(t *testing.T) {
+	t.Parallel()
+
+	old := ownership.New()
+	old.Invalidate()
+	fresh := ownership.New()
+	if ownership.IsOwnedBy(old, fresh) {
+		t.Fatal("stale stamp must not match a new active owner")
+	}
+	if !ownership.IsOwnedBy(fresh, fresh) {
+		t.Fatal("fresh owner must own itself")
 	}
 }

@@ -28,12 +28,15 @@ func (w *Window) Owner() *ownership.Owner {
 	return w.owner
 }
 
-// Freeze permanently closes the window. It does not walk nodes.
-// A second Freeze, a nil receiver, or a zero-value window panics with
-// "transient: window used after Freeze".
+// Freeze permanently closes the window in O(1): it Invalidates the owner
+// token (so any node still stamped with that *Owner fails IsOwnedBy) and
+// clears the window's owner pointer. It does not walk nodes and does not
+// require Detach. A second Freeze, a nil receiver, or a zero-value window
+// panics with "transient: window used after Freeze".
 func (w *Window) Freeze() {
 	if w == nil || w.owner == nil {
 		panic(panicUsedAfterFreeze)
 	}
+	w.owner.Invalidate()
 	w.owner = nil
 }

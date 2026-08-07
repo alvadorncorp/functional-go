@@ -6,6 +6,7 @@ const panicIndexOutOfRange = "persistent: index out of range"
 
 // panicBuilderUsedAfterBuild is what any method on a ListBuilder, MapBuilder,
 // or SetBuilder panics with once Build has already run on that builder.
-// Build transfers ownership of the builder's internal buffer to the
-// collection it returns, so no method can honor a call afterward.
+// Build freezes the transient window and clears builder state so no method
+// can honor a call afterward. Public builders never leak "transient: ..."
+// panics.
 const panicBuilderUsedAfterBuild = "persistent: builder used after Build"

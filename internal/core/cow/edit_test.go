@@ -103,3 +103,38 @@ func TestEnsureEditablePanicsOnNilCloneWhenCopyRequired(t *testing.T) {
 	}()
 	_ = cow.EnsureEditable[*fakeNode](n.owner, owner, n, nil)
 }
+
+func TestNeedsCopyAfterInvalidate(t *testing.T) {
+	t.Parallel()
+
+	owner := ownership.New()
+	// Same pointer identity is insufficient once the token is inactive.
+	owner.Invalidate()
+	if !cow.NeedsCopy(owner, owner) {
+		t.Fatal("inactive owner must need copy even for same pointer")
+	}
+}
+
+func TestEnsureEditableClonesAfterInvalidate(t *testing.T) {
+	t.Parallel()
+
+	owner := ownership.New()
+	n := &fakeNode{owner: owner, value: 3}
+	owner.Invalidate()
+	fresh := ownership.New()
+	calls := 0
+
+	got := cow.EnsureEditable(n.owner, fresh, n, func() *fakeNode {
+		calls++
+		return &fakeNode{owner: fresh, value: n.value}
+	})
+	if got == n {
+		t.Fatal("expected clone when node stamp is an inactive owner")
+	}
+	if calls != 1 {
+		t.Fatalf("clone called %d times, want 1", calls)
+	}
+	if got.owner != fresh || got.value != 3 {
+		t.Fatalf("got %+v", got)
+	}
+}

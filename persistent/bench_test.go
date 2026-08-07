@@ -7,15 +7,28 @@ import (
 	"github.com/alvadorncorp/gopackages/functional/persistent"
 )
 
-// Benchmark sizes: small (fits easily in cache), medium, and large enough
-// to make an O(n^2) loop-of-copies path visibly worse than linear.
+// Benchmark sizes for Baseline B (path-copy engines).
+//
+// Single-op Map.Set / Set.Add / List.Append should show allocs/op tracking a
+// depth curve (roughly O(log32 n) nodes), NOT scaling linearly with n.
+// ReportAllocs is set on every sub-benchmark so that property is visible in
+// go test -bench output. Loop-of-immutable-update still allocates n roots;
+// Builder is the bulk path. Native mutable baselines quantify immutability
+// overhead.
 const (
-	benchSizeSmall  = 16
-	benchSizeMedium = 1_024
-	benchSizeLarge  = 65_536
+	benchSizeSmall = 16
+	benchSize1K    = 1_024
+	benchSize16K   = 16_384
+	benchSize64K   = 65_536
+	benchSize1M    = 1_000_000
 )
 
-var benchSizes = []int{benchSizeSmall, benchSizeMedium, benchSizeLarge}
+// Single-op structure-sharing sizes: include 1M (setup cost only; -bench is
+// not run by default unit tests).
+var benchSizesSingleOp = []int{benchSize1K, benchSize16K, benchSize64K, benchSize1M}
+
+// Loop / iteration / lookup sizes: omit 1M so loop benches stay practical.
+var benchSizes = []int{benchSizeSmall, benchSize1K, benchSize16K, benchSize64K}
 
 func makeBenchList(n int) persistent.List[int] {
 	items := make([]int, n)
@@ -41,10 +54,11 @@ func makeBenchSet(n int) persistent.Set[int] {
 	return persistent.NewSet(items...)
 }
 
-// BenchmarkListAppend measures a single Append call against a List already
-// holding n elements: one full O(n) copy per call.
+// BenchmarkListAppend measures a single Append against a List already holding
+// n elements. Watch allocs/op: path-copy vector depth curve, not O(n) full
+// copy. Still creates one new root per call.
 func BenchmarkListAppend(b *testing.B) {
-	for _, n := range benchSizes {
+	for _, n := range benchSizesSingleOp {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
 			b.ReportAllocs()
 			base := makeBenchList(n)
@@ -56,10 +70,8 @@ func BenchmarkListAppend(b *testing.B) {
 }
 
 // BenchmarkListAppendLoop measures building a List of size n by calling
-// Append n times, each on the previous result. With today's copy-on-write
-// engine this is the O(n^2) cliff: total work is 1+2+...+n copies, so
-// walltime grows much faster than linearly with n. This number documents
-// exactly why Builder exists.
+// Append n times, each on the previous result. Even with path-copy, this
+// allocates n intermediate Lists — the reason Builder exists for bulk work.
 func BenchmarkListAppendLoop(b *testing.B) {
 	for _, n := range benchSizes {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
@@ -75,9 +87,8 @@ func BenchmarkListAppendLoop(b *testing.B) {
 }
 
 // BenchmarkListBuilderAppendLoop is BenchmarkListAppendLoop's Builder
-// counterpart: n Appends against one shared, mutable buffer. This is the
-// correct path for building in a loop, and should scale roughly linearly
-// with n where BenchmarkListAppendLoop scales quadratically.
+// counterpart: n Appends under exclusive ownership, then O(1) Freeze on
+// Build. Prefer this path for loop construction.
 func BenchmarkListBuilderAppendLoop(b *testing.B) {
 	for _, n := range benchSizes {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
@@ -136,10 +147,11 @@ func BenchmarkMapGet(b *testing.B) {
 	}
 }
 
-// BenchmarkMapSet measures a single Set call against a Map already holding
-// n entries: one full O(n) copy per call.
+// BenchmarkMapSet measures a single Set against a Map already holding n
+// entries. Watch allocs/op: HAMT path-copy depth curve — must not grow
+// linearly with n (contrast historical full-copy COW).
 func BenchmarkMapSet(b *testing.B) {
-	for _, n := range benchSizes {
+	for _, n := range benchSizesSingleOp {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
 			b.ReportAllocs()
 			m := makeBenchMap(n)
@@ -151,7 +163,7 @@ func BenchmarkMapSet(b *testing.B) {
 }
 
 // BenchmarkMapBuilderSet is BenchmarkMapSet's loop-building counterpart via
-// Builder: n Sets against one shared, mutable buffer.
+// Builder: n Sets under exclusive ownership, then O(1) Freeze.
 func BenchmarkMapBuilderSet(b *testing.B) {
 	for _, n := range benchSizes {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
@@ -176,6 +188,37 @@ func BenchmarkSetHas(b *testing.B) {
 			v := n / 2
 			for b.Loop() {
 				_ = s.Has(v)
+			}
+		})
+	}
+}
+
+// BenchmarkSetAdd measures a single Add against a Set already holding n
+// members. Watch allocs/op: same HAMT depth-curve property as Map.Set —
+// not linear in n.
+func BenchmarkSetAdd(b *testing.B) {
+	for _, n := range benchSizesSingleOp {
+		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			s := makeBenchSet(n)
+			for b.Loop() {
+				_ = s.Add(n)
+			}
+		})
+	}
+}
+
+// BenchmarkSetRemove measures a single Remove of a present member against a
+// Set of size n. Same depth-curve watch as BenchmarkSetAdd.
+func BenchmarkSetRemove(b *testing.B) {
+	for _, n := range benchSizesSingleOp {
+		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			s := makeBenchSet(n)
+			// Remove a key that exists so the path does real work; result discarded.
+			victim := n / 2
+			for b.Loop() {
+				_ = s.Remove(victim)
 			}
 		})
 	}

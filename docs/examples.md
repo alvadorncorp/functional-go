@@ -98,11 +98,12 @@ object shape this fits into.
 
 ## 4. Building a `persistent.List` in a loop
 
-A single `persistent.List.Append` is a full `O(n)` copy of the receiver.
-Calling it `n` times in a loop is `O(n²)` — see
-[packages/persistent.md](packages/persistent.md) for measured numbers.
-`Builder()` exists precisely for this shape: seed it once, batch every
-write through the mutable builder, and call `Build()` once at the end.
+A single `persistent.List.Append` path-copies along the vector depth (not a
+full collection copy), but calling it `n` times in a loop still allocates
+`n` intermediate Lists. `Builder()` exists precisely for bulk construction:
+seed it once, batch every write under exclusive ownership, and call
+`Build()` once at the end (O(1) Freeze). See
+[packages/persistent.md](packages/persistent.md).
 
 ```go
 package pipeline
@@ -120,10 +121,11 @@ func collectEven(items []int) persistent.List[int] {
 }
 ```
 
-`Build()` transfers the builder's internal buffer to the returned `List` and
-permanently disables the builder — every method on it, including a repeated
-`Build`, panics with `"persistent: builder used after Build"` from that
-point on. Never keep using a builder after calling `Build()`.
+`Build()` freezes the builder's transient window (O(1) owner invalidation),
+returns an immutable `List`, and permanently disables the builder — every
+method on it, including a repeated `Build`, panics with
+`"persistent: builder used after Build"` from that point on. Never keep
+using a builder after calling `Build()`.
 
 ---
 

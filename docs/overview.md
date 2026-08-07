@@ -18,9 +18,10 @@ dependencies outside the standard library, permanently**:
 - **`frozen`** — `Slice[T]` and `Map[K,V]`, read-only snapshots that copy on
   every boundary crossing. No write operation exists, or ever will.
 - **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: collections that write
-  functionally (every update returns a new value). Today's engines full-copy
-  a stdlib slice or map; Builders use the internal transient window for a
-  linear build path.
+  functionally (every update returns a new value). Engines use path-copy
+  structural sharing: Map/Set are a HAMT; List is a 32-way persistent
+  vector. Builders open an exclusive transient window and `Freeze` in O(1)
+  via owner invalidation.
 - **`valueobject`** — `Check[T]`, a reflective test helper that verifies a
   type is structurally immutable.
 
@@ -64,26 +65,34 @@ It is not a style preference; it is the only shape the language permits for
 for how this interacts with `Optional`'s representation and its `Equal`
 method.
 
-## Internal immutability core
+## Internal immutability core vs engines
 
 Under `functional/internal/core/` lives a thin substrate for exclusive
 mutation and batch edit windows. It is **not** a public package and **not**
-a shipped HAMT/RRB engine. Core answers only "may I mutate?"; concrete
-structures own how they clone. See
+an engine. Core answers only "may I mutate?"; concrete engines own how they
+clone and share structure. See
 [packages/core.md](packages/core.md) and
 [ADR-004](adr/functional/adr-004-thin-immutability-core.md).
 
 | Package | Role |
 |---|---|
-| `ownership` | Pointer-identity `*Owner` token; nil stamp = published |
+| `ownership` | Pointer-identity `*Owner` token with `Active` / `Invalidate`; nil stamp = published |
 | `cow` | `NeedsCopy` / `EnsureEditable` — caller supplies clone; no `Clone[T]`, no reflect |
 | `sharing` | `Detach` / `Published` — clear exclusive stamps |
-| `transient` | `Window` Open / Owner / Freeze (open iff non-nil owner) |
+| `transient` | `Window` Open / Owner / Freeze (Freeze is O(1) owner invalidation) |
 
-`persistent` Builders already open a `transient.Window` and `Freeze` on
-`Build`. List/Map/Set themselves still full-copy on immutable updates.
-Documented O(log n) complexity on the public API is **aspirational headroom**
-for a future structure-sharing engine, not a claim that core implements one.
+Engines live under `functional/internal/engine/` (also internal):
+
+| Engine | Used by | Representation |
+|---|---|---|
+| `hamt` | `persistent.Map`, `persistent.Set` | 32-way HAMT; path-copy structural sharing; per-`Root` `maphash.Seed` via `maphash.Comparable` |
+| `vector` | `persistent.List` | 32-way persistent vector (trie + tail); path-copy on Set/Append; `Delete` may be O(n) |
+
+`persistent` Builders open a `transient.Window`, edit under the window's
+exclusive owner (engine transient paths mutate owned nodes in place), and
+`Freeze` on `Build` — O(1) publish by invalidating the owner token; no tree
+walk. Documented complexity bounds on the public API are upper-bound
+headroom; see [ADR-005](adr/functional/adr-005-persistent-engine-family.md).
 
 ## The zero-dependency boundary
 
@@ -135,11 +144,22 @@ flowchart TB
   cow["internal/core/cow"]
   sharing["internal/core/sharing"]
   transient["internal/core/transient"]
+  hamt["internal/engine/hamt"]
+  vector["internal/engine/vector"]
+  keyhash["internal/engine/keyhash"]
 
   optional --> eq
   frozen --> eq
   persistent --> eq
   persistent --> transient
+  persistent --> hamt
+  persistent --> vector
+  hamt --> ownership
+  hamt --> cow
+  hamt --> sharing
+  hamt --> keyhash
+  vector --> ownership
+  vector --> cow
   cow --> ownership
   sharing --> ownership
   transient --> ownership
@@ -180,3 +200,4 @@ compares a candidate field's `reflect.Type.PkgPath()` against the string
 - [ADR-001 — Optional representation and zero value](adr/functional/adr-001-optional-representation-and-zero-value.md)
 - [ADR-003 — Zero-dependency boundary](adr/functional/adr-003-zero-dependency-boundary.md)
 - [ADR-004 — Thin immutability core](adr/functional/adr-004-thin-immutability-core.md)
+- [ADR-005 — Persistent engine family (HAMT + vector)](adr/functional/adr-005-persistent-engine-family.md)

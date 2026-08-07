@@ -2,8 +2,11 @@
 // mechanically, so they stay true rather than merely documented: the module
 // has zero non-stdlib dependencies outside itself, no public subpackage
 // imports another (functional/internal/eq is the one shared exception every
-// public package may use), and the internal/core DAG stays a star into
-// ownership with no peer edges and no reflect.
+// public package may use), the internal/core DAG stays a star into ownership
+// with no peer edges and no reflect, and internal/engine packages obey their
+// own import allow-lists (keyhash: stdlib only; hamt: ownership/cow/sharing/
+// keyhash only among functional packages; vector: ownership/cow/sharing only
+// among functional packages).
 package archtest
 
 import (
@@ -29,7 +32,11 @@ const (
 	pkgTransient = "github.com/alvadorncorp/gopackages/functional/internal/core/transient"
 	pkgSharing   = "github.com/alvadorncorp/gopackages/functional/internal/core/sharing"
 	pkgEq        = "github.com/alvadorncorp/gopackages/functional/internal/eq"
+	pkgKeyhash   = "github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
+	pkgHamt      = "github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
+	pkgVector    = "github.com/alvadorncorp/gopackages/functional/internal/engine/vector"
 	corePrefix   = "github.com/alvadorncorp/gopackages/functional/internal/core/"
+	enginePrefix = "github.com/alvadorncorp/gopackages/functional/internal/engine/"
 )
 
 // publicPackages are every public subpackage of functional, by import path.
@@ -58,9 +65,16 @@ var corePackages = []string{
 	pkgSharing,
 }
 
+// enginePackages is every production package under internal/engine.
+var enginePackages = []string{
+	pkgKeyhash,
+	pkgHamt,
+	pkgVector,
+}
+
 // allPackages is every production package whose non-stdlib dependency set
-// must stay inside the functional module: public packages, internal/eq, and
-// all internal/core packages.
+// must stay inside the functional module: public packages, internal/eq,
+// internal/core, and internal/engine packages.
 var allPackages = []string{
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/frozen",
@@ -71,6 +85,9 @@ var allPackages = []string{
 	pkgCow,
 	pkgTransient,
 	pkgSharing,
+	pkgKeyhash,
+	pkgHamt,
+	pkgVector,
 }
 
 // coreAllowedEdges is the only permitted non-self edge set among core
@@ -85,6 +102,40 @@ var coreAllowedEdges = map[string][]string{
 // coreForbiddenTargets are non-core functional packages no core package may
 // import (today or later without an explicit archtest change).
 var coreForbiddenTargets = []string{
+	pkgEq,
+	pkgKeyhash,
+	pkgHamt,
+	pkgVector,
+	"github.com/alvadorncorp/gopackages/functional/optional",
+	"github.com/alvadorncorp/gopackages/functional/frozen",
+	"github.com/alvadorncorp/gopackages/functional/persistent",
+	"github.com/alvadorncorp/gopackages/functional/valueobject",
+}
+
+// hamtAllowedFunctional is the only permitted set of functional-module
+// imports for the hamt engine (among non-self deps). keyhash is stdlib-only
+// and is checked separately.
+var hamtAllowedFunctional = []string{
+	pkgOwnership,
+	pkgCow,
+	pkgSharing,
+	pkgKeyhash,
+}
+
+// vectorAllowedFunctional is the only permitted set of functional-module
+// imports for the vector engine (among non-self deps). vector must not
+// import hamt, keyhash, or transient.
+var vectorAllowedFunctional = []string{
+	pkgOwnership,
+	pkgCow,
+	pkgSharing,
+}
+
+// engineForbiddenTargets are functional packages no engine may import,
+// regardless of other allow-lists (transient is core but not for engines;
+// public packages and eq stay above the engine layer).
+var engineForbiddenTargets = []string{
+	pkgTransient,
 	pkgEq,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/frozen",
@@ -227,6 +278,101 @@ func TestPublicPackagesDoNotImportCore(t *testing.T) {
 			for _, dep := range deps(t, pkg) {
 				if strings.HasPrefix(dep, corePrefix) {
 					t.Errorf("%s must not depend on core package %s", pkg, dep)
+				}
+			}
+		})
+	}
+}
+
+// TestEngineNoReflect proves no production file under internal/engine
+// imports "reflect". Tests may still use the testing package; this gate
+// inspects production Imports only (go list without -test).
+func TestEngineNoReflect(t *testing.T) {
+	t.Parallel()
+	for _, pkg := range enginePackages {
+		t.Run(pkg, func(t *testing.T) {
+			t.Parallel()
+			for _, imp := range productionImports(t, pkg) {
+				if imp == "reflect" {
+					t.Errorf("%s must not import reflect", pkg)
+				}
+			}
+		})
+	}
+}
+
+// TestEngineDependencies proves engine import allow-lists:
+//   - keyhash: standard library only (no functional packages)
+//   - hamt: among functional packages, only ownership, cow, sharing, keyhash
+//   - vector: among functional packages, only ownership, cow, sharing
+//   - no engine may import transient, eq, optional, frozen, persistent,
+//     or valueobject
+//   - hamt ↛ vector and vector ↛ hamt (peer engines stay disconnected)
+//
+// Core packages already cannot import engines via TestCoreDependencyDAG
+// (any non-allowed functional edge fails); engines are also listed in
+// coreForbiddenTargets for explicit failure messages.
+func TestEngineDependencies(t *testing.T) {
+	t.Parallel()
+	for _, pkg := range enginePackages {
+		t.Run(pkg, func(t *testing.T) {
+			t.Parallel()
+			for _, dep := range deps(t, pkg) {
+				if dep == pkg {
+					continue
+				}
+				if !strings.HasPrefix(dep, functionalModulePrefix) {
+					continue // stdlib / outside handled by TestNoNonStdlibDependencies
+				}
+				if slices.Contains(engineForbiddenTargets, dep) {
+					t.Errorf("%s must not depend on %s", pkg, dep)
+					continue
+				}
+				// Peer engines must not import each other.
+				if pkg == pkgHamt && dep == pkgVector {
+					t.Errorf("%s must not depend on %s", pkg, dep)
+					continue
+				}
+				if pkg == pkgVector && dep == pkgHamt {
+					t.Errorf("%s must not depend on %s", pkg, dep)
+					continue
+				}
+				// keyhash stays stdlib-only and must not reach either peer engine.
+				if pkg == pkgKeyhash && (dep == pkgVector || dep == pkgHamt) {
+					t.Errorf("%s must not depend on %s", pkg, dep)
+					continue
+				}
+				switch pkg {
+				case pkgKeyhash:
+					t.Errorf("%s must depend on stdlib only; found functional package %s", pkg, dep)
+				case pkgHamt:
+					if !slices.Contains(hamtAllowedFunctional, dep) {
+						t.Errorf("%s must not depend on %s (allowed functional: %v)", pkg, dep, hamtAllowedFunctional)
+					}
+				case pkgVector:
+					if !slices.Contains(vectorAllowedFunctional, dep) {
+						t.Errorf("%s must not depend on %s (allowed functional: %v)", pkg, dep, vectorAllowedFunctional)
+					}
+				default:
+					t.Errorf("unhandled engine package %s depending on %s", pkg, dep)
+				}
+			}
+		})
+	}
+}
+
+// TestCoreDoesNotImportEngine is an explicit star-boundary check: no core
+// package may reach into internal/engine. TestCoreDependencyDAG already
+// rejects any non-allowed functional edge; this names the engine layer so
+// a regression is obvious without reading the generic rule.
+func TestCoreDoesNotImportEngine(t *testing.T) {
+	t.Parallel()
+	for _, pkg := range corePackages {
+		t.Run(pkg, func(t *testing.T) {
+			t.Parallel()
+			for _, dep := range deps(t, pkg) {
+				if strings.HasPrefix(dep, enginePrefix) {
+					t.Errorf("%s must not depend on engine package %s", pkg, dep)
 				}
 			}
 		})

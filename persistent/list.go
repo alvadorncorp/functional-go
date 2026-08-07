@@ -2,9 +2,9 @@ package persistent
 
 import (
 	"iter"
-	"slices"
 
 	"github.com/alvadorncorp/gopackages/functional/internal/core/transient"
+	"github.com/alvadorncorp/gopackages/functional/internal/engine/vector"
 	"github.com/alvadorncorp/gopackages/functional/internal/eq"
 )
 
@@ -12,76 +12,94 @@ import (
 // a new List; the receiver is never changed. See the package doc for the
 // full contract, including why List is not ==-comparable and why documented
 // complexity is an upper bound rather than today's constant.
+//
+// Representation: List holds an unexported vector.Root. The zero List is a
+// valid empty list — it relies on the zero vector.Root (nil trie, empty
+// tail, count 0): Len is 0, At panics, and Append starts a lineage from that
+// seed. Constructed Lists (NewList, CollectList, Builder.Build, and every
+// Append/Set/Delete result) use a proper Empty-seeded root when they first
+// materialize elements.
+//
+// The blank [0]func() field keeps List deliberately not ==-comparable,
+// matching Map/Set: representation identity must never be observable via ==.
+// Use Equal instead.
 type List[T any] struct {
-	items []T
+	_    [0]func()
+	root vector.Root[T]
 }
 
 // NewList returns a List holding a copy of items, in order. The caller's
 // slice is never retained: later mutation of items through the caller's own
 // reference does not reach the returned List.
 func NewList[T any](items ...T) List[T] {
-	return List[T]{items: slices.Clone(items)}
+	return List[T]{root: vector.Empty[T]().Append(items...)}
 }
 
 // CollectList drains seq into a new List, in iteration order.
 func CollectList[T any](seq iter.Seq[T]) List[T] {
-	return List[T]{items: slices.Collect(seq)}
+	root := vector.Empty[T]()
+	for v := range seq {
+		root = root.Append(v)
+	}
+	return List[T]{root: root}
 }
 
 // Len returns the number of elements in l.
-func (l List[T]) Len() int { return len(l.items) }
+func (l List[T]) Len() int { return l.root.Len() }
 
 // At returns the element at index i. It panics with
 // "persistent: index out of range" when i is outside [0, Len).
+//
+// Bounds are checked here so a vector engine panic never leaks a "vector:"
+// message to public callers.
 func (l List[T]) At(i int) T {
-	if i < 0 || i >= len(l.items) {
+	if i < 0 || i >= l.root.Len() {
 		panic(panicIndexOutOfRange)
 	}
-	return l.items[i]
+	return l.root.At(i)
 }
 
 // Append returns a new List with items added to the end, in order. l is
 // unchanged.
 //
-// A single Append is a full copy of the receiver: O(n) with today's engine.
-// Calling Append n times in a loop is therefore O(n^2); use Builder for
-// that case instead.
+// Documented complexity is O(log n) amortized (structure-sharing vector).
+// Calling Append n times in a loop still allocates n intermediate Lists;
+// use Builder for bulk construction.
 func (l List[T]) Append(items ...T) List[T] {
-	next := make([]T, len(l.items)+len(items))
-	copy(next, l.items)
-	copy(next[len(l.items):], items)
-	return List[T]{items: next}
+	return List[T]{root: l.root.Append(items...)}
 }
 
 // Set returns a new List with the element at index i replaced by v. l is
 // unchanged. It panics with "persistent: index out of range" when i is
 // outside [0, Len).
+//
+// Bounds are checked here so a vector engine panic never leaks a "vector:"
+// message to public callers.
 func (l List[T]) Set(i int, v T) List[T] {
-	if i < 0 || i >= len(l.items) {
+	if i < 0 || i >= l.root.Len() {
 		panic(panicIndexOutOfRange)
 	}
-	next := slices.Clone(l.items)
-	next[i] = v
-	return List[T]{items: next}
+	return List[T]{root: l.root.Set(i, v)}
 }
 
 // Delete returns a new List without the element at index i; every later
 // element shifts down by one. l is unchanged. It panics with
 // "persistent: index out of range" when i is outside [0, Len).
+//
+// Delete is currently O(n): the vector engine rebuilds by iteration rather
+// than a path-aware shift. Bounds are checked here so a vector engine panic
+// never leaks a "vector:" message to public callers.
 func (l List[T]) Delete(i int) List[T] {
-	if i < 0 || i >= len(l.items) {
+	if i < 0 || i >= l.root.Len() {
 		panic(panicIndexOutOfRange)
 	}
-	next := make([]T, len(l.items)-1)
-	copy(next, l.items[:i])
-	copy(next[i:], l.items[i+1:])
-	return List[T]{items: next}
+	return List[T]{root: l.root.Delete(i)}
 }
 
 // Values returns an iterator over l's elements in index order.
 func (l List[T]) Values() iter.Seq[T] {
 	return func(yield func(T) bool) {
-		for _, v := range l.items {
+		for _, v := range l.root.All() {
 			if !yield(v) {
 				return
 			}
@@ -91,102 +109,113 @@ func (l List[T]) Values() iter.Seq[T] {
 
 // All returns an iterator over l's (index, element) pairs in index order.
 func (l List[T]) All() iter.Seq2[int, T] {
-	return func(yield func(int, T) bool) {
-		for i, v := range l.items {
-			if !yield(i, v) {
-				return
-			}
-		}
-	}
+	return l.root.All()
 }
 
 // Items returns a new slice holding a copy of l's elements, in order. The
 // caller owns the result: mutating it never reaches l, and later writes to l
 // never reach a slice returned earlier.
-func (l List[T]) Items() []T { return slices.Clone(l.items) }
+func (l List[T]) Items() []T {
+	n := l.root.Len()
+	if n == 0 {
+		return nil
+	}
+	items := make([]T, 0, n)
+	for _, v := range l.root.All() {
+		items = append(items, v)
+	}
+	return items
+}
 
 // Equal reports whether l and other hold the same elements in the same
 // order, comparing each pair with functional/internal/eq.Equal.
 func (l List[T]) Equal(other List[T]) bool {
-	if len(l.items) != len(other.items) {
+	if l.root.Len() != other.root.Len() {
 		return false
 	}
-	for i := range l.items {
-		if !eq.Equal(l.items[i], other.items[i]) {
+	for i, v := range l.root.All() {
+		if !eq.Equal(v, other.root.At(i)) {
 			return false
 		}
 	}
 	return true
 }
 
-// Builder returns a ListBuilder seeded with a copy of l's elements. l is not
-// affected by any later operation on the builder.
+// Builder returns a ListBuilder seeded from l's root (same node graph; later
+// exclusive edits copy-on-write). l is not affected by any later operation
+// on the builder.
 func (l List[T]) Builder() *ListBuilder[T] {
 	return &ListBuilder[T]{
-		items: slices.Clone(l.items),
-		win:   transient.Open(),
+		root: l.root,
+		win:  transient.Open(),
 	}
 }
 
-// ListBuilder accumulates writes for List in amortized linear time. It is
-// MUTABLE and is NOT safe for concurrent use.
+// ListBuilder accumulates writes for List in amortized linear time via the
+// vector transient path. It is MUTABLE and is NOT safe for concurrent use.
 //
-// Build transfers ownership of the builder's internal buffer to the List it
-// returns. After Build runs, every method on the builder — including Build
-// itself — panics with "persistent: builder used after Build".
+// The builder holds a vector.Root and an open transient.Window.
+// Append/Set/Delete call engine transient ops under win.Owner(). Build
+// freezes the window (O(1) owner invalidation — no tree walk), returns a
+// List with the current root, and permanently disables the builder.
+//
+// After Build runs, every method on the builder — including Build itself —
+// panics with "persistent: builder used after Build".
 type ListBuilder[T any] struct {
-	items []T
-	win   *transient.Window
+	root vector.Root[T]
+	win  *transient.Window
 }
 
 func (b *ListBuilder[T]) checkNotBuilt() {
 	checkBuilderWindow(b.win)
 }
 
-// Append adds items to the end of the builder's buffer, in order, and
-// returns b for chaining.
+// Append adds items to the end under the builder's exclusive owner, in
+// order, and returns b for chaining.
 func (b *ListBuilder[T]) Append(items ...T) *ListBuilder[T] {
 	b.checkNotBuilt()
-	b.items = append(b.items, items...)
+	b.root = b.root.TransientAppend(b.win.Owner(), items...)
 	return b
 }
 
-// Set replaces the element at index i with v and returns b for chaining. It
-// panics with "persistent: index out of range" when i is outside [0, Len).
+// Set replaces the element at index i with v under the builder's exclusive
+// owner and returns b for chaining. It panics with
+// "persistent: index out of range" when i is outside [0, Len).
 func (b *ListBuilder[T]) Set(i int, v T) *ListBuilder[T] {
 	b.checkNotBuilt()
-	if i < 0 || i >= len(b.items) {
+	if i < 0 || i >= b.root.Len() {
 		panic(panicIndexOutOfRange)
 	}
-	b.items[i] = v
+	b.root = b.root.TransientSet(b.win.Owner(), i, v)
 	return b
 }
 
-// Delete removes the element at index i, shifting every later element down
-// by one, and returns b for chaining. It panics with
-// "persistent: index out of range" when i is outside [0, Len).
+// Delete removes the element at index i under the builder's exclusive owner,
+// shifting every later element down by one, and returns b for chaining. It
+// panics with "persistent: index out of range" when i is outside [0, Len).
 func (b *ListBuilder[T]) Delete(i int) *ListBuilder[T] {
 	b.checkNotBuilt()
-	if i < 0 || i >= len(b.items) {
+	if i < 0 || i >= b.root.Len() {
 		panic(panicIndexOutOfRange)
 	}
-	b.items = append(b.items[:i], b.items[i+1:]...)
+	b.root = b.root.TransientDelete(b.win.Owner(), i)
 	return b
 }
 
-// Len returns the number of elements currently buffered.
+// Len returns the number of elements currently held by the builder.
 func (b *ListBuilder[T]) Len() int {
 	b.checkNotBuilt()
-	return len(b.items)
+	return b.root.Len()
 }
 
-// Build returns an immutable List holding the builder's buffered elements
-// and permanently disables the builder: every method, including a repeated
+// Build returns an immutable List holding the builder's current root and
+// permanently disables the builder: every method, including a repeated
 // Build, panics with "persistent: builder used after Build" from this point
-// on.
+// on. Freeze invalidates the owner token in O(1); nodes may retain stale
+// inactive stamps.
 func (b *ListBuilder[T]) Build() List[T] {
 	freezeBuilderWindow(&b.win)
-	items := b.items
-	b.items = nil
-	return List[T]{items: items}
+	root := b.root
+	b.root = vector.Root[T]{}
+	return List[T]{root: root}
 }

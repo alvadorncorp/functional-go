@@ -7,13 +7,30 @@ functionally: every update method returns a new collection and leaves the
 receiver unchanged. There is no in-place mutation anywhere in this API;
 "write" always means "derive a new value from an old one."
 
-The engine underneath is **full-copy** copy-on-write over a stdlib slice or
-map **today**. Builders open an internal `transient.Window` (see
-[core.md](core.md)) and freeze it on `Build`. A future structure-sharing
-engine may use more of the thin core (`ownership` / `cow` / `sharing`);
-documented log-n complexity bounds below are **aspirational public-API
-headroom**, not a description of the current engine. Decision record:
-[ADR-004](../adr/functional/adr-004-thin-immutability-core.md).
+## Engines (Baseline B)
+
+| Type | Engine | Sharing model |
+|---|---|---|
+| `Map[K,V]`, `Set[T]` | `internal/engine/hamt` | 32-way HAMT; path-copy structural sharing |
+| `List[T]` | `internal/engine/vector` | 32-way persistent vector (trie + tail); path-copy on Set/Append |
+
+- **HAMT seed policy:** each independent empty `hamt.Root` holds its own
+  `maphash.Seed`; derived versions preserve that seed. Key hashing uses
+  `maphash.Comparable` via `internal/engine/keyhash`.
+- **Builders:** open an internal `transient.Window`, edit under the window's
+  exclusive `*ownership.Owner` (engine transient paths mutate owned nodes in
+  place), and `Freeze` on `Build` — **O(1)** owner invalidation, no tree
+  walk. Residual inactive stamps fail `IsOwnedBy`, so no Detach walk is
+  required.
+- **`List.Delete`:** currently **O(n)** (vector rebuild by iteration). A
+  caller MUST NOT depend on a tighter bound for Delete.
+
+Documented log-n complexity bounds below are **upper-bound public-API
+headroom**. Decision records:
+[ADR-004](../adr/functional/adr-004-thin-immutability-core.md) (thin core),
+[ADR-005](../adr/functional/adr-005-persistent-engine-family.md) (engine
+family). Historical note: early milestones used full-copy COW over a stdlib
+slice/map; that is no longer the engine.
 
 ---
 
@@ -24,47 +41,48 @@ headroom**, not a description of the current engine. Decision record:
 | Ordered collection | `List[T]`, `NewList`, `CollectList`, `ListBuilder[T]` |
 | Key-value collection | `Map[K,V]`, `NewMap`, `CollectMap`, `MapBuilder[K,V]` |
 | Set collection | `Set[T]`, `NewSet`, `CollectSet`, `SetBuilder[T]` |
-| Internal substrate | Builders use `internal/core/transient`; full-copy engines do not yet stamp node owners |
+| Engines | `internal/engine/hamt` (Map/Set), `internal/engine/vector` (List) |
+| Mutation substrate | Builders use `internal/core/transient` + engine exclusive-owner paths |
 
 ---
 
 ## The contract every type follows
 
 1. **No method accepts or returns the internal representation.** `Items()`
-   always copies rather than handing out the backing slice or map.
+   always copies rather than handing out the backing engine storage.
 2. **`Map`/`Set` iteration order is UNSPECIFIED** and may change between
    releases, or even between two calls on the same value. `List` iterates
    in index order — that order is specified and part of the contract.
 3. **Documented complexity is an upper bound** the public API reserves room
-   for, not a description of what full-copy COW does today (see the table
-   below).
+   for (see the table below). Path-copy updates allocate along a tree path
+   (depth curve), not a full collection copy — but callers must still use
+   the documented bounds, not today's constants.
 4. **None of the three types are `==`-comparable.** Use `Equal`. Comparing
    by `==` would compare identity of the underlying representation.
-5. **A single update is a full copy: `O(n)` with today's engine.** Calling
-   `Append`/`Set`/`Delete` `n` times in a loop is therefore `O(n²)`.
-   `Builder()` exists for that case — see [the benchmark](#measured-append-loop-vs-builder)
-   below. Builders open a `transient.Window` and `Freeze` on `Build`; public
-   panics remain `"persistent: ..."`.
+5. **Calling `Append`/`Set`/`Delete`/`Add`/`Remove` `n` times in a loop still
+   allocates `n` intermediate collections.** `Builder()` exists for bulk
+   construction: exclusive ownership + O(1) `Freeze`. Builders open a
+   `transient.Window` and `Freeze` on `Build`; public panics remain
+   `"persistent: ..."`.
 6. **Every test in this package is `package persistent_test`** (external),
    asserting only publicly observable behavior — the acceptance criterion
    for any future engine change is this suite passing unchanged.
 
 ---
 
-## Documented complexity (upper bound, not today's constant)
+## Documented complexity (upper bound)
 
-| Operation | Documented bound |
-|---|---|
-| `Len` | `O(1)` |
-| `At`, `Get`, `Has` | `O(log n)` |
-| `Set`, `Delete` | `O(log n)` |
-| `Append` | `O(log n)` amortized |
+| Operation | Documented bound | Notes |
+|---|---|---|
+| `Len` | `O(1)` | |
+| `At`, `Get`, `Has` | `O(log n)` | |
+| `Set`, `Delete` (Map), `Add`/`Remove` (Set) | `O(log n)` | Path-copy HAMT |
+| `Append`, `Set` (List) | `O(log n)` amortized / path | Path-copy vector |
+| `Delete` (List) | `O(log n)` headroom | **Today O(n)** rebuild |
 
-The current full-copy engine beats several of these today (`At` is `O(1)`
-right now, for instance) — a caller **must not** depend on that. Only the
-bound above is guaranteed as API headroom. The thin core does not implement
-these bounds; it only provides ownership/window/publish primitives for
-engines that might. See [ADR-004](../adr/functional/adr-004-thin-immutability-core.md)
+Only the table's documented bound is guaranteed as API headroom for methods
+that meet it. `List.Delete`'s current implementation is O(n); do not depend
+on a tighter constant. See [ADR-005](../adr/functional/adr-005-persistent-engine-family.md)
 and [core.md](core.md).
 
 ---
@@ -73,34 +91,34 @@ and [core.md](core.md).
 
 | Function / method | Behaviour |
 |---|---|
-| `NewList[T](items ...T) List[T]` | Copies `items`, in order. |
+| `NewList[T](items ...T) List[T]` | Copies `items`, in order (via vector append). |
 | `CollectList[T](seq iter.Seq[T]) List[T]` | Drains `seq` into a new `List`, in iteration order. |
 | `(l List[T]) Len() int` | Element count. |
 | `(l List[T]) At(i int) T` | Element at `i`; panics `"persistent: index out of range"` outside `[0, Len)`. |
-| `(l List[T]) Append(items ...T) List[T]` | New `List` with `items` appended. `l` unchanged. Full copy: `O(n)` per call. |
+| `(l List[T]) Append(items ...T) List[T]` | New `List` with `items` appended. `l` unchanged. Path-copy vector. |
 | `(l List[T]) Set(i int, v T) List[T]` | New `List` with index `i` replaced. Panics as above. |
-| `(l List[T]) Delete(i int) List[T]` | New `List` without index `i`; later elements shift down. Panics as above. |
+| `(l List[T]) Delete(i int) List[T]` | New `List` without index `i`; later elements shift down. Panics as above. **Currently O(n).** |
 | `(l List[T]) Values() iter.Seq[T]` | Elements in index order. |
 | `(l List[T]) All() iter.Seq2[int, T]` | (index, element) pairs in index order. |
 | `(l List[T]) Items() []T` | Fresh mutable copy; caller owns it. |
 | `(l List[T]) Equal(other List[T]) bool` | Same elements, same order, via `functional/internal/eq.Equal`. |
-| `(l List[T]) Builder() *ListBuilder[T]` | Seeds a `ListBuilder[T]` with a copy of `l`'s elements and opens a `transient.Window`. |
+| `(l List[T]) Builder() *ListBuilder[T]` | Seeds a `ListBuilder[T]` from `l` and opens a `transient.Window`. |
 
 `ListBuilder[T]` — **mutable, not safe for concurrent use** — offers
 `Append`, `Set`, `Delete` (all chainable, same panic messages as `List`),
 `Len`, and `Build() List[T]`. `Build` freezes the builder's transient
-window, transfers ownership of the builder's buffer to the returned `List`,
-and permanently disables the builder: every method afterward, including a
+window (O(1) owner invalidation), returns an immutable `List`, and
+permanently disables the builder: every method afterward, including a
 repeated `Build`, panics `"persistent: builder used after Build"`.
 
 ## `Map[K,V]`
 
 | Function / method | Behaviour |
 |---|---|
-| `NewMap[K,V](m map[K]V) Map[K,V]` | Copies `m`. |
+| `NewMap[K,V](m map[K]V) Map[K,V]` | Copies `m` into a fresh HAMT root. |
 | `CollectMap[K,V](seq iter.Seq2[K,V]) Map[K,V]` | Drains `seq`; last value wins on a repeated key, matching `maps.Collect`. |
 | `(m Map[K,V]) Len() int` / `Get(k K) (V, bool)` / `Has(k K) bool` | Read access. |
-| `(m Map[K,V]) Set(k K, v V) Map[K,V]` | New `Map` with `k` mapped to `v`. `m` unchanged. |
+| `(m Map[K,V]) Set(k K, v V) Map[K,V]` | New `Map` with `k` mapped to `v`. `m` unchanged. Path-copy HAMT. |
 | `(m Map[K,V]) Delete(k K) Map[K,V]` | New `Map` without `k`. `m` unchanged. |
 | `(m Map[K,V]) All/Keys/Values() iter.Seq(2)[...]` | Unspecified iteration order. |
 | `(m Map[K,V]) Items() map[K]V` | Fresh, non-nil copy. |
@@ -109,7 +127,7 @@ repeated `Build`, panics `"persistent: builder used after Build"`.
 
 `MapBuilder[K,V]` — mutable, not concurrency-safe — offers `Set`, `Delete`
 (chainable), `Len`, and `Build() Map[K,V]` with the same freeze,
-transfer-and-disable contract as `ListBuilder`.
+publish-and-disable contract as `ListBuilder`.
 
 ## `Set[T]`
 
@@ -127,32 +145,31 @@ transfer-and-disable contract as `ListBuilder`.
 
 `SetBuilder[T]` — mutable, not concurrency-safe — offers `Add`, `Remove`
 (chainable), `Len`, and `Build() Set[T]` with the same freeze,
-transfer-and-disable contract.
+publish-and-disable contract.
 
 ---
 
-## Measured: Append-loop vs. Builder
+## Measured: single update vs. Builder loop
 
-This is the argument for using `Builder` in a loop, not `Append` repeated.
-Measured on Apple M2 Max (`go test -run '^$' -bench
-'BenchmarkListAppendLoop|BenchmarkListBuilderAppendLoop' -benchmem
-./persistent/...`), each benchmark builds a `List[int]` of size `n` from
-empty, one element at a time:
+Path-copy engines allocate along a **depth curve** (roughly O(log₃₂ n)
+nodes), not a full `O(n)` collection copy. The property to watch in
+`go test -bench` is **allocs/op** (and B/op) **not scaling linearly with n**
+for a single `Map.Set` / `Set.Add` / `List.Append` against a pre-built base.
 
-| n | `Append` in a loop | `Builder` in a loop | Time ratio | Memory ratio |
-|---:|---|---|---:|---:|
-| 16 | 280.5 ns/op, 1.1 KB/op, 16 allocs/op | 110.1 ns/op, 248 B/op, 5 allocs/op | ~2.5× | ~4.6× |
-| 1,024 | 436.2 µs/op, 4.47 MB/op, 1,024 allocs/op | 4.8 µs/op, 25.2 KB/op, 12 allocs/op | ~90× | ~177× |
-| 65,536 | 1.089 s/op, 17.4 GB/op, 66,009 allocs/op | 529.3 µs/op, 2.51 MB/op, 26 allocs/op | ~2,058× | ~6,941× |
+Looping `Append`/`Set`/`Add` on the immutable type still creates **n
+intermediate roots**. `Builder` is the bulk path: exclusive ownership,
+in-place edits on owned nodes, O(1) `Freeze`. Native mutable baselines
+(`[]T` append, `map[K]V` assign) live in `persistent/bench_test.go` for
+comparison.
 
-**This is the `O(n²)` cliff, made concrete.** `Append` in a loop does
-`1 + 2 + … + n` full copies of the growing `List`; at `n = 65,536` that is
-over a second of wall time and 17 GB of allocation to build one collection —
-against 529 microseconds and 2.5 MB through `Builder`. The gap grows with
-`n` precisely because one path is quadratic and the other is linear. Always
-route loop-building through `<Type>.Builder()`; never call
+```sh
+cd functional
+go test ./persistent/ -run '^$' -bench 'BenchmarkMapSet|BenchmarkSetAdd|BenchmarkListAppend|BenchmarkListBuilder' -benchmem
+```
+
+Always route loop-building through `<Type>.Builder()`; never call
 `Append`/`Set`/`Delete`/`Add`/`Remove` in a loop against the immutable type
-itself.
+itself when linear bulk construction is the goal.
 
 ---
 
@@ -163,3 +180,4 @@ itself.
 - [Internal: core](core.md)
 - [Package API: frozen](frozen.md) (the read-only sibling)
 - [ADR-004 — Thin immutability core](../adr/functional/adr-004-thin-immutability-core.md)
+- [ADR-005 — Persistent engine family](../adr/functional/adr-005-persistent-engine-family.md)

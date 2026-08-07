@@ -2,102 +2,131 @@ package persistent
 
 import (
 	"iter"
-	"maps"
 
 	"github.com/alvadorncorp/gopackages/functional/internal/core/transient"
+	"github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
 	"github.com/alvadorncorp/gopackages/functional/internal/eq"
 )
-
-// cloneMap returns a new, always non-nil map holding a copy of m, with
-// spare capacity for extra additional entries. It is shared by Map and Set,
-// whose write methods must never mutate the receiver's backing map nor hand
-// out a nil map that would panic on the caller's first write into it.
-func cloneMap[K comparable, V any](m map[K]V, extra int) map[K]V {
-	next := make(map[K]V, len(m)+extra)
-	for k, v := range m {
-		next[k] = v
-	}
-	return next
-}
 
 // Map is an immutable key-value collection. Every write method returns a
 // new Map; the receiver is never changed. See the package doc for the full
 // contract, including why Map is not ==-comparable, why iteration order is
 // unspecified, and why documented complexity is an upper bound rather than
-// today's constant.
+// a guarantee of today's constants.
+//
+// Representation: Map holds an unexported hamt.Root. The zero Map is a
+// valid empty map — it relies on the zero hamt.Root (nil node, zero seed,
+// size 0): Len is 0, Get misses, and Set starts a lineage from that seed.
+// Constructed Maps (NewMap, CollectMap, Builder.Build, and every Set/Delete
+// result) use a proper Empty-seeded root when they first materialize entries.
+//
+// The blank [0]func() field keeps Map deliberately not ==-comparable:
+// hamt.Root's fields are all comparable, so without this marker Map would
+// compare by representation identity, which the public contract forbids.
 type Map[K comparable, V any] struct {
-	items map[K]V
+	_    [0]func()
+	root hamt.Root[K, V]
 }
 
 // NewMap returns a Map holding a copy of m. The caller's map is never
 // retained: later mutation of m through the caller's own reference does not
 // reach the returned Map.
 func NewMap[K comparable, V any](m map[K]V) Map[K, V] {
-	return Map[K, V]{items: cloneMap(m, 0)}
+	return Map[K, V]{root: mapToRoot(m)}
 }
 
 // CollectMap drains seq into a new Map. When seq yields the same key more
 // than once, the last value for that key wins, matching maps.Collect.
 func CollectMap[K comparable, V any](seq iter.Seq2[K, V]) Map[K, V] {
-	return Map[K, V]{items: maps.Collect(seq)}
+	root := hamt.Empty[K, V]()
+	for k, v := range seq {
+		root = root.Set(k, v)
+	}
+	return Map[K, V]{root: root}
+}
+
+// mapToRoot copies m into a fresh hamt.Root. m is never retained.
+func mapToRoot[K comparable, V any](m map[K]V) hamt.Root[K, V] {
+	root := hamt.Empty[K, V]()
+	for k, v := range m {
+		root = root.Set(k, v)
+	}
+	return root
 }
 
 // Len returns the number of entries in m.
-func (m Map[K, V]) Len() int { return len(m.items) }
+func (m Map[K, V]) Len() int { return m.root.Len() }
 
 // Get returns the value stored for k and true, or the zero value of V and
 // false when k is absent.
 func (m Map[K, V]) Get(k K) (V, bool) {
-	v, ok := m.items[k]
-	return v, ok
+	return m.root.Get(k)
 }
 
 // Has reports whether k is present in m.
 func (m Map[K, V]) Has(k K) bool {
-	_, ok := m.items[k]
+	_, ok := m.root.Get(k)
 	return ok
 }
 
 // Set returns a new Map with k mapped to v, replacing any existing value for
 // k. m is unchanged.
 func (m Map[K, V]) Set(k K, v V) Map[K, V] {
-	next := cloneMap(m.items, 1)
-	next[k] = v
-	return Map[K, V]{items: next}
+	return Map[K, V]{root: m.root.Set(k, v)}
 }
 
 // Delete returns a new Map without k. m is unchanged.
 func (m Map[K, V]) Delete(k K) Map[K, V] {
-	next := cloneMap(m.items, 0)
-	delete(next, k)
-	return Map[K, V]{items: next}
+	return Map[K, V]{root: m.root.Delete(k)}
 }
 
 // All returns an iterator over m's (key, value) pairs. Iteration order is
 // UNSPECIFIED and may change between releases.
-func (m Map[K, V]) All() iter.Seq2[K, V] { return maps.All(m.items) }
+func (m Map[K, V]) All() iter.Seq2[K, V] { return m.root.All() }
 
 // Keys returns an iterator over m's keys. Iteration order is UNSPECIFIED and
 // may change between releases.
-func (m Map[K, V]) Keys() iter.Seq[K] { return maps.Keys(m.items) }
+func (m Map[K, V]) Keys() iter.Seq[K] {
+	return func(yield func(K) bool) {
+		for k := range m.root.All() {
+			if !yield(k) {
+				return
+			}
+		}
+	}
+}
 
 // Values returns an iterator over m's values. Iteration order is
 // UNSPECIFIED and may change between releases.
-func (m Map[K, V]) Values() iter.Seq[V] { return maps.Values(m.items) }
+func (m Map[K, V]) Values() iter.Seq[V] {
+	return func(yield func(V) bool) {
+		for _, v := range m.root.All() {
+			if !yield(v) {
+				return
+			}
+		}
+	}
+}
 
 // Items returns a new, non-nil map holding a copy of m's entries. The
 // caller owns the result: mutating it never reaches m, and later writes to m
 // never reach a map returned earlier.
-func (m Map[K, V]) Items() map[K]V { return cloneMap(m.items, 0) }
+func (m Map[K, V]) Items() map[K]V {
+	out := make(map[K]V, m.root.Len())
+	for k, v := range m.root.All() {
+		out[k] = v
+	}
+	return out
+}
 
 // Equal reports whether m and other hold the same set of keys, each mapped
 // to an equal value under functional/internal/eq.Equal.
 func (m Map[K, V]) Equal(other Map[K, V]) bool {
-	if len(m.items) != len(other.items) {
+	if m.root.Len() != other.root.Len() {
 		return false
 	}
-	for k, v := range m.items {
-		ov, ok := other.items[k]
+	for k, v := range m.root.All() {
+		ov, ok := other.root.Get(k)
 		if !ok || !eq.Equal(v, ov) {
 			return false
 		}
@@ -105,58 +134,65 @@ func (m Map[K, V]) Equal(other Map[K, V]) bool {
 	return true
 }
 
-// Builder returns a MapBuilder seeded with a copy of m's entries. m is not
-// affected by any later operation on the builder.
+// Builder returns a MapBuilder seeded from m's root (same node graph; later
+// exclusive edits copy-on-write). m is not affected by any later operation
+// on the builder.
 func (m Map[K, V]) Builder() *MapBuilder[K, V] {
 	return &MapBuilder[K, V]{
-		items: cloneMap(m.items, 0),
-		win:   transient.Open(),
+		root: m.root,
+		win:  transient.Open(),
 	}
 }
 
-// MapBuilder accumulates writes for Map in amortized linear time. It is
-// MUTABLE and is NOT safe for concurrent use.
+// MapBuilder accumulates writes for Map in amortized linear time via the
+// HAMT transient path. It is MUTABLE and is NOT safe for concurrent use.
 //
-// Build transfers ownership of the builder's internal buffer to the Map it
-// returns. After Build runs, every method on the builder — including Build
-// itself — panics with "persistent: builder used after Build".
+// The builder holds a hamt.Root and an open transient.Window. Set/Delete
+// call engine transient ops under win.Owner(). Build freezes the window
+// (O(1) owner invalidation — no tree walk), returns a Map with the current
+// root, and permanently disables the builder.
+//
+// After Build runs, every method on the builder — including Build itself —
+// panics with "persistent: builder used after Build".
 type MapBuilder[K comparable, V any] struct {
-	items map[K]V
-	win   *transient.Window
+	root hamt.Root[K, V]
+	win  *transient.Window
 }
 
 func (b *MapBuilder[K, V]) checkNotBuilt() {
 	checkBuilderWindow(b.win)
 }
 
-// Set maps k to v in the builder's buffer, replacing any existing value for
-// k, and returns b for chaining.
+// Set maps k to v under the builder's exclusive owner, replacing any
+// existing value for k, and returns b for chaining.
 func (b *MapBuilder[K, V]) Set(k K, v V) *MapBuilder[K, V] {
 	b.checkNotBuilt()
-	b.items[k] = v
+	b.root = b.root.TransientSet(b.win.Owner(), k, v)
 	return b
 }
 
-// Delete removes k from the builder's buffer and returns b for chaining.
+// Delete removes k under the builder's exclusive owner and returns b for
+// chaining.
 func (b *MapBuilder[K, V]) Delete(k K) *MapBuilder[K, V] {
 	b.checkNotBuilt()
-	delete(b.items, k)
+	b.root = b.root.TransientDelete(b.win.Owner(), k)
 	return b
 }
 
-// Len returns the number of entries currently buffered.
+// Len returns the number of entries currently held by the builder.
 func (b *MapBuilder[K, V]) Len() int {
 	b.checkNotBuilt()
-	return len(b.items)
+	return b.root.Len()
 }
 
-// Build returns an immutable Map holding the builder's buffered entries and
+// Build returns an immutable Map holding the builder's current root and
 // permanently disables the builder: every method, including a repeated
 // Build, panics with "persistent: builder used after Build" from this point
-// on.
+// on. Freeze invalidates the owner token in O(1); nodes may retain stale
+// inactive stamps.
 func (b *MapBuilder[K, V]) Build() Map[K, V] {
 	freezeBuilderWindow(&b.win)
-	items := b.items
-	b.items = nil
-	return Map[K, V]{items: items}
+	root := b.root
+	b.root = hamt.Root[K, V]{}
+	return Map[K, V]{root: root}
 }

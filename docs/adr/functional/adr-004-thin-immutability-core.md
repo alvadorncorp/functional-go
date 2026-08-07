@@ -6,10 +6,18 @@ title: Thin immutability core — ownership, cow, sharing, transient
 status: Aceita
 tags: [functional, core, ownership, cow, transient, sharing, persistent]
 deciders: [alvadorn]
-related: [adr:functional:001, adr:functional:003]
+related: [adr:functional:001, adr:functional:003, adr:functional:005]
 date: 2026-08-07
 ---
 # ADR-004: Thin immutability core — ownership, cow, sharing, transient
+
+> **Supersession (engine claims only):** Baseline B ships structure-sharing
+> engines (HAMT + 32-way vector). Representation decisions, seed policy,
+> O(1) Freeze publish, and List.Delete O(n) are recorded in
+> [ADR-005](adr-005-persistent-engine-family.md). This ADR remains the
+> decision record for the **thin core** (ownership / cow / sharing /
+> transient). Passages below that describe "full-copy engines" are
+> historical context from when the core was extracted.
 
 ## Context and problem
 
@@ -23,8 +31,8 @@ what the module implements and understated what was actually extracted:
 - publish/share primitives that clear exclusive stamps.
 
 Those concerns must stay separate from structure-specific cloning and from
-the current full-copy engines. Putting clone or reflection into a shared
-core would couple every future engine to one representation strategy.
+the engines that own representation. Putting clone or reflection into a
+shared core would couple every engine to one representation strategy.
 
 ## Decision drivers
 

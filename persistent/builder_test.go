@@ -247,6 +247,55 @@ func TestListBuilderLen(t *testing.T) {
 	}
 }
 
+func TestListBuilderMultiAppend(t *testing.T) {
+	t.Parallel()
+
+	const n = 200
+	seed := persistent.NewList(0, 1, 2)
+	b := seed.Builder()
+	for i := 3; i < n; i++ {
+		b.Append(i)
+	}
+	b.Set(0, 999)
+	b.Delete(1)
+
+	// Seed remains the original three elements.
+	if got, want := seed.Items(), []int{0, 1, 2}; !slices.Equal(got, want) {
+		t.Fatalf("seed = %v, want %v", got, want)
+	}
+
+	built := b.Build()
+	if built.Len() != n-1 { // deleted one element
+		t.Fatalf("Len = %d, want %d", built.Len(), n-1)
+	}
+	if built.At(0) != 999 {
+		t.Fatalf("At(0)=%d", built.At(0))
+	}
+	// After Delete(1) on [999,1,2,3,...] → [999,2,3,...]
+	if built.At(1) != 2 {
+		t.Fatalf("At(1)=%d want 2", built.At(1))
+	}
+	if built.At(built.Len()-1) != n-1 {
+		t.Fatalf("last=%d want %d", built.At(built.Len()-1), n-1)
+	}
+
+	// Seed still intact after Build.
+	if got, want := seed.Items(), []int{0, 1, 2}; !slices.Equal(got, want) {
+		t.Fatalf("seed after Build = %v, want %v", got, want)
+	}
+}
+
+func TestListBuilderEmptySeedAppend(t *testing.T) {
+	t.Parallel()
+
+	b := persistent.NewList[int]().Builder()
+	b.Append(10, 20, 30)
+	built := b.Build()
+	if got, want := built.Items(), []int{10, 20, 30}; !slices.Equal(got, want) {
+		t.Fatalf("Build() = %v, want %v", got, want)
+	}
+}
+
 func TestMapBuilderLen(t *testing.T) {
 	t.Parallel()
 
