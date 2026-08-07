@@ -12,7 +12,7 @@ receiver unchanged. There is no in-place mutation anywhere in this API;
 | Type | Engine | Sharing model |
 |---|---|---|
 | `Map[K,V]`, `Set[T]` | `internal/engine/hamt` | 32-way HAMT; path-copy structural sharing |
-| `List[T]` | `internal/engine/vector` | 32-way persistent vector (trie + tail); path-copy on Set/Append |
+| `List[T]` | `internal/engine/vector` | 32-way persistent vector (trie + tail); path-copy on Set/Append/Pop |
 
 - **HAMT seed policy:** each independent empty `hamt.Root` holds its own
   `maphash.Seed`; derived versions preserve that seed. Key hashing uses
@@ -22,8 +22,13 @@ receiver unchanged. There is no in-place mutation anywhere in this API;
   place), and `Freeze` on `Build` — **O(1)** owner invalidation, no tree
   walk. Residual inactive stamps fail `IsOwnedBy`, so no Detach walk is
   required.
-- **`List.Delete`:** currently **O(n)** (vector rebuild by iteration). A
-  caller MUST NOT depend on a tighter bound for Delete.
+- **`List.Delete`:** currently **O(n)** (vector rebuild by iteration; mid-index
+  shift). A caller MUST NOT depend on a tighter bound for Delete. The vector
+  engine also exposes internal `Pop`/`TransientPop` (O(1) when the tail has
+  more than one element, else O(log₃₂ n)); there is no public `List.Pop`.
+- **Engine micro-benches:** optional alloc/path-copy probes live in
+  `internal/engine/hamt/benchmark_test.go` and
+  `internal/engine/vector/benchmark_test.go` (not part of the public API).
 
 Documented log-n complexity bounds below are **upper-bound public-API
 headroom**. Decision records:

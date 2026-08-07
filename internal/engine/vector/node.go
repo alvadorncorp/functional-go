@@ -117,3 +117,63 @@ func tdoAssoc[T any](level uint, n *node[T], i int, v T, owner *ownership.Owner)
 	out.children[subidx] = tdoAssoc(level-bitsPerLevel, out.children[subidx], i, v, owner)
 	return out
 }
+
+// popTail removes the rightmost leaf from the trie rooted at parent.
+// count is the vector length while the one-element tail is still present
+// (the last trie-resident index is count-2). Returns nil when the subtree
+// becomes empty after the removal. New nodes are published with owner == nil.
+func popTail[T any](level uint, parent *node[T], count int) *node[T] {
+	subidx := ((count - 2) >> level) & indexMask
+
+	if level > bitsPerLevel {
+		newChild := popTail(level-bitsPerLevel, parent.children[subidx], count)
+		if newChild == nil && subidx == 0 {
+			return nil
+		}
+		newLen := subidx + 1
+		if newChild == nil {
+			newLen = subidx
+		}
+		children := make([]*node[T], newLen)
+		copy(children, parent.children[:newLen])
+		if newChild != nil {
+			children[subidx] = newChild
+		}
+		return &node[T]{children: children}
+	}
+
+	// Parent of leaves (level == bitsPerLevel).
+	if subidx == 0 {
+		return nil
+	}
+	children := make([]*node[T], subidx)
+	copy(children, parent.children[:subidx])
+	return &node[T]{children: children}
+}
+
+// tpopTail is popTail under owner: ensureEditable on the spine, shrink or
+// replace the rightmost child in place when exclusively owned.
+func tpopTail[T any](level uint, parent *node[T], count int, owner *ownership.Owner) *node[T] {
+	subidx := ((count - 2) >> level) & indexMask
+
+	if level > bitsPerLevel {
+		newChild := tpopTail(level-bitsPerLevel, parent.children[subidx], count, owner)
+		if newChild == nil && subidx == 0 {
+			return nil
+		}
+		parent = cloneBranch(parent, owner)
+		if newChild == nil {
+			parent.children = parent.children[:subidx]
+		} else {
+			parent.children[subidx] = newChild
+		}
+		return parent
+	}
+
+	if subidx == 0 {
+		return nil
+	}
+	parent = cloneBranch(parent, owner)
+	parent.children = parent.children[:subidx]
+	return parent
+}

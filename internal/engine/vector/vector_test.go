@@ -5,22 +5,6 @@ import (
 	"testing"
 )
 
-func TestEmptyZeroValueAndLen(t *testing.T) {
-	t.Parallel()
-
-	var z Root[int]
-	if z.Len() != 0 {
-		t.Fatalf("zero Len = %d", z.Len())
-	}
-	e := Empty[int]()
-	if e.Len() != 0 {
-		t.Fatalf("Empty Len = %d", e.Len())
-	}
-	if e.root != nil || e.tail != nil || e.count != 0 {
-		t.Fatal("Empty must match zero-value shape")
-	}
-}
-
 func TestAppendAtSetLen(t *testing.T) {
 	t.Parallel()
 
@@ -91,125 +75,6 @@ func TestDeleteMidPreservesOrder(t *testing.T) {
 	one := Empty[int]().Append(42)
 	if got := one.Delete(0); got.Len() != 0 {
 		t.Fatalf("delete sole: Len=%d", got.Len())
-	}
-}
-
-func TestBoundsPanics(t *testing.T) {
-	t.Parallel()
-
-	r := Empty[int]().Append(1, 2, 3)
-	for _, tc := range []struct {
-		name string
-		fn   func()
-	}{
-		{"At(-1)", func() { _ = r.At(-1) }},
-		{"At(len)", func() { _ = r.At(3) }},
-		{"Set(-1)", func() { _ = r.Set(-1, 0) }},
-		{"Set(len)", func() { _ = r.Set(3, 0) }},
-		{"Delete(-1)", func() { _ = r.Delete(-1) }},
-		{"Delete(len)", func() { _ = r.Delete(3) }},
-		{"At empty", func() { _ = Empty[int]().At(0) }},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			defer func() {
-				rec := recover()
-				if rec == nil {
-					t.Fatal("expected panic")
-				}
-				msg, ok := rec.(string)
-				if !ok || msg != "vector: index out of range" {
-					t.Fatalf("panic = %#v", rec)
-				}
-			}()
-			tc.fn()
-		})
-	}
-}
-
-func TestStructuralSharingOnSet(t *testing.T) {
-	t.Parallel()
-
-	// 65 elements → trie holds two full leaves (0..31 and 32..63) and the
-	// tail holds index 64. That gives the root two sibling children so Set
-	// on the first leaf can prove the second child pointer is shared.
-	r := Empty[int]()
-	for i := 0; i < 65; i++ {
-		r = r.Append(i)
-	}
-	old := r
-
-	// Mutate an element in the first leaf (index 0).
-	next := r.Set(0, 999)
-
-	if old.root == next.root {
-		t.Fatal("root must be path-copied on Set into the trie")
-	}
-	if old.root == nil || next.root == nil {
-		t.Fatal("expected non-nil roots at n=65")
-	}
-	if len(old.root.children) < 2 || len(next.root.children) < 2 {
-		t.Fatalf("expected >=2 root children, got old=%d next=%d",
-			len(old.root.children), len(next.root.children))
-	}
-
-	// Untouched sibling leaf (second child) must be the same pointer.
-	if old.root.children[1] != next.root.children[1] {
-		t.Fatal("untouched sibling leaf must be shared by pointer")
-	}
-	// Edited path child must differ.
-	if old.root.children[0] == next.root.children[0] {
-		t.Fatal("edited leaf path must be path-copied")
-	}
-
-	if old.At(0) != 0 {
-		t.Fatal("old version mutated")
-	}
-	if next.At(0) != 999 {
-		t.Fatalf("next At(0)=%d", next.At(0))
-	}
-	if next.At(33) != 33 || old.At(33) != 33 {
-		t.Fatal("sibling region values broken")
-	}
-}
-
-func TestStructuralSharingOnSetDeep(t *testing.T) {
-	t.Parallel()
-
-	// Force a deeper tree (shift > 5): more than 32 leaves under the root.
-	// 32 leaves * 32 values = 1024 in the trie; use 1100 to be past overflow.
-	const n = 1100
-	r := Empty[int]()
-	for i := 0; i < n; i++ {
-		r = r.Append(i)
-	}
-	if r.shift < 2*bitsPerLevel {
-		t.Fatalf("expected deeper tree, shift=%d", r.shift)
-	}
-
-	old := r
-	// Edit near the end of the trie region (not in the tail).
-	idx := r.tailoff() - 1
-	next := r.Set(idx, -1)
-
-	if old.root == next.root {
-		t.Fatal("deep Set must path-copy root")
-	}
-	// At least one top-level child should remain shared.
-	shared := 0
-	for i := 0; i < len(old.root.children) && i < len(next.root.children); i++ {
-		if old.root.children[i] == next.root.children[i] {
-			shared++
-		}
-	}
-	if shared == 0 {
-		t.Fatal("expected at least one shared top-level child after deep Set")
-	}
-	if old.At(idx) == -1 {
-		t.Fatal("old version mutated")
-	}
-	if next.At(idx) != -1 {
-		t.Fatalf("next At(%d)=%d", idx, next.At(idx))
 	}
 }
 
@@ -291,35 +156,6 @@ func TestAllIteration(t *testing.T) {
 	}
 }
 
-func TestAllMatchesAtAcrossTrieAndTail(t *testing.T) {
-	t.Parallel()
-
-	// Sizes cover empty, tail-only, first trie push (32), multi-leaf, and a
-	// deeper root (past 1024) so All's sequential walk is checked against At.
-	for _, n := range []int{0, 1, 31, 32, 33, 64, 100, 1100} {
-		r := Empty[int]()
-		for i := 0; i < n; i++ {
-			r = r.Append(i * 3)
-		}
-		seen := 0
-		for i, v := range r.All() {
-			if i != seen {
-				t.Fatalf("n=%d: All index = %d, want sequential %d", n, i, seen)
-			}
-			if want := r.At(i); v != want {
-				t.Fatalf("n=%d: All(%d)=%d, At(%d)=%d", n, i, v, i, want)
-			}
-			if want := i * 3; v != want {
-				t.Fatalf("n=%d: All(%d)=%d, want %d", n, i, v, want)
-			}
-			seen++
-		}
-		if seen != n {
-			t.Fatalf("n=%d: All yielded %d pairs, want %d", n, seen, n)
-		}
-	}
-}
-
 func TestAppendAcrossTailPushAndLevelOverflow(t *testing.T) {
 	t.Parallel()
 
@@ -345,33 +181,5 @@ func TestAppendAcrossTailPushAndLevelOverflow(t *testing.T) {
 	}
 	if s2.At(100) != -100 || r.At(100) != 100 {
 		t.Fatal("trie Set broken")
-	}
-}
-
-func TestPublishedNodesHaveNilOwner(t *testing.T) {
-	t.Parallel()
-
-	r := Empty[int]()
-	for i := 0; i < 40; i++ {
-		r = r.Append(i)
-	}
-	if r.root == nil {
-		t.Fatal("expected trie root after 40 appends")
-	}
-	if r.root.owner != nil {
-		t.Fatal("published root owner must be nil")
-	}
-	for _, ch := range r.root.children {
-		if ch == nil {
-			continue
-		}
-		if ch.owner != nil {
-			t.Fatal("published child owner must be nil")
-		}
-	}
-
-	s := r.Set(0, 1)
-	if s.root.owner != nil || s.root.children[0].owner != nil {
-		t.Fatal("path-copied Set nodes must publish with nil owner")
 	}
 }

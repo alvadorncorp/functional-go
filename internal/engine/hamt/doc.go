@@ -13,6 +13,9 @@
 // carries a maphash.Seed; derived versions preserve that seed so structural
 // sharing remains valid.
 //
+// Replacing an existing key is not required to be a structural no-op even when
+// the new value equals the old one (V is not comparable; no reflect equality).
+//
 // Allowed non-stdlib imports (when needed): ownership, cow, sharing, keyhash.
 // Must not import transient, eq, optional, frozen, persistent, valueobject,
 // or vector.

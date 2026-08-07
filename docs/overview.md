@@ -86,7 +86,7 @@ Engines live under `functional/internal/engine/` (also internal):
 | Engine | Used by | Representation |
 |---|---|---|
 | `hamt` | `persistent.Map`, `persistent.Set` | 32-way HAMT; path-copy structural sharing; per-`Root` `maphash.Seed` via `maphash.Comparable` |
-| `vector` | `persistent.List` | 32-way persistent vector (trie + tail); path-copy on Set/Append; `Delete` may be O(n) |
+| `vector` | `persistent.List` | 32-way persistent vector (trie + tail); path-copy on Set/Append/Pop (Pop O(1)/O(log n) internal); mid-index `Delete` O(n) |
 
 `persistent` Builders open a `transient.Window`, edit under the window's
 exclusive owner (engine transient paths mutate owned nodes in place), and

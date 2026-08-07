@@ -9,17 +9,18 @@ import (
 // Root is an immutable 32-way persistent vector.
 //
 // The zero value is a valid empty vector (same as Empty). Pure immutable
-// Set/Append/Delete never mutate r; they return a new Root that structurally
-// shares untouched trie nodes with prior versions.
+// Set/Append/Delete/Pop never mutate r; they return a new Root that
+// structurally shares untouched trie nodes with prior versions.
 //
-// TransientAppend/TransientSet/TransientDelete edit under an active
-// *ownership.Owner: owned nodes (and an exclusively owned tail) mutate in
-// place; foreign or published structure is shallow-cloned and stamped. After
-// the owner is invalidated (Freeze), residual stamps are treated as published
-// — no tree walk is required to publish.
+// TransientAppend/TransientSet/TransientDelete/TransientPop edit under an
+// active *ownership.Owner: owned nodes (and an exclusively owned tail) mutate
+// in place; foreign or published structure is shallow-cloned and stamped.
+// After the owner is invalidated (Freeze), residual stamps are treated as
+// published — no tree walk is required to publish.
 //
-// At and Set panic with "vector: index out of range" on invalid indices.
-// Public List wrappers may map those panics later.
+// At, Set, Delete, and Pop panic with "vector: index out of range" on invalid
+// indices (including Pop on an empty vector). Public List wrappers may map
+// those panics later.
 type Root[T any] struct {
 	count     int
 	shift     uint // root level shift (5, 10, 15, ...); 0 when the trie is unused
@@ -49,11 +50,17 @@ func (r Root[T]) arrayFor(i int) []T {
 	if i >= r.tailoff() {
 		return r.tail
 	}
+	return r.leafNode(i).values
+}
+
+// leafNode returns the trie leaf that holds index i (caller guarantees i is in
+// the trie, not the tail).
+func (r Root[T]) leafNode(i int) *node[T] {
 	n := r.root
 	for level := r.shift; level > 0; level -= bitsPerLevel {
 		n = n.children[(i>>level)&indexMask]
 	}
-	return n.values
+	return n
 }
 
 // At returns the element at index i.
@@ -165,6 +172,54 @@ func (r Root[T]) Delete(i int) Root[T] {
 		vals = append(vals, v)
 	}
 	return Empty[T]().Append(vals...)
+}
+
+// Pop returns a new Root without the last element and the removed value.
+// r is unchanged. Complexity: O(1) when the tail has more than one element;
+// O(log32 n) when the last full leaf must be pulled from the trie into the tail.
+// It panics with "vector: index out of range" when Len() == 0
+// (same string as At/Set/Delete for empty/invalid index).
+func (r Root[T]) Pop() (next Root[T], val T) {
+	if r.count == 0 {
+		panic("vector: index out of range")
+	}
+	if r.count == 1 {
+		return Empty[T](), r.tail[0]
+	}
+	if len(r.tail) > 1 {
+		val = r.tail[len(r.tail)-1]
+		newTail := make([]T, len(r.tail)-1)
+		copy(newTail, r.tail[:len(r.tail)-1])
+		return Root[T]{
+			count: r.count - 1,
+			shift: r.shift,
+			root:  r.root,
+			tail:  newTail,
+		}, val
+	}
+	// Single-element tail: pull the last full leaf from the trie.
+	return r.popPullLeaf()
+}
+
+// popPullLeaf implements the O(log32 n) Pop path when len(tail) == 1.
+// Caller guarantees count > 1 and a non-nil root.
+func (r Root[T]) popPullLeaf() (next Root[T], val T) {
+	val = r.tail[0]
+	newTail := r.arrayFor(r.count - 2) // share published leaf values
+	newRoot := popTail(r.shift, r.root, r.count)
+	newShift := r.shift
+	if newRoot == nil {
+		newShift = 0
+	} else if newShift > bitsPerLevel && len(newRoot.children) == 1 {
+		newRoot = newRoot.children[0]
+		newShift -= bitsPerLevel
+	}
+	return Root[T]{
+		count: r.count - 1,
+		shift: newShift,
+		root:  newRoot,
+		tail:  newTail,
+	}, val
 }
 
 // TransientSet returns a Root with index i replaced by v, editing under owner.
@@ -299,6 +354,65 @@ func (r Root[T]) TransientDelete(owner *ownership.Owner, i int) Root[T] {
 		out = out.TransientAppend(owner, v)
 	}
 	return out
+}
+
+// TransientPop is the owner-scoped counterpart of Pop: exclusive tail/nodes may
+// mutate in place; published structure is shallow-cloned and stamped.
+// It panics with "vector: index out of range" when Len() == 0.
+func (r Root[T]) TransientPop(owner *ownership.Owner) (next Root[T], val T) {
+	if r.count == 0 {
+		panic("vector: index out of range")
+	}
+	if r.count == 1 {
+		return Empty[T](), r.tail[0]
+	}
+	if len(r.tail) > 1 {
+		val = r.tail[len(r.tail)-1]
+		var newTail []T
+		if ownership.IsOwnedBy(r.tailOwner, owner) {
+			newTail = r.tail[:len(r.tail)-1]
+		} else {
+			newTail = make([]T, len(r.tail)-1, branching)
+			copy(newTail, r.tail[:len(r.tail)-1])
+		}
+		return Root[T]{
+			count:     r.count - 1,
+			shift:     r.shift,
+			root:      r.root,
+			tail:      newTail,
+			tailOwner: owner,
+		}, val
+	}
+	return r.transientPopPullLeaf(owner)
+}
+
+// transientPopPullLeaf implements the O(log32 n) TransientPop path when
+// len(tail) == 1. Caller guarantees count > 1 and a non-nil root.
+func (r Root[T]) transientPopPullLeaf(owner *ownership.Owner) (next Root[T], val T) {
+	val = r.tail[0]
+	leaf := r.leafNode(r.count - 2)
+	newRoot := tpopTail(r.shift, r.root, r.count, owner)
+	newShift := r.shift
+	if newRoot == nil {
+		newShift = 0
+	} else if newShift > bitsPerLevel && len(newRoot.children) == 1 {
+		newRoot = newRoot.children[0]
+		newShift -= bitsPerLevel
+	}
+	var newTail []T
+	if ownership.IsOwnedBy(leaf.owner, owner) {
+		newTail = leaf.values
+	} else {
+		newTail = make([]T, len(leaf.values), branching)
+		copy(newTail, leaf.values)
+	}
+	return Root[T]{
+		count:     r.count - 1,
+		shift:     newShift,
+		root:      newRoot,
+		tail:      newTail,
+		tailOwner: owner,
+	}, val
 }
 
 // editableTail returns a tail slice safe to mutate under owner. When the
