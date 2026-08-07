@@ -4,6 +4,7 @@ import (
 	"iter"
 	"slices"
 
+	"github.com/alvadorncorp/gopackages/functional/internal/core/transient"
 	"github.com/alvadorncorp/gopackages/functional/internal/eq"
 )
 
@@ -121,7 +122,10 @@ func (l List[T]) Equal(other List[T]) bool {
 // Builder returns a ListBuilder seeded with a copy of l's elements. l is not
 // affected by any later operation on the builder.
 func (l List[T]) Builder() *ListBuilder[T] {
-	return &ListBuilder[T]{items: slices.Clone(l.items)}
+	return &ListBuilder[T]{
+		items: slices.Clone(l.items),
+		win:   transient.Open(),
+	}
 }
 
 // ListBuilder accumulates writes for List in amortized linear time. It is
@@ -132,13 +136,11 @@ func (l List[T]) Builder() *ListBuilder[T] {
 // itself — panics with "persistent: builder used after Build".
 type ListBuilder[T any] struct {
 	items []T
-	built bool
+	win   *transient.Window
 }
 
 func (b *ListBuilder[T]) checkNotBuilt() {
-	if b.built {
-		panic(panicBuilderUsedAfterBuild)
-	}
+	checkBuilderWindow(b.win)
 }
 
 // Append adds items to the end of the builder's buffer, in order, and
@@ -183,8 +185,7 @@ func (b *ListBuilder[T]) Len() int {
 // Build, panics with "persistent: builder used after Build" from this point
 // on.
 func (b *ListBuilder[T]) Build() List[T] {
-	b.checkNotBuilt()
-	b.built = true
+	freezeBuilderWindow(&b.win)
 	items := b.items
 	b.items = nil
 	return List[T]{items: items}

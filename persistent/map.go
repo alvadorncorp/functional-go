@@ -4,6 +4,7 @@ import (
 	"iter"
 	"maps"
 
+	"github.com/alvadorncorp/gopackages/functional/internal/core/transient"
 	"github.com/alvadorncorp/gopackages/functional/internal/eq"
 )
 
@@ -107,7 +108,10 @@ func (m Map[K, V]) Equal(other Map[K, V]) bool {
 // Builder returns a MapBuilder seeded with a copy of m's entries. m is not
 // affected by any later operation on the builder.
 func (m Map[K, V]) Builder() *MapBuilder[K, V] {
-	return &MapBuilder[K, V]{items: cloneMap(m.items, 0)}
+	return &MapBuilder[K, V]{
+		items: cloneMap(m.items, 0),
+		win:   transient.Open(),
+	}
 }
 
 // MapBuilder accumulates writes for Map in amortized linear time. It is
@@ -118,13 +122,11 @@ func (m Map[K, V]) Builder() *MapBuilder[K, V] {
 // itself — panics with "persistent: builder used after Build".
 type MapBuilder[K comparable, V any] struct {
 	items map[K]V
-	built bool
+	win   *transient.Window
 }
 
 func (b *MapBuilder[K, V]) checkNotBuilt() {
-	if b.built {
-		panic(panicBuilderUsedAfterBuild)
-	}
+	checkBuilderWindow(b.win)
 }
 
 // Set maps k to v in the builder's buffer, replacing any existing value for
@@ -153,8 +155,7 @@ func (b *MapBuilder[K, V]) Len() int {
 // Build, panics with "persistent: builder used after Build" from this point
 // on.
 func (b *MapBuilder[K, V]) Build() Map[K, V] {
-	b.checkNotBuilt()
-	b.built = true
+	freezeBuilderWindow(&b.win)
 	items := b.items
 	b.items = nil
 	return Map[K, V]{items: items}

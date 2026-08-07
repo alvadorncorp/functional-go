@@ -1,6 +1,10 @@
 package persistent
 
-import "iter"
+import (
+	"iter"
+
+	"github.com/alvadorncorp/gopackages/functional/internal/core/transient"
+)
 
 // Set is an immutable collection of distinct, comparable values. Every write
 // method returns a new Set; the receiver is never changed. See the package
@@ -99,7 +103,10 @@ func (s Set[T]) Equal(other Set[T]) bool {
 // Builder returns a SetBuilder seeded with a copy of s's elements. s is not
 // affected by any later operation on the builder.
 func (s Set[T]) Builder() *SetBuilder[T] {
-	return &SetBuilder[T]{items: cloneMap(s.items, 0)}
+	return &SetBuilder[T]{
+		items: cloneMap(s.items, 0),
+		win:   transient.Open(),
+	}
 }
 
 // SetBuilder accumulates writes for Set in amortized linear time. It is
@@ -110,13 +117,11 @@ func (s Set[T]) Builder() *SetBuilder[T] {
 // itself — panics with "persistent: builder used after Build".
 type SetBuilder[T comparable] struct {
 	items map[T]struct{}
-	built bool
+	win   *transient.Window
 }
 
 func (b *SetBuilder[T]) checkNotBuilt() {
-	if b.built {
-		panic(panicBuilderUsedAfterBuild)
-	}
+	checkBuilderWindow(b.win)
 }
 
 // Add adds items to the builder's buffer, deduplicated, and returns b for
@@ -150,8 +155,7 @@ func (b *SetBuilder[T]) Len() int {
 // Build, panics with "persistent: builder used after Build" from this point
 // on.
 func (b *SetBuilder[T]) Build() Set[T] {
-	b.checkNotBuilt()
-	b.built = true
+	freezeBuilderWindow(&b.win)
 	items := b.items
 	b.items = nil
 	return Set[T]{items: items}
