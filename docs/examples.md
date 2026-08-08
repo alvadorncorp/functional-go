@@ -12,6 +12,7 @@ Illustrative sketches for common uses. For API contracts see
 3. [Immutable collection field with `persistent.List`](#3-immutable-collection-field-with-persistentlist)
 4. [Building a `persistent.List` in a loop](#4-building-a-persistentlist-in-a-loop)
 5. [`persistent.MapOf` / `SetOf` snapshots](#5-persistentmapof--setof-snapshots)
+6. [Versioned pure state with `state.Of` / `Apply` / `Materialize`](#6-versioned-pure-state-with-stateof--apply--materialize)
 
 ---
 
@@ -163,10 +164,53 @@ For bulk Map construction, prefer `MapOf[K,V](nil).Builder()` (or
 
 ---
 
+## 6. Versioned pure state with `state.Of` / `Apply` / `Materialize`
+
+`state.Of` seeds a Version-0 plan. `Apply` records a pure `func(T) T`
+without running it (O(1) reverse-linked plan node). `Materialize` re-applies
+the full plan oldest→newest every call — there is no cache. Optional
+`Begin`/`Transaction` batches several plan steps before `Commit` (still
+lazy; Commit does not Materialize).
+
+```go
+package counter
+
+import "github.com/alvadorncorp/gopackages/functional/state"
+
+func evolve() (int, state.Version) {
+	s := state.Of(0).
+		Apply(func(v int) int { return v + 1 }).
+		Apply(func(v int) int { return v * 10 })
+
+	// Batch two more steps without intermediate States if preferred:
+	s = s.Begin().
+		Apply(func(v int) int { return v + 2 }).
+		Apply(func(v int) int { return v + 3 }).
+		Commit()
+
+	return s.Materialize(), s.Version() // 15, Version 4
+}
+```
+
+Remember the distinctions:
+
+```
+state.Transaction ≠ persistent.Builder
+state.Diff ≠ Domain Event
+state.Version ≠ DB revision
+state.Materialize ≠ deep clone
+```
+
+Runnable godoc examples live in `state/example_test.go`. Full API:
+[packages/state.md](packages/state.md).
+
+---
+
 ## See also
 
 - [overview](overview.md)
 - [package API: optional](packages/optional.md)
 - [package API: persistent](packages/persistent.md)
+- [package API: state](packages/state.md)
 - [package API: valueobject](packages/valueobject.md)
 - [pattern: value objects](patterns/value-objects.md)

@@ -1,8 +1,8 @@
 # functional
 
 An umbrella module for small, dependency-free functional-programming building
-blocks: explicit absence, immutable collections, and value-object
-verification.
+blocks: explicit absence, immutable collections, pure state evolution, and
+value-object verification.
 
 ```text
 module  github.com/alvadorncorp/gopackages/functional
@@ -12,7 +12,7 @@ go      1.26+
 **The root package exports nothing.** `functional` is documentation only —
 this README and the file it mirrors, [`doc.go`](doc.go). Each concept lives
 in its own subpackage: [`optional`](optional/), [`persistent`](persistent/),
-[`valueobject`](valueobject/).
+[`state`](state/), [`valueobject`](valueobject/).
 
 This README is the **documentation index**. Guides live under
 [`docs/`](docs/).
@@ -26,7 +26,7 @@ This README is the **documentation index**. Guides live under
 | Document | Description |
 |---|---|
 | [**docs/overview.md**](docs/overview.md) | Purpose, the Go language constraint that shapes the API, the immutability core, the zero-dependency boundary, the sibling-import rule |
-| [**docs/examples.md**](docs/examples.md) | Usage sketches (config precedence, fallible parse, immutable collection field, loop-building) |
+| [**docs/examples.md**](docs/examples.md) | Usage sketches (config precedence, fallible parse, immutable collection field, loop-building, pure state evolution) |
 
 ### Package (micro view)
 
@@ -34,6 +34,7 @@ This README is the **documentation index**. Guides live under
 |---|---|
 | [docs/packages/optional.md](docs/packages/optional.md) | `github.com/alvadorncorp/gopackages/functional/optional` |
 | [docs/packages/persistent.md](docs/packages/persistent.md) | `github.com/alvadorncorp/gopackages/functional/persistent` |
+| [docs/packages/state.md](docs/packages/state.md) | `github.com/alvadorncorp/gopackages/functional/state` |
 | [docs/packages/valueobject.md](docs/packages/valueobject.md) | `github.com/alvadorncorp/gopackages/functional/valueobject` |
 | [docs/packages/core.md](docs/packages/core.md) | `internal/core` (ownership, cow, sharing, transient) — maintainers |
 
@@ -51,6 +52,7 @@ This README is the **documentation index**. Guides live under
 | [docs/adr/functional/adr-003-zero-dependency-boundary.md](docs/adr/functional/adr-003-zero-dependency-boundary.md) | `adr:functional:003` |
 | [docs/adr/functional/adr-004-thin-immutability-core.md](docs/adr/functional/adr-004-thin-immutability-core.md) | `adr:functional:004` |
 | [docs/adr/functional/adr-005-persistent-engine-family.md](docs/adr/functional/adr-005-persistent-engine-family.md) | `adr:functional:005` |
+| [docs/adr/functional/adr-006-state-semantic-layer.md](docs/adr/functional/adr-006-state-semantic-layer.md) | `adr:functional:006` |
 
 ---
 
@@ -60,6 +62,7 @@ This README is the **documentation index**. Guides live under
 |---|---|---|
 | [`optional`](optional/) | Explicit absence: an operation that may or may not produce a value | `optional.Optional[T]` |
 | [`persistent`](persistent/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List; Builders use exclusive-owner transient + O(1) Freeze) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |
+| [`state`](state/) | Pure semantic evolution over `T`: reverse-linked plans, Version, single-use Tx, structural Diff | `state.State[T]`, `state.Transaction[T]`, `state.Diff[T]`, `state.Snapshot[T]` |
 | [`valueobject`](valueobject/) | Reflective verification that a type is structurally immutable (test helper) | `valueobject.Check[T]` |
 
 ---
@@ -70,12 +73,16 @@ This README is the **documentation index**. Guides live under
 import (
     "github.com/alvadorncorp/gopackages/functional/optional"
     "github.com/alvadorncorp/gopackages/functional/persistent"
+    "github.com/alvadorncorp/gopackages/functional/state"
 )
 
 port := optional.Some("8080")
 n, err := optional.Map(port, len) // optional.Optional[int]{...}, no error path
 
 tags := persistent.ListOf("prod", "us-east") // persistent.List[string]
+
+s := state.Of(0).Apply(func(v int) int { return v + 1 })
+_ = s.Materialize() // 1; Apply is lazy, Materialize re-applies the plan
 ```
 
 See **[docs/examples.md](docs/examples.md)** for more sketches.
@@ -99,8 +106,9 @@ cd functional && go test ./... -count=1
   `encoding/json` as **`{}`** — the marshaled value, not just the marker of
   absence, is lost. Do not put `Optional[T]` on a struct you intend to
   marshal without writing your own `MarshalJSON`/`Scan` bridge.
-- **No monad zoo.** No `IO`, `Task`, `Reader`, `State`, or any other
-  effect/context type — `optional` stops at explicit absence.
+- **No monad zoo.** No `IO`, `Task`, `Reader`, or monadic effect/context
+  types — `optional` stops at explicit absence. The public `state` package
+  is a pure plan/Version layer over `T`, not a monadic State effect.
 - **`persistent` collections are SHALLOW, not transitively immutable.**
   `persistent.List[[]byte]` still shares each element's backing array;
   nothing in this module makes an element type immutable on your behalf.
@@ -112,6 +120,10 @@ cd functional && go test ./... -count=1
   [ADR-004](docs/adr/functional/adr-004-thin-immutability-core.md), and
   [docs/packages/core.md](docs/packages/core.md). Core remains laws only —
   not a generic engine library.
+- **`state` is pure over T and mesh-isolated.** Production `state` does not
+  import `persistent`, core, or engines. `Version` is not a DB revision;
+  `Diff` is not a domain event; `Transaction` is not a `persistent.Builder`.
+  See [ADR-006](docs/adr/functional/adr-006-state-semantic-layer.md).
 
 ---
 

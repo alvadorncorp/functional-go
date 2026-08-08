@@ -4,10 +4,10 @@
 // imports another (functional/internal/eq is the one shared exception every
 // public package may use), the internal/core DAG stays a star into ownership
 // with no peer edges and no reflect, internal/eq production code imports
-// neither reflect nor unsafe, persistent production code imports neither
-// reflect nor unsafe, and internal/engine packages obey their own import
-// allow-lists (keyhash: stdlib only; hamt: ownership/cow/sharing/keyhash only
-// among functional packages; vector: ownership/cow/sharing only among
+// neither reflect nor unsafe, persistent and state production code import
+// neither reflect nor unsafe, and internal/engine packages obey their own
+// import allow-lists (keyhash: stdlib only; hamt: ownership/cow/sharing/keyhash
+// only among functional packages; vector: ownership/cow/sharing only among
 // functional packages).
 package archtest
 
@@ -38,6 +38,7 @@ const (
 	pkgHamt       = "github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
 	pkgVector     = "github.com/alvadorncorp/gopackages/functional/internal/engine/vector"
 	pkgPersistent = "github.com/alvadorncorp/gopackages/functional/persistent"
+	pkgState      = "github.com/alvadorncorp/gopackages/functional/state"
 	corePrefix    = "github.com/alvadorncorp/gopackages/functional/internal/core/"
 	enginePrefix  = "github.com/alvadorncorp/gopackages/functional/internal/engine/"
 )
@@ -47,6 +48,7 @@ const (
 var publicPackages = []string{
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
+	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
 
@@ -55,6 +57,7 @@ var publicPackages = []string{
 // later for the engine contract.
 var publicPackagesNoCore = []string{
 	"github.com/alvadorncorp/gopackages/functional/optional",
+	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
 
@@ -79,6 +82,7 @@ var enginePackages = []string{
 var allPackages = []string{
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
+	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
 	pkgEq,
 	pkgOwnership,
@@ -108,6 +112,7 @@ var coreForbiddenTargets = []string{
 	pkgVector,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
+	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
 
@@ -138,6 +143,7 @@ var engineForbiddenTargets = []string{
 	pkgEq,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
+	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
 
@@ -277,6 +283,29 @@ func TestPersistentNoUnsafe(t *testing.T) {
 	}
 }
 
+// TestStateNoReflect proves no production file under state imports
+// "reflect". The semantic layer stays free of reflection; tests may still
+// use reflect. This gate inspects production Imports only (go list without
+// -test).
+func TestStateNoReflect(t *testing.T) {
+	t.Parallel()
+	for _, imp := range productionImports(t, pkgState) {
+		if imp == "reflect" {
+			t.Errorf("%s must not import reflect", pkgState)
+		}
+	}
+}
+
+// TestStateNoUnsafe proves no production file under state imports "unsafe".
+func TestStateNoUnsafe(t *testing.T) {
+	t.Parallel()
+	for _, imp := range productionImports(t, pkgState) {
+		if imp == "unsafe" {
+			t.Errorf("%s must not import unsafe", pkgState)
+		}
+	}
+}
+
 // TestCoreDependencyDAG proves the core package graph is a star into
 // ownership: cow, transient, and sharing may each depend on ownership, and
 // nothing else in functional. Peer edges, reverse edges into ownership, and
@@ -311,7 +340,7 @@ func TestCoreDependencyDAG(t *testing.T) {
 	}
 }
 
-// TestPublicPackagesDoNotImportCore proves optional and valueobject
+// TestPublicPackagesDoNotImportCore proves optional, state, and valueobject
 // production code never reach into internal/core. persistent is allowed to
 // import core (engine contract) and is not checked here.
 func TestPublicPackagesDoNotImportCore(t *testing.T) {
@@ -349,7 +378,7 @@ func TestEngineNoReflect(t *testing.T) {
 //   - keyhash: standard library only (no functional packages)
 //   - hamt: among functional packages, only ownership, cow, sharing, keyhash
 //   - vector: among functional packages, only ownership, cow, sharing
-//   - no engine may import transient, eq, optional, persistent, or valueobject
+//   - no engine may import transient, eq, optional, persistent, state, or valueobject
 //   - hamt ↛ vector and vector ↛ hamt (peer engines stay disconnected)
 //
 // Core packages already cannot import engines via TestCoreDependencyDAG

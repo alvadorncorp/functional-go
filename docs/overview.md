@@ -21,21 +21,27 @@ dependencies outside the standard library, permanently**:
   persistent vector. Builders open an exclusive transient window and
   `Freeze` in O(1) via owner invalidation. Use the same types for
   read-only snapshots (never call write methods) and for versioned state.
+- **`state`** — `State[T]`: pure semantic evolution over an opaque `T`.
+  `Apply` records reverse-linked plan steps without running them;
+  `Materialize` re-applies the full plan (no cache); `Begin`/`Transaction`
+  batches plan growth; `DiffBetween` captures structural plan diffs within
+  one lineage. Mesh-isolated from `persistent` in production code.
 - **`valueobject`** — `Check[T]`, a reflective test helper that verifies a
   type is structurally immutable.
 
 ## Why the root package is doc-only
 
 `functional` itself (the root package, [`doc.go`](../doc.go)) exports
-nothing. That is deliberate, not an oversight: the three concepts above do not
+nothing. That is deliberate, not an oversight: the concepts above do not
 share a common supertype, a common constructor, or any runtime behavior — the
 only thing they share is "small, dependency-free, functional in spirit." A
-root package that re-exported all three (type aliases, or worse, a grab-bag of
+root package that re-exported all of them (type aliases, or worse, a grab-bag of
 helpers) would give every consumer of any one concept a compile-time
-dependency on the other two, defeating the point of splitting them into
+dependency on the others, defeating the point of splitting them into
 subpackages in the first place. So the root package carries only the
 module-level doc comment, and every concept lives one import path down:
-`functional/optional`, `functional/persistent`, `functional/valueobject`.
+`functional/optional`, `functional/persistent`, `functional/state`,
+`functional/valueobject`.
 
 ## The constraint that shapes the whole API: no type parameters on methods
 
@@ -92,6 +98,9 @@ exclusive owner (engine transient paths mutate owned nodes in place), and
 walk. Documented complexity bounds on the public API are upper-bound
 headroom; see [ADR-005](adr/functional/adr-005-persistent-engine-family.md).
 
+`state` does **not** use core or engines. Its plan is a reverse-linked list
+of pure `func(T) T` steps owned entirely by the `state` package.
+
 ## The zero-dependency boundary
 
 `functional` depends on nothing outside the standard library, and this is
@@ -108,11 +117,11 @@ proves it mechanically on every test run:
 
 Additional core gates: `TestCoreNoReflect`, `TestCoreDependencyDAG` (star
 into `ownership`), and `TestPublicPackagesDoNotImportCore` (`optional` /
-`valueobject` must not import core; `persistent` may).
+`valueobject` / `state` must not import core; `persistent` may).
 
 ## No public subpackage imports another (in production code)
 
-`optional`, `persistent`, and `valueobject` do not import each
+`optional`, `persistent`, `state`, and `valueobject` do not import each
 other **in production code**. This is also proven, not just documented:
 `TestNoPublicSiblingDependencies` in `functional/internal/archtest` walks
 each public subpackage's dependency list, via `go list -deps -json` without
@@ -122,19 +131,26 @@ The invariant is scoped to production imports by design. Test code MAY
 import a sibling public package to exercise or demonstrate cross-package
 behavior — that is a legitimate use of a real dependency between test
 binaries, not a violation of the architectural boundary the mechanism above
-protects. The concrete example in this module is
-`valueobject/check_test.go`, which imports `functional/persistent` directly to
-build a `Good` fixture whose one collection field is a `persistent.List[string]`
-— proving that `AllowPackage`'s default leaf list actually frees `persistent`
-fields, not just that the code compiles. `go list -deps -json` without
-`-test` never sees that import, because it does not inspect `_test.go`
-files; `TestNoPublicSiblingDependencies` would need `-test` to catch it, and
-deliberately does not pass it, for exactly this reason.
+protects. Concrete examples in this module:
+
+- `valueobject/check_test.go` imports `functional/persistent` to build a
+  `Good` fixture whose one collection field is a `persistent.List[string]`
+  — proving that `AllowPackage`'s default leaf list actually frees
+  `persistent` fields, not just that the code compiles.
+- `state` integration and bench tests may import `functional/persistent`
+  when `T` embeds Map/Set/List fields; production `state` still has no
+  sibling edge.
+
+`go list -deps -json` without `-test` never sees those imports, because it
+does not inspect `_test.go` files; `TestNoPublicSiblingDependencies` would
+need `-test` to catch them, and deliberately does not pass it, for exactly
+this reason.
 
 ```mermaid
 flowchart TB
   optional[optional]
   persistent[persistent]
+  state[state]
   valueobject[valueobject]
   eq["internal/eq (internal)"]
   ownership["internal/core/ownership"]
@@ -160,7 +176,23 @@ flowchart TB
   sharing --> ownership
   transient --> ownership
   valueobject -.->|no import; string-compares PkgPath instead| persistent
+  state -.->|test-only composition| persistent
 ```
+
+`state` has **no production edges** to siblings or to core/engine. The
+dashed `state` → `persistent` edge is test-only composition (optional in
+diagrams; never a production import).
+
+### Distinctions: state vs persistent vs domain
+
+```
+state.Transaction ≠ persistent.Builder
+state.Diff ≠ Domain Event
+state.Version ≠ DB revision
+state.Materialize ≠ deep clone
+```
+
+See [packages/state.md](packages/state.md) for the full contract.
 
 There is exactly **one** shared exception for equality: `functional/internal/eq`,
 a small package that resolves value equality without `reflect` (an `Equal(T) bool`
@@ -189,6 +221,7 @@ descent.
 
 - [Package API: optional](packages/optional.md)
 - [Package API: persistent](packages/persistent.md)
+- [Package API: state](packages/state.md)
 - [Package API: valueobject](packages/valueobject.md)
 - [Internal: core](packages/core.md)
 - [Examples](examples.md)
@@ -197,3 +230,4 @@ descent.
 - [ADR-003 — Zero-dependency boundary](adr/functional/adr-003-zero-dependency-boundary.md)
 - [ADR-004 — Thin immutability core](adr/functional/adr-004-thin-immutability-core.md)
 - [ADR-005 — Persistent engine family (HAMT + vector)](adr/functional/adr-005-persistent-engine-family.md)
+- [ADR-006 — State semantic layer](adr/functional/adr-006-state-semantic-layer.md)

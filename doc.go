@@ -5,8 +5,10 @@
 // Each concept lives in its own subpackage: optional (Optional[T] and its
 // combinators), persistent (immutable collections with functional writes:
 // HAMT Map/Set and a 32-way vector List; Builders use an exclusive-owner
-// transient window with O(1) Freeze), and valueobject (reflective
-// verification of structural immutability, a test helper).
+// transient window with O(1) Freeze), state (pure semantic evolution over T:
+// reverse-linked plans, Version, single-use Transaction, structural Diff),
+// and valueobject (reflective verification of structural immutability, a
+// test helper).
 //
 // The module has zero dependencies outside the standard library, permanently.
 // No public subpackage imports another public subpackage. Shared internals
@@ -15,7 +17,7 @@
 // functional/internal/core (thin ownership / cow /
 // sharing / transient substrate — laws, not engines), and
 // functional/internal/engine (hamt, vector, keyhash representations used by
-// persistent).
+// persistent). Production state does not import core or engines.
 //
 // The exported type is always Optional, never Option: Option already names
 // the functional-options pattern elsewhere in this repository (eventbus,
