@@ -15,17 +15,25 @@ type Mutation[T any] func(T) T
 type Version uint64
 
 // lineage is an unexported identity token shared by every State produced
-// from the same Of root (or the same zero-value chain). DiffBetween and
-// Diff.Apply compare lineage by pointer equality so independent Of roots
-// never join even when their base values compare equal.
-type lineage struct{}
+// from the same Of root. DiffBetween and Diff.Apply compare lineage by
+// pointer equality so independent Of roots never join even when their base
+// values compare equal. It must remain non-zero-sized: Go is permitted to
+// coalesce pointers to distinct zero-sized allocations.
+type lineage struct{ _ byte }
+
+// zeroValueLineage gives all zero States of a given T their canonical empty
+// root. A zero State has no storage for a per-value token, so the first Apply
+// must use this stable token for diffs from that zero root to remain valid.
+// States of different T cannot be mixed by the type system.
+var zeroValueLineage = new(lineage)
 
 // State is an immutable plan of pure evolutions over a base value of type T.
 //
 // The zero State is valid: Materialize returns the zero value of T with no
 // mutations applied, and Version reports 0. Apply never mutates its
 // receiver; it returns a new State that shares the prior reverse-linked
-// plan and prepends one node.
+// plan and prepends one node. A State derived from the zero value uses the
+// canonical zero-value lineage, so it can be diffed from that empty root.
 //
 // Mutations are not executed by Apply. Materialize walks the plan from
 // oldest to newest, re-applying every step on each call (no cache).
@@ -62,14 +70,22 @@ func (s State[T]) Version() Version {
 //
 // Apply is O(1): one plan node is allocated and linked as the new head.
 // The returned State's Version is s.Version() + 1. The lineage token is
-// copied so the new State stays in s's lineage.
+// preserved, or the canonical zero-value token is selected for a zero
+// receiver.
 func (s State[T]) Apply(m Mutation[T]) State[T] {
 	return State[T]{
 		base: s.base,
 		head: &planNode[T]{older: s.head, mut: m},
 		ver:  s.ver + 1,
-		line: s.line,
+		line: s.lineageToken(),
 	}
+}
+
+func (s State[T]) lineageToken() *lineage {
+	if s.line == nil {
+		return zeroValueLineage
+	}
+	return s.line
 }
 
 // Materialize returns the value obtained by applying every planned mutation

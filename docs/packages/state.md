@@ -53,11 +53,11 @@ state.Materialize ≠ deep clone
    Callers that need a frozen value once should use `Snapshot`.
 4. **`Apply` is O(1)** plan growth (one node prepend). `Materialize` is
    linear in plan length (walk + temporary steps slice + mutation work).
-5. **Lineage is pointer identity.** Each `Of` allocates a fresh lineage
-   token; derived States share it. `DiffBetween` / `Diff.Apply` panic with
-   `"state: unrelated lineages"` across independent roots or non-descendant
-   plans. Two independent zero States share the nil token and yield an empty
-   Diff only.
+5. **Lineage is pointer identity.** Each `Of` allocates a fresh, non-zero-size
+   lineage token; derived States share it. Zero States use one canonical
+   zero-value lineage, so `DiffBetween(zero, zero.Apply(...))` is valid.
+   `DiffBetween` / `Diff.Apply` panic with `"state: unrelated lineages"`
+   across `Of` roots or non-descendant plans.
 6. **Version advances by one per `Apply`** on the returned State (or on the
    transaction working copy). Sibling branches from the same parent both
    advance independently; Version does not encode plan shape.
@@ -82,7 +82,7 @@ state.Materialize ≠ deep clone
 | Function / method | Behaviour |
 |---|---|
 | `Of[T](value T) State[T]` | Base value, empty plan, Version 0, fresh lineage. |
-| zero `State[T]` | Valid: `Materialize` returns zero `T`, Version 0, nil lineage. |
+| zero `State[T]` | Valid canonical empty root: `Materialize` returns zero `T`, Version 0; `Apply` can be diffed from that root. |
 | `(s State[T]) Version() Version` | Monotonic counter; `Of` / zero report 0. |
 | `(s State[T]) Apply(m Mutation[T]) State[T]` | New State with `m` prepended; receiver unchanged; `m` not invoked; Version +1. |
 | `(s State[T]) Materialize() T` | Apply plan oldest→newest to base; full re-apply every call. |

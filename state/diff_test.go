@@ -61,6 +61,55 @@ func TestDiffBetweenRootToTip(t *testing.T) {
 	}
 }
 
+func TestDiffBetweenZeroRootToTip(t *testing.T) {
+	t.Parallel()
+
+	var root state.State[int]
+	tip := root.
+		Apply(func(v int) int { return v + 1 }).
+		Apply(func(v int) int { return v * 10 })
+
+	d := state.DiffBetween(root, tip)
+	if got := d.Len(); got != 2 {
+		t.Fatalf("DiffBetween(zero, tip).Len() = %d, want 2", got)
+	}
+	applied := d.Apply(root)
+	if got := applied.Materialize(); got != tip.Materialize() {
+		t.Fatalf("Diff.Apply(zero).Materialize() = %d, want %d", got, tip.Materialize())
+	}
+	if got := applied.Version(); got != tip.Version() {
+		t.Fatalf("Diff.Apply(zero).Version() = %d, want %d", got, tip.Version())
+	}
+}
+
+func TestDiffBetweenZeroRootToTipApplyIsLazy(t *testing.T) {
+	t.Parallel()
+
+	var calls int
+	inc := func(v int) int {
+		calls++
+		return v + 1
+	}
+
+	var root state.State[int]
+	tip := root.Apply(inc).Apply(inc)
+	if calls != 0 {
+		t.Fatalf("calls after zero-root Apply = %d, want 0", calls)
+	}
+
+	d := state.DiffBetween(root, tip)
+	applied := d.Apply(root)
+	if calls != 0 {
+		t.Fatalf("calls after DiffBetween and Diff.Apply(zero) = %d, want 0", calls)
+	}
+	if got := applied.Materialize(); got != 2 {
+		t.Fatalf("Diff.Apply(zero).Materialize() = %d, want 2", got)
+	}
+	if calls != 2 {
+		t.Fatalf("calls after Materialize = %d, want 2", calls)
+	}
+}
+
 func TestDiffBetweenEmptySameState(t *testing.T) {
 	t.Parallel()
 
@@ -127,6 +176,25 @@ func TestDiffBetweenUnrelatedOfRootsPanic(t *testing.T) {
 	_ = state.DiffBetween(a, b)
 }
 
+func TestDiffBetweenIndependentOfRootsAtVersionZeroPanic(t *testing.T) {
+	t.Parallel()
+
+	first := state.Of(0)
+	second := state.Of(0)
+
+	defer func() {
+		got := recover()
+		if got == nil {
+			t.Fatal("DiffBetween(independent Of roots) did not panic")
+		}
+		const want = "state: unrelated lineages"
+		if got != want {
+			t.Fatalf("panic = %v, want %q", got, want)
+		}
+	}()
+	_ = state.DiffBetween(first, second)
+}
+
 func TestDiffBetweenZeroZeroEmpty(t *testing.T) {
 	t.Parallel()
 
@@ -149,6 +217,48 @@ func TestDiffBetweenZeroZeroEmpty(t *testing.T) {
 	if got := applied.Version(); got != 0 {
 		t.Fatalf("empty zero Diff.Apply Version() = %d, want 0", got)
 	}
+}
+
+func TestDiffBetweenZeroZeroRejectsEvolvedZeroState(t *testing.T) {
+	t.Parallel()
+
+	var zero state.State[int]
+	d := state.DiffBetween(zero, zero)
+	evolved := zero.Apply(func(v int) int { return v + 1 })
+
+	defer func() {
+		got := recover()
+		if got == nil {
+			t.Fatal("DiffBetween(zero, zero).Apply(evolved zero) did not panic")
+		}
+		const want = "state: unrelated lineages"
+		if got != want {
+			t.Fatalf("panic = %v, want %q", got, want)
+		}
+	}()
+	_ = d.Apply(evolved)
+}
+
+func TestZeroDiffApplyAcceptsOnlyZeroState(t *testing.T) {
+	t.Parallel()
+
+	var d state.Diff[int]
+	var zero state.State[int]
+	if got := d.Apply(zero).Materialize(); got != 0 {
+		t.Fatalf("zero Diff.Apply(zero).Materialize() = %d, want 0", got)
+	}
+
+	defer func() {
+		got := recover()
+		if got == nil {
+			t.Fatal("zero Diff.Apply(Of root) did not panic")
+		}
+		const want = "state: unrelated lineages"
+		if got != want {
+			t.Fatalf("panic = %v, want %q", got, want)
+		}
+	}()
+	_ = d.Apply(state.Of(0))
 }
 
 func TestDiffBetweenZeroAndOfPanic(t *testing.T) {
@@ -215,6 +325,31 @@ func TestDiffApplyWrongBasePanic(t *testing.T) {
 		}
 	}()
 	_ = d.Apply(wrong)
+}
+
+func TestDiffApplySiblingAtSameVersionButDifferentHeadPanics(t *testing.T) {
+	t.Parallel()
+
+	root := state.Of(0)
+	from := root.Apply(func(v int) int { return v + 1 })
+	to := from.Apply(func(v int) int { return v * 10 })
+	d := state.DiffBetween(from, to)
+	sibling := root.Apply(func(v int) int { return v + 100 })
+
+	if sibling.Version() != from.Version() {
+		t.Fatalf("sibling.Version() = %d, want %d", sibling.Version(), from.Version())
+	}
+	defer func() {
+		got := recover()
+		if got == nil {
+			t.Fatal("Diff.Apply(sibling at same version) did not panic")
+		}
+		const want = "state: unrelated lineages"
+		if got != want {
+			t.Fatalf("panic = %v, want %q", got, want)
+		}
+	}()
+	_ = d.Apply(sibling)
 }
 
 func TestDiffBetweenTransactionCommitLineage(t *testing.T) {

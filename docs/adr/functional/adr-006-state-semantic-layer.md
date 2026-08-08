@@ -83,7 +83,8 @@ as the semantic evolution layer for `T any`.
   as `persistent` element types).
 - Shipped construction and evolution:
   - `Of[T](value T) State[T]` — Version 0, empty plan, fresh lineage token.
-  - Zero `State[T]` is valid (zero `T`, Version 0, nil lineage).
+  - Zero `State[T]` is valid (zero `T`, Version 0). It uses the canonical
+    zero-value lineage when evolved, preserving diffs from its empty root.
   - `Mutation[T] = func(T) T` — pure evolution step.
   - `Apply` records one reverse-linked plan node in O(1) and does **not**
     invoke the mutation; Version advances by one on the returned State.
@@ -104,7 +105,7 @@ as the semantic evolution layer for `T any`.
 
 | Concern | Decision |
 |---|---|
-| Lineage / Version | Unexported lineage token per `Of` root; `Version` is a monotonic `uint64` counter. Operations across unrelated lineages panic with `"state: unrelated lineages"`. Version is **not** a DB revision. |
+| Lineage / Version | Unexported non-zero-size lineage token per `Of` root; zero States use one canonical zero-value lineage. `Version` is a monotonic `uint64` counter. Operations across unrelated lineages panic with `"state: unrelated lineages"`. Version is **not** a DB revision. |
 | Linked plan | Reverse-linked immutable plan nodes; sibling branches share the parent prefix by pointer. |
 | Tx single-use | `Begin` / `Transaction.Apply` / `Commit`. Commit is lazy (no Materialize). After Commit, further use panics with `"state: transaction used after Commit"`. Tx ≠ `persistent.Builder`. |
 | Diff | `DiffBetween(from, to)` captures plan steps when `to` is a descendant of `from` in the same lineage; `Diff.Apply` replays lazily. Diff ≠ domain event. No production `reflect` or `unsafe`. |

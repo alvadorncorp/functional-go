@@ -5,8 +5,7 @@ package state
 // materializing either side.
 //
 // The zero Diff is empty: From and To report 0, Len is 0, and Apply accepts
-// only a zero-lineage base at Version 0 with a nil plan head (the zero
-// State).
+// only the zero State at Version 0 with a nil plan head.
 type Diff[T any] struct {
 	line     *lineage
 	fromVer  Version
@@ -17,9 +16,10 @@ type Diff[T any] struct {
 
 // DiffBetween returns the plan steps that evolve from into to.
 //
-// from and to must share a lineage token (pointer equality). Both zero
-// States (nil lineage) yield an empty Diff. A single nil lineage against a
-// non-nil one panics with "state: unrelated lineages".
+// from and to must share a lineage token (pointer equality). Zero States use
+// the package's canonical zero-value lineage, so a diff may extend from a
+// zero State to one derived from it. A zero State and an Of root are
+// unrelated.
 //
 // to must be a plan descendant of from: walking to's reverse-linked plan
 // must eventually reach from's head, or from must be an empty-plan root of
@@ -29,15 +29,13 @@ type Diff[T any] struct {
 // The returned Diff does not call Materialize. Len is the number of
 // mutations strictly after from's head up to and including to's head.
 func DiffBetween[T any](from, to State[T]) Diff[T] {
-	if from.line == nil && to.line == nil {
-		// Independent zero States share the nil token; empty Diff only.
-		return Diff[T]{}
-	}
-	requireSameLineage(from.line, to.line)
+	fromLine := from.lineageToken()
+	toLine := to.lineageToken()
+	requireSameLineage(fromLine, toLine)
 
 	if from.head == to.head && from.ver == to.ver {
 		return Diff[T]{
-			line:     from.line,
+			line:     fromLine,
 			fromVer:  from.ver,
 			toVer:    to.ver,
 			fromHead: from.head,
@@ -47,7 +45,7 @@ func DiffBetween[T any](from, to State[T]) Diff[T] {
 	requirePlanDescendant(from, to)
 
 	return Diff[T]{
-		line:     from.line,
+		line:     fromLine,
 		fromVer:  from.ver,
 		toVer:    to.ver,
 		fromHead: from.head,
@@ -117,7 +115,13 @@ func (d Diff[T]) Len() int {
 // hold the same plan head DiffBetween captured for from. Any mismatch
 // panics with "state: unrelated lineages".
 func (d Diff[T]) Apply(base State[T]) State[T] {
-	if base.line != d.line || base.ver != d.fromVer || base.head != d.fromHead {
+	if d.line == nil && d.fromHead == nil && d.fromVer == 0 && d.toVer == 0 && len(d.steps) == 0 {
+		if base.line != nil || base.ver != 0 || base.head != nil {
+			panic(panicUnrelatedLineages)
+		}
+		return base
+	}
+	if base.lineageToken() != d.line || base.ver != d.fromVer || base.head != d.fromHead {
 		panic(panicUnrelatedLineages)
 	}
 	s := base
