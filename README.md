@@ -61,6 +61,7 @@ This README is the **documentation index**. Guides live under
 | Package | Role | Core types |
 |---|---|---|
 | [`optional`](optional/) | Explicit absence: an operation that may or may not produce a value | `optional.Optional[T]` |
+| `values/{optional,result,either,nonempty,validated}` | Independent algebraic value types | `Optional[T]`, `Result[T,E]`, `Either[L,R]`, `NonEmpty[T]`, `Validated[T,E]` |
 | [`persistent`](persistent/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List; Builders use exclusive-owner transient + O(1) Freeze) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |
 | [`state`](state/) | Pure semantic evolution over `T`: reverse-linked plans, Version, single-use Tx, structural Diff | `state.State[T]`, `state.Transaction[T]`, `state.Diff[T]`, `state.Snapshot[T]` |
 | [`valueobject`](valueobject/) | Reflective verification that a type is structurally immutable (test helper) | `valueobject.Check[T]` |
