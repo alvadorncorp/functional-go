@@ -5,17 +5,18 @@ The module root [README](../README.md) is a short **index**. Content lives here.
 | Path | Purpose |
 |---|---|
 | [overview.md](overview.md) | Purpose, the language constraint that shapes the API, the immutability core, the zero-dependency boundary, the sibling-import rule |
-| [examples.md](examples.md) | Usage sketches (config precedence, fallible parse, immutable collection field, loop-building, pure state evolution) |
+| [examples.md](examples.md) | Usage sketches, including Result parsing and Validated accumulation |
 | [packages/optional.md](packages/optional.md) | Public API of `github.com/alvadorncorp/gopackages/functional/optional`<br>The established `functional/optional` API remains supported and unchanged.<br>The smaller baseline API at `functional/values/optional` is an independent type; this plan adds no alias, conversion, or migration between them. |
 | [packages/persistent.md](packages/persistent.md) | Public API of `github.com/alvadorncorp/gopackages/functional/persistent`, including measured Append-loop vs. Builder benchmarks |
 | [packages/state.md](packages/state.md) | Public API of `github.com/alvadorncorp/gopackages/functional/state` (pure `State[T]`, lineage, Tx, Diff) |
 | [packages/valueobject.md](packages/valueobject.md) | Public API of `github.com/alvadorncorp/gopackages/functional/valueobject` |
 | [packages/core.md](packages/core.md) | Maintainer guide for `internal/core` (ownership, cow, sharing, transient) |
-| [packages/values-optional.md](packages/values-optional.md) | Future guide for `github.com/alvadorncorp/gopackages/functional/values/optional` |
-| [packages/values-result.md](packages/values-result.md) | Future guide for `github.com/alvadorncorp/gopackages/functional/values/result` |
-| [packages/values-either.md](packages/values-either.md) | Future guide for `github.com/alvadorncorp/gopackages/functional/values/either` |
-| [packages/values-nonempty.md](packages/values-nonempty.md) | Future guide for `github.com/alvadorncorp/gopackages/functional/values/nonempty` |
-| [packages/values-validated.md](packages/values-validated.md) | Future guide for `github.com/alvadorncorp/gopackages/functional/values/validated` |
+| [packages/values.md](packages/values.md) | Family guide: choice by semantics, zero values, dependency boundary, and cost model |
+| [packages/values-optional.md](packages/values-optional.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/optional` |
+| [packages/values-result.md](packages/values-result.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/result` |
+| [packages/values-either.md](packages/values-either.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/either` |
+| [packages/values-nonempty.md](packages/values-nonempty.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/nonempty` |
+| [packages/values-validated.md](packages/values-validated.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/validated` |
 | [patterns/value-objects.md](patterns/value-objects.md) | What a value object needs from this module vs. what plain Go already covers |
 | [adr/functional/](adr/functional/) | Architecture decisions (`adr:functional:NNN`) |
 

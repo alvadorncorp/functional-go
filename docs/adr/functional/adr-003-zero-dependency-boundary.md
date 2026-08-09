@@ -78,11 +78,17 @@ enforced by `functional/internal/archtest`
 (`TestNoNonStdlibDependencies`, `TestPublicDependencyDAG`,
 `TestGoModHasNoRequirements`), which fails the build the moment a stray
 dependency creeps in, rather than relying on doc comments or review alone.
+These gates inspect production imports: `go list` runs without `-test`, so
+`_test.go` imports are deliberately outside this architectural boundary.
 
 ADR-007 narrows the public-sibling rule for the nested values family: the only
 permitted production edge is `functional/values/validated` →
 `functional/values/nonempty`. Every other public-sibling edge remains forbidden,
 and the permanent no-external-dependency rule is unchanged.
+`TestValuesDependencyDAG` enforces that exact values-only edge, while
+`TestValuesNoReflectOrUnsafe` rejects direct `reflect` and `unsafe` imports in
+the production files of every values package. `TestPublicDependencyDAG` remains
+the broader public-package dependency gate.
 
 **2. Pre-v1.0.0, no library module puts `optional.Optional[T]` in its own
 exported signature.** Until `functional` reaches v1.0.0, a library module in

@@ -12,7 +12,13 @@ go      1.26+
 **The root package exports nothing.** `functional` is documentation only —
 this README and the file it mirrors, [`doc.go`](doc.go). Each concept lives
 in its own subpackage: [`optional`](optional/), [`persistent`](persistent/),
-[`state`](state/), [`valueobject`](valueobject/).
+[`state`](state/), [`valueobject`](valueobject/), or one of the
+[`values`](values/) packages.
+
+The established [`functional/optional`](optional/) API remains supported and
+unchanged. [`functional/values/optional`](values/optional/) is an independent
+baseline type; this module provides no alias, conversion, or migration layer
+between them.
 
 This README is the **documentation index**. Guides live under
 [`docs/`](docs/).
@@ -26,7 +32,8 @@ This README is the **documentation index**. Guides live under
 | Document | Description |
 |---|---|
 | [**docs/overview.md**](docs/overview.md) | Purpose, the Go language constraint that shapes the API, the immutability core, the zero-dependency boundary, the sibling-import rule |
-| [**docs/examples.md**](docs/examples.md) | Usage sketches (config precedence, fallible parse, immutable collection field, loop-building, pure state evolution) |
+| [**docs/examples.md**](docs/examples.md) | Usage sketches, including Result parsing and Validated accumulation |
+| [**docs/packages/values.md**](docs/packages/values.md) | Choosing and composing the functional values family |
 
 ### Package (micro view)
 
@@ -37,6 +44,12 @@ This README is the **documentation index**. Guides live under
 | [docs/packages/state.md](docs/packages/state.md) | `github.com/alvadorncorp/gopackages/functional/state` |
 | [docs/packages/valueobject.md](docs/packages/valueobject.md) | `github.com/alvadorncorp/gopackages/functional/valueobject` |
 | [docs/packages/core.md](docs/packages/core.md) | `internal/core` (ownership, cow, sharing, transient) — maintainers |
+| [docs/packages/values.md](docs/packages/values.md) | Family guide for the five `functional/values/*` packages |
+| [docs/packages/values-optional.md](docs/packages/values-optional.md) | `github.com/alvadorncorp/gopackages/functional/values/optional` |
+| [docs/packages/values-result.md](docs/packages/values-result.md) | `github.com/alvadorncorp/gopackages/functional/values/result` |
+| [docs/packages/values-either.md](docs/packages/values-either.md) | `github.com/alvadorncorp/gopackages/functional/values/either` |
+| [docs/packages/values-nonempty.md](docs/packages/values-nonempty.md) | `github.com/alvadorncorp/gopackages/functional/values/nonempty` |
+| [docs/packages/values-validated.md](docs/packages/values-validated.md) | `github.com/alvadorncorp/gopackages/functional/values/validated` |
 
 ### Patterns
 
@@ -61,7 +74,7 @@ This README is the **documentation index**. Guides live under
 | Package | Role | Core types |
 |---|---|---|
 | [`optional`](optional/) | Explicit absence: an operation that may or may not produce a value | `optional.Optional[T]` |
-| `values/{optional,result,either,nonempty,validated}` | Independent algebraic value types | `Optional[T]`, `Result[T,E]`, `Either[L,R]`, `NonEmpty[T]`, `Validated[T,E]` |
+| [`values/optional`](values/optional/), [`values/result`](values/result/), [`values/either`](values/either/), [`values/nonempty`](values/nonempty/), [`values/validated`](values/validated/) | Independent algebraic value types; see the [family guide](docs/packages/values.md) | `Optional[T]`, `Result[T,E]`, `Either[L,R]`, `NonEmpty[T]`, `Validated[T,E]` |
 | [`persistent`](persistent/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List; Builders use exclusive-owner transient + O(1) Freeze) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |
 | [`state`](state/) | Pure semantic evolution over `T`: reverse-linked plans, Version, single-use Tx, structural Diff | `state.State[T]`, `state.Transaction[T]`, `state.Diff[T]`, `state.Snapshot[T]` |
 | [`valueobject`](valueobject/) | Reflective verification that a type is structurally immutable (test helper) | `valueobject.Check[T]` |

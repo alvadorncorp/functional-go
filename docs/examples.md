@@ -13,6 +13,7 @@ Illustrative sketches for common uses. For API contracts see
 4. [Building a `persistent.List` in a loop](#4-building-a-persistentlist-in-a-loop)
 5. [`persistent.MapOf` / `SetOf` snapshots](#5-persistentmapof--setof-snapshots)
 6. [Versioned pure state with `state.Of` / `Apply` / `Materialize`](#6-versioned-pure-state-with-stateof--apply--materialize)
+7. [Parsing with Result and independent Validated checks](#7-parsing-with-result-and-independent-validated-checks)
 
 ---
 
@@ -206,9 +207,81 @@ Runnable godoc examples live in `state/example_test.go`. Full API:
 
 ---
 
+## 7. Parsing with Result and independent Validated checks
+
+Use `Result` when parsing one field can fail before there is a value to
+validate. Once an age has been parsed, name, email, and age checks are
+independent `Validated` values; nested `Map2` accumulates every known error
+instead of stopping at the first one.
+
+```go
+package registration
+
+import (
+	"strconv"
+
+	"github.com/alvadorncorp/gopackages/functional/values/result"
+	"github.com/alvadorncorp/gopackages/functional/values/validated"
+)
+
+type person struct {
+	name  string
+	email string
+	age   int
+}
+
+func parseAge(raw string) result.Result[int, string] {
+	age, err := strconv.Atoi(raw)
+	if err != nil {
+		return result.Err[int, string]("age must be a number")
+	}
+	return result.Ok[int, string](age)
+}
+
+func validatePerson(name, email, rawAge string) validated.Validated[person, string] {
+	nameCheck := validated.Valid[string, string](name)
+	if name == "" {
+		nameCheck = validated.Invalid[string, string]("name is required")
+	}
+	emailCheck := validated.Valid[string, string](email)
+	if email == "" {
+		emailCheck = validated.Invalid[string, string]("email is required")
+	}
+
+	parsedAge := parseAge(rawAge)
+	age, parsed := parsedAge.Get()
+	ageCheck := validated.Valid[int, string](age)
+	if !parsed {
+		message, _ := parsedAge.ErrValue()
+		ageCheck = validated.Invalid[int, string](message)
+	} else if age < 18 {
+		ageCheck = validated.Invalid[int, string]("age must be at least 18")
+	}
+
+	identity := validated.Map2(nameCheck, emailCheck, func(name, email string) [2]string {
+		return [2]string{name, email}
+	})
+	return validated.Map2(identity, ageCheck, func(identity [2]string, age int) person {
+		return person{name: identity[0], email: identity[1], age: age}
+	})
+}
+```
+
+This is explicit at the boundary: inspect `Result` to turn a parse failure
+into that field's validation error, then let `Validated.Map2` accumulate
+independent checks. The values packages intentionally add no conversion API.
+
+---
+
 ## See also
 
 - [overview](overview.md)
+- [functional values family](packages/values.md)
+- [values Optional](packages/values-optional.md)
+- [values Result](packages/values-result.md)
+- [values Either](packages/values-either.md)
+- [values NonEmpty](packages/values-nonempty.md)
+- [values Validated](packages/values-validated.md)
 - [package API: optional](packages/optional.md)
 - [package API: persistent](packages/persistent.md)
 - [package API: state](packages/state.md)
