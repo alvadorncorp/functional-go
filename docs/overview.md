@@ -28,6 +28,11 @@ dependencies outside the standard library, permanently**:
   one lineage. Mesh-isolated from `persistent` in production code.
 - **`valueobject`** — `Check[T]`, a reflective test helper that verifies a
   type is structurally immutable.
+- **`values/optional`**, **`values/result`**, **`values/either`**,
+  **`values/nonempty`**, and **`values/validated`** — independent generic
+  values for presence, fail-fast outcomes, neutral alternatives, minimum
+  cardinality, and accumulating validation. See the
+  [functional values family guide](packages/values.md).
 
 ## Why the root package is doc-only
 
@@ -41,7 +46,12 @@ dependency on the others, defeating the point of splitting them into
 subpackages in the first place. So the root package carries only the
 module-level doc comment, and every concept lives one import path down:
 `functional/optional`, `functional/persistent`, `functional/state`,
-`functional/valueobject`.
+`functional/valueobject`, or one of the five `functional/values/*` packages.
+
+`functional/optional` remains the established legacy API and is supported
+unchanged. `functional/values/optional` is an independent, smaller baseline
+type: this module deliberately provides no alias, conversion, or migration
+between the two.
 
 ## The constraint that shapes the whole API: no type parameters on methods
 
@@ -123,9 +133,10 @@ into `ownership`), and `TestPublicPackagesDoNotImportCore` (`optional` /
 
 `optional`, `persistent`, `state`, and `valueobject` do not import each
 other **in production code**. This is also proven, not just documented:
-`TestNoPublicSiblingDependencies` in `functional/internal/archtest` walks
-each public subpackage's dependency list, via `go list -deps -json` without
-`-test`, and fails if it contains another public subpackage's import path.
+`TestPublicDependencyDAG` in `functional/internal/archtest` walks each public
+subpackage's dependency list, via `go list -deps -json` without `-test`, and
+fails if it contains another public subpackage's import path except the one
+explicitly allowed values edge, `values/validated` → `values/nonempty`.
 
 The invariant is scoped to production imports by design. Test code MAY
 import a sibling public package to exercise or demonstrate cross-package
@@ -142,9 +153,22 @@ protects. Concrete examples in this module:
   sibling edge.
 
 `go list -deps -json` without `-test` never sees those imports, because it
-does not inspect `_test.go` files; `TestNoPublicSiblingDependencies` would
-need `-test` to catch them, and deliberately does not pass it, for exactly
-this reason.
+does not inspect `_test.go` files; `TestPublicDependencyDAG` would need
+`-test` to catch them, and deliberately does not pass it, for exactly this
+reason.
+
+### Values-family production gates
+
+The five values packages (`values/optional`, `values/result`,
+`values/either`, `values/nonempty`, and `values/validated`) have a stricter,
+family-local production boundary. `TestValuesDependencyDAG` permits exactly
+one in-module edge — `values/validated` → `values/nonempty` — leaving the
+other four packages as standard-library-only leaves. In the same
+`functional/internal/archtest` package, `TestValuesNoReflectOrUnsafe` reads
+only production imports (never `_test.go` imports) and rejects direct
+`reflect` or `unsafe` imports for all five values packages. Together with
+`TestPublicDependencyDAG`, these are executable constraints rather than
+conventions.
 
 ```mermaid
 flowchart TB
@@ -224,6 +248,12 @@ descent.
 - [Package API: state](packages/state.md)
 - [Package API: valueobject](packages/valueobject.md)
 - [Internal: core](packages/core.md)
+- [Functional values family](packages/values.md)
+- [Package API: values Optional](packages/values-optional.md)
+- [Package API: values Result](packages/values-result.md)
+- [Package API: values Either](packages/values-either.md)
+- [Package API: values NonEmpty](packages/values-nonempty.md)
+- [Package API: values Validated](packages/values-validated.md)
 - [Examples](examples.md)
 - [Value object pattern](patterns/value-objects.md)
 - [ADR-001 — Optional representation and zero value](adr/functional/adr-001-optional-representation-and-zero-value.md)

@@ -1,8 +1,9 @@
 // Package archtest proves dependency invariants of the functional module
 // mechanically, so they stay true rather than merely documented: the module
-// has zero non-stdlib dependencies outside itself, no public subpackage
-// imports another (functional/internal/eq is the one shared exception every
-// public package may use), the internal/core DAG stays a star into ownership
+// has zero non-stdlib dependencies outside itself, public subpackages have
+// exactly one permitted sibling edge (values/validated to values/nonempty;
+// functional/internal/eq is the one shared exception every public package may
+// use), the internal/core DAG stays a star into ownership
 // with no peer edges and no reflect, internal/eq production code imports
 // neither reflect nor unsafe, persistent and state production code import
 // neither reflect nor unsafe, and internal/engine packages obey their own
@@ -29,27 +30,49 @@ import (
 const functionalModulePrefix = "github.com/alvadorncorp/gopackages/functional/"
 
 const (
-	pkgOwnership  = "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
-	pkgCow        = "github.com/alvadorncorp/gopackages/functional/internal/core/cow"
-	pkgTransient  = "github.com/alvadorncorp/gopackages/functional/internal/core/transient"
-	pkgSharing    = "github.com/alvadorncorp/gopackages/functional/internal/core/sharing"
-	pkgEq         = "github.com/alvadorncorp/gopackages/functional/internal/eq"
-	pkgKeyhash    = "github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
-	pkgHamt       = "github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
-	pkgVector     = "github.com/alvadorncorp/gopackages/functional/internal/engine/vector"
-	pkgPersistent = "github.com/alvadorncorp/gopackages/functional/persistent"
-	pkgState      = "github.com/alvadorncorp/gopackages/functional/state"
-	corePrefix    = "github.com/alvadorncorp/gopackages/functional/internal/core/"
-	enginePrefix  = "github.com/alvadorncorp/gopackages/functional/internal/engine/"
+	pkgOwnership       = "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	pkgCow             = "github.com/alvadorncorp/gopackages/functional/internal/core/cow"
+	pkgTransient       = "github.com/alvadorncorp/gopackages/functional/internal/core/transient"
+	pkgSharing         = "github.com/alvadorncorp/gopackages/functional/internal/core/sharing"
+	pkgEq              = "github.com/alvadorncorp/gopackages/functional/internal/eq"
+	pkgKeyhash         = "github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
+	pkgHamt            = "github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
+	pkgVector          = "github.com/alvadorncorp/gopackages/functional/internal/engine/vector"
+	pkgPersistent      = "github.com/alvadorncorp/gopackages/functional/persistent"
+	pkgState           = "github.com/alvadorncorp/gopackages/functional/state"
+	pkgValuesOptional  = "github.com/alvadorncorp/gopackages/functional/values/optional"
+	pkgValuesResult    = "github.com/alvadorncorp/gopackages/functional/values/result"
+	pkgValuesEither    = "github.com/alvadorncorp/gopackages/functional/values/either"
+	pkgValuesNonEmpty  = "github.com/alvadorncorp/gopackages/functional/values/nonempty"
+	pkgValuesValidated = "github.com/alvadorncorp/gopackages/functional/values/validated"
+	corePrefix         = "github.com/alvadorncorp/gopackages/functional/internal/core/"
+	enginePrefix       = "github.com/alvadorncorp/gopackages/functional/internal/engine/"
 )
 
 // publicPackages are every public subpackage of functional, by import path.
-// None of these may depend on another.
+// The only permitted public sibling edge is values/validated to values/nonempty.
 var publicPackages = []string{
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
+	pkgValuesOptional,
+	pkgValuesResult,
+	pkgValuesEither,
+	pkgValuesNonEmpty,
+	pkgValuesValidated,
+}
+
+var valuesPackages = []string{
+	pkgValuesOptional,
+	pkgValuesResult,
+	pkgValuesEither,
+	pkgValuesNonEmpty,
+	pkgValuesValidated,
+}
+
+var publicAllowedEdges = map[string][]string{
+	pkgValuesValidated: {pkgValuesNonEmpty},
 }
 
 // publicPackagesNoCore are the public packages that must never import
@@ -59,6 +82,11 @@ var publicPackagesNoCore = []string{
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
+	pkgValuesOptional,
+	pkgValuesResult,
+	pkgValuesEither,
+	pkgValuesNonEmpty,
+	pkgValuesValidated,
 }
 
 // corePackages is every production package under internal/core.
@@ -84,6 +112,11 @@ var allPackages = []string{
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
+	pkgValuesOptional,
+	pkgValuesResult,
+	pkgValuesEither,
+	pkgValuesNonEmpty,
+	pkgValuesValidated,
 	pkgEq,
 	pkgOwnership,
 	pkgCow,
@@ -164,8 +197,8 @@ func TestNoNonStdlibDependencies(t *testing.T) {
 	}
 }
 
-// TestNoPublicSiblingDependencies proves "no public subpackage imports
-// another" as a tested invariant, not just a documented one. It is what
+// TestPublicDependencyDAG proves the exact public-package dependency DAG as a
+// tested invariant, not just a documented one. It is what
 // guarantees, for example, that persistent.Map.Get returns comma-ok instead
 // of optional.Optional by design, not by oversight: if it ever imported
 // optional to do so, this test would fail.
@@ -181,19 +214,57 @@ func TestNoNonStdlibDependencies(t *testing.T) {
 // between test binaries, and it does not violate the architectural boundary
 // this test protects (production code never importing a public sibling).
 // Adding `-test` here would make that legitimate test import fail this
-// test; do not do that. See docs/overview.md, "No public subpackage imports
-// another (in production code)", for the full rationale.
-func TestNoPublicSiblingDependencies(t *testing.T) {
+// test; do not do that. The sole production sibling exception is
+// values/validated to values/nonempty; every other public sibling edge is
+// forbidden. See docs/overview.md for the full rationale.
+func TestPublicDependencyDAG(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range publicPackages {
 		t.Run(pkg, func(t *testing.T) {
 			t.Parallel()
+			allowed := publicAllowedEdges[pkg]
 			for _, dep := range deps(t, pkg) {
-				if dep == pkg {
-					continue // deps(t, pkg) includes pkg itself
+				if dep == pkg || !slices.Contains(publicPackages, dep) {
+					continue
 				}
-				if slices.Contains(publicPackages, dep) {
-					t.Errorf("%s must not depend on public sibling %s", pkg, dep)
+				if !slices.Contains(allowed, dep) {
+					t.Errorf("%s must not depend on public sibling %s (allowed: %v)", pkg, dep, allowed)
+				}
+			}
+		})
+	}
+}
+
+func TestValuesDependencyDAG(t *testing.T) {
+	t.Parallel()
+	for _, pkg := range valuesPackages {
+		pkg := pkg
+		t.Run(pkg, func(t *testing.T) {
+			t.Parallel()
+			allowed := publicAllowedEdges[pkg]
+			for _, dep := range deps(t, pkg) {
+				if dep == pkg || !strings.HasPrefix(dep, functionalModulePrefix) {
+					continue
+				}
+				if !slices.Contains(allowed, dep) {
+					t.Errorf("%s must not depend on %s (allowed: %v)", pkg, dep, allowed)
+				}
+			}
+		})
+	}
+}
+
+// TestValuesNoReflectOrUnsafe proves each values package's production code
+// stays free of direct reflection and unsafe imports.
+func TestValuesNoReflectOrUnsafe(t *testing.T) {
+	t.Parallel()
+	for _, pkg := range valuesPackages {
+		pkg := pkg
+		t.Run(pkg, func(t *testing.T) {
+			t.Parallel()
+			for _, imp := range productionImports(t, pkg) {
+				if imp == "reflect" || imp == "unsafe" {
+					t.Errorf("%s must not import %s", pkg, imp)
 				}
 			}
 		})
