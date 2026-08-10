@@ -13,6 +13,8 @@ for runnable sketches see [examples.md](examples.md).
 small, general-purpose functional-programming building blocks with **zero
 dependencies outside the standard library, permanently**:
 
+- **`function`** — six stateless generic combinators for ordinary Go function
+  values. It is a standard-library-only public leaf.
 - **`optional`** — `Optional[T]`, a value type for an operation that may or
   may not produce a `T`. Explicit absence, not a nil check.
 - **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
@@ -45,8 +47,9 @@ helpers) would give every consumer of any one concept a compile-time
 dependency on the others, defeating the point of splitting them into
 subpackages in the first place. So the root package carries only the
 module-level doc comment, and every concept lives one import path down:
-`functional/optional`, `functional/persistent`, `functional/state`,
-`functional/valueobject`, or one of the five `functional/values/*` packages.
+`functional/function`, `functional/optional`, `functional/persistent`,
+`functional/state`, `functional/valueobject`, or one of the five
+`functional/values/*` packages.
 
 `functional/optional` remains the established legacy API and is supported
 unchanged. `functional/values/optional` is an independent, smaller baseline
@@ -131,8 +134,8 @@ into `ownership`), and `TestPublicPackagesDoNotImportCore` (`optional` /
 
 ## No public subpackage imports another (in production code)
 
-`optional`, `persistent`, `state`, and `valueobject` do not import each
-other **in production code**. This is also proven, not just documented:
+`function`, `optional`, `persistent`, `state`, and `valueobject` do not
+import each other **in production code**. This is also proven, not just documented:
 `TestPublicDependencyDAG` in `functional/internal/archtest` walks each public
 subpackage's dependency list, via `go list -deps -json` without `-test`, and
 fails if it contains another public subpackage's import path except the one
@@ -169,6 +172,12 @@ only production imports (never `_test.go` imports) and rejects direct
 `reflect` or `unsafe` imports for all five values packages. Together with
 `TestPublicDependencyDAG`, these are executable constraints rather than
 conventions.
+
+### Function production gates
+
+`function` is a standard-library-only leaf. `TestPrimitiveDependencyDAG` and
+`TestPrimitivesNoReflectOrUnsafe` ensure its production code imports no other
+functional package, `reflect`, or `unsafe`.
 
 ```mermaid
 flowchart TB
@@ -243,6 +252,7 @@ descent.
 
 ## Related documents
 
+- [Package API: function](packages/function.md)
 - [Package API: optional](packages/optional.md)
 - [Package API: persistent](packages/persistent.md)
 - [Package API: state](packages/state.md)

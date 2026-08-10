@@ -14,6 +14,7 @@ Illustrative sketches for common uses. For API contracts see
 5. [`persistent.MapOf` / `SetOf` snapshots](#5-persistentmapof--setof-snapshots)
 6. [Versioned pure state with `state.Of` / `Apply` / `Materialize`](#6-versioned-pure-state-with-stateof--apply--materialize)
 7. [Parsing with Result and independent Validated checks](#7-parsing-with-result-and-independent-validated-checks)
+8. [Function composition with `Pipe`](#8-function-composition-with-pipe)
 
 ---
 
@@ -273,9 +274,33 @@ independent checks. The values packages intentionally add no conversion API.
 
 ---
 
+## 8. Function composition with `Pipe`
+
+`function.Pipe` applies ordinary Go functions left to right. `Compose` is the
+same operation with arguments named in execution-reverse order.
+
+```go
+package presentation
+
+import (
+	"fmt"
+
+	"github.com/alvadorncorp/gopackages/functional/function"
+)
+
+func printDoubledLength() {
+	length := func(value string) int { return len(value) }
+	double := func(value int) int { return value * 2 }
+	fmt.Println(function.Pipe(length, double)("abcd")) // 8
+}
+```
+
+---
+
 ## See also
 
 - [overview](overview.md)
+- [package API: function](packages/function.md)
 - [functional values family](packages/values.md)
 - [values Optional](packages/values-optional.md)
 - [values Result](packages/values-result.md)

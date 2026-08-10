@@ -2,8 +2,9 @@
 // functional-programming building blocks; this file is the entire root
 // package, which exports nothing.
 //
-// Each concept lives in its own subpackage: optional (Optional[T] and its
-// combinators), persistent (immutable collections with functional writes:
+// Each concept lives in its own subpackage: function (six stateless,
+// standard-library-only combinators for ordinary Go function values), optional
+// (Optional[T] and its combinators), persistent (immutable collections with functional writes:
 // HAMT Map/Set and a 32-way vector List; Builders use an exclusive-owner
 // transient window with O(1) Freeze), state (pure semantic evolution over T:
 // reverse-linked plans, Version, single-use Transaction, structural Diff),
