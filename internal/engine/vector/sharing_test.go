@@ -9,7 +9,7 @@ func TestStructuralSharingOnSet(t *testing.T) {
 	// tail holds index 64. That gives the root two sibling children so Set
 	// on the first leaf can prove the second child pointer is shared.
 	r := Empty[int]()
-	for i := 0; i < 65; i++ {
+	for i := range 65 {
 		r = r.Append(i)
 	}
 	old := r
@@ -55,7 +55,7 @@ func TestStructuralSharingOnSetDeep(t *testing.T) {
 	// 32 leaves * 32 values = 1024 in the trie; use 1100 to be past overflow.
 	const n = 1100
 	r := Empty[int]()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		r = r.Append(i)
 	}
 	if r.shift < 2*bitsPerLevel {

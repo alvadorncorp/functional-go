@@ -30,7 +30,6 @@ var expectedPrimitiveAPI = map[string][]string{
 func TestPrimitivesPublicAPI(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range primitivePackages {
-		pkg := pkg
 		t.Run(pkg, func(t *testing.T) {
 			t.Parallel()
 			got := valuesExportedNames(t, pkg)
@@ -49,8 +48,8 @@ func TestTupleFieldShape(t *testing.T) {
 		typeOf reflect.Type
 		fields []string
 	}{
-		{reflect.TypeOf(tuple.Tuple2[int, string]{}), []string{"First", "Second"}},
-		{reflect.TypeOf(tuple.Tuple3[int, string, bool]{}), []string{"First", "Second", "Third"}},
+		{reflect.TypeFor[tuple.Tuple2[int, string]](), []string{"First", "Second"}},
+		{reflect.TypeFor[tuple.Tuple3[int, string, bool]](), []string{"First", "Second", "Third"}},
 	} {
 		if test.typeOf.NumField() != len(test.fields) {
 			t.Fatalf("%s fields = %d, want %d", test.typeOf, test.typeOf.NumField(), len(test.fields))

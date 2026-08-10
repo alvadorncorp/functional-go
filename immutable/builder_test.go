@@ -416,7 +416,7 @@ func TestListBuilderMatchesPureModel(t *testing.T) {
 	b := pure.Builder()
 
 	const ops = 400
-	for i := 0; i < ops; i++ {
+	for i := range ops {
 		switch rng.IntN(5) {
 		case 0, 1, 2: // Append is the common case
 			v := rng.IntN(10_000)
@@ -468,7 +468,7 @@ func TestMapBuilderMatchesPureModel(t *testing.T) {
 	b := pure.Builder()
 
 	const ops = 400
-	for i := 0; i < ops; i++ {
+	for i := range ops {
 		switch rng.IntN(4) {
 		case 0, 1, 2: // Set is the common case
 			k := rng.IntN(80)

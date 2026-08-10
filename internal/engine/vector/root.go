@@ -422,10 +422,7 @@ func (r Root[T]) editableTail(owner *ownership.Owner) []T {
 	if ownership.IsOwnedBy(r.tailOwner, owner) {
 		return r.tail
 	}
-	capHint := branching
-	if len(r.tail) > capHint {
-		capHint = len(r.tail)
-	}
+	capHint := max(len(r.tail), branching)
 	out := make([]T, len(r.tail), capHint)
 	copy(out, r.tail)
 	return out

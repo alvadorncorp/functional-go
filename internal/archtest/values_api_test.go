@@ -37,7 +37,6 @@ var expectedValuesAPI = map[string][]string{
 func TestValuesPublicAPI(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range valuesPackages {
-		pkg := pkg
 		t.Run(pkg, func(t *testing.T) {
 			t.Parallel()
 			got := valuesExportedNames(t, pkg)

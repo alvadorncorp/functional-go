@@ -57,7 +57,7 @@ func TestTransientSharingAfterNewOwner(t *testing.T) {
 	t.Parallel()
 
 	pub := Empty[int]()
-	for i := 0; i < 65; i++ {
+	for i := range 65 {
 		pub = pub.Append(i)
 	}
 
@@ -104,7 +104,7 @@ func TestMutationAfterFreezeNeedsCopy(t *testing.T) {
 
 	owner := ownership.New()
 	r := Empty[int]()
-	for i := 0; i < 40; i++ {
+	for i := range 40 {
 		r = r.TransientAppend(owner, i)
 	}
 	if r.root == nil {
@@ -211,7 +211,7 @@ func TestTransientLargeAppend(t *testing.T) {
 	const n = 1100
 	owner := ownership.New()
 	r := Empty[int]()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		r = r.TransientAppend(owner, i)
 	}
 	owner.Invalidate()

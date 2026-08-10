@@ -1,5 +1,7 @@
 package predicate
 
+import "slices"
+
 // All reports whether every value satisfies predicate. Empty values return true.
 func All[T any](values []T, predicate Predicate[T]) bool {
 	for _, value := range values {
@@ -12,12 +14,7 @@ func All[T any](values []T, predicate Predicate[T]) bool {
 
 // Any reports whether at least one value satisfies predicate. Empty values return false.
 func Any[T any](values []T, predicate Predicate[T]) bool {
-	for _, value := range values {
-		if predicate(value) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(values, predicate)
 }
 
 // None reports whether no value satisfies predicate. Empty values return true.

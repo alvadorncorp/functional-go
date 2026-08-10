@@ -257,7 +257,6 @@ func TestPublicDependencyDAG(t *testing.T) {
 func TestValuesDependencyDAG(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range valuesPackages {
-		pkg := pkg
 		t.Run(pkg, func(t *testing.T) {
 			t.Parallel()
 			allowed := publicAllowedEdges[pkg]
@@ -278,7 +277,6 @@ func TestValuesDependencyDAG(t *testing.T) {
 func TestValuesNoReflectOrUnsafe(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range valuesPackages {
-		pkg := pkg
 		t.Run(pkg, func(t *testing.T) {
 			t.Parallel()
 			for _, imp := range productionImports(t, pkg) {

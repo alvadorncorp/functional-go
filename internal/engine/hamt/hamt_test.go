@@ -1,6 +1,7 @@
 package hamt
 
 import (
+	"maps"
 	"testing"
 )
 
@@ -124,13 +125,13 @@ func TestManyKeysRoundTrip(t *testing.T) {
 
 	const n = 200
 	r := Empty[int, int]()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		r = r.Set(i, i*i)
 	}
 	if r.Len() != n {
 		t.Fatalf("Len = %d want %d", r.Len(), n)
 	}
-	for i := 0; i < n; i++ {
+	for i := range n {
 		assertGet(t, r, i, i*i)
 	}
 	// Delete half.
@@ -140,7 +141,7 @@ func TestManyKeysRoundTrip(t *testing.T) {
 	if r.Len() != n/2 {
 		t.Fatalf("after half delete Len = %d", r.Len())
 	}
-	for i := 0; i < n; i++ {
+	for i := range n {
 		v, ok := r.Get(i)
 		if i%2 == 0 {
 			if ok {
@@ -158,10 +159,7 @@ func TestAllIterator(t *testing.T) {
 	t.Parallel()
 
 	r := Empty[string, int]().Set("a", 1).Set("b", 2).Set("c", 3)
-	got := map[string]int{}
-	for k, v := range r.All() {
-		got[k] = v
-	}
+	got := maps.Collect(r.All())
 	if len(got) != 3 || got["a"] != 1 || got["b"] != 2 || got["c"] != 3 {
 		t.Fatalf("All = %#v", got)
 	}

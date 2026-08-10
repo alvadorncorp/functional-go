@@ -19,7 +19,7 @@ import (
 func TestListIsNotComparable(t *testing.T) {
 	t.Parallel()
 
-	if reflect.TypeOf(immutable.List[int]{}).Comparable() {
+	if reflect.TypeFor[immutable.List[int]]().Comparable() {
 		t.Error("List[int] must not be ==-comparable: identity of the internal representation must never be observable")
 	}
 }
@@ -27,7 +27,7 @@ func TestListIsNotComparable(t *testing.T) {
 func TestMapIsNotComparable(t *testing.T) {
 	t.Parallel()
 
-	if reflect.TypeOf(immutable.Map[string, int]{}).Comparable() {
+	if reflect.TypeFor[immutable.Map[string, int]]().Comparable() {
 		t.Error("Map[string, int] must not be ==-comparable: " +
 			"identity of the internal representation must never be observable")
 	}
@@ -36,7 +36,7 @@ func TestMapIsNotComparable(t *testing.T) {
 func TestSetIsNotComparable(t *testing.T) {
 	t.Parallel()
 
-	if reflect.TypeOf(immutable.Set[int]{}).Comparable() {
+	if reflect.TypeFor[immutable.Set[int]]().Comparable() {
 		t.Error("Set[int] must not be ==-comparable: identity of the internal representation must never be observable")
 	}
 }

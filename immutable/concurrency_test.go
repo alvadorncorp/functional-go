@@ -30,9 +30,7 @@ func TestListConcurrentReadDuringDerive(t *testing.T) {
 	stop := make(chan struct{})
 
 	for range numReaders {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for {
 				select {
 				case <-stop:
@@ -54,7 +52,7 @@ func TestListConcurrentReadDuringDerive(t *testing.T) {
 					return
 				}
 			}
-		}()
+		})
 	}
 
 	go func() {
@@ -88,9 +86,7 @@ func TestMapConcurrentReadDuringDerive(t *testing.T) {
 	stop := make(chan struct{})
 
 	for range numReaders {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for {
 				select {
 				case <-stop:
@@ -106,7 +102,7 @@ func TestMapConcurrentReadDuringDerive(t *testing.T) {
 					return
 				}
 			}
-		}()
+		})
 	}
 
 	go func() {
@@ -138,9 +134,7 @@ func TestSetConcurrentReadDuringDerive(t *testing.T) {
 	stop := make(chan struct{})
 
 	for range numReaders {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for {
 				select {
 				case <-stop:
@@ -156,7 +150,7 @@ func TestSetConcurrentReadDuringDerive(t *testing.T) {
 					return
 				}
 			}
-		}()
+		})
 	}
 
 	go func() {

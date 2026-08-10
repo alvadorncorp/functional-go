@@ -52,7 +52,7 @@ func TestTransientSharingAfterNewOwner(t *testing.T) {
 
 	// Build a wide published root.
 	pub := Empty[int, int]()
-	for i := 0; i < 64; i++ {
+	for i := range 64 {
 		pub = pub.Set(i, i)
 	}
 
@@ -76,7 +76,7 @@ func TestTransientSharingAfterNewOwner(t *testing.T) {
 	}
 
 	shared := 0
-	for idx := uint(0); idx < 32; idx++ {
+	for idx := range uint(32) {
 		bit := bitpos(idx)
 		if ob.bitmap&bit == 0 || nb.bitmap&bit == 0 {
 			continue
@@ -143,7 +143,7 @@ func TestMultiVersionBuilderLineage(t *testing.T) {
 
 	// V1 pure immutable.
 	v1 := Empty[int, int]()
-	for i := 0; i < 48; i++ {
+	for i := range 48 {
 		v1 = v1.Set(i, i)
 	}
 	assertOwnersNil(t, v1.node)
@@ -194,7 +194,7 @@ func TestMultiVersionBuilderLineage(t *testing.T) {
 	assertGet(t, v3, 200, 200)
 
 	// V1 still fully intact after later builders.
-	for i := 0; i < 48; i++ {
+	for i := range 48 {
 		assertGet(t, v1, i, i)
 	}
 
@@ -205,7 +205,7 @@ func TestMultiVersionBuilderLineage(t *testing.T) {
 		t.Fatalf("expected bitmap roots, got %T %T", v2.node, v3.node)
 	}
 	shared := 0
-	for idx := uint(0); idx < 32; idx++ {
+	for idx := range uint(32) {
 		bit := bitpos(idx)
 		if b2.bitmap&bit == 0 || b3.bitmap&bit == 0 {
 			continue

@@ -24,7 +24,6 @@ var primitivePackages = []string{
 func TestPrimitiveDependencyDAG(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range primitivePackages {
-		pkg := pkg
 		t.Run(pkg, func(t *testing.T) {
 			t.Parallel()
 			allowed := publicAllowedEdges[pkg]
@@ -43,7 +42,6 @@ func TestPrimitiveDependencyDAG(t *testing.T) {
 func TestPrimitivesNoReflectOrUnsafe(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range primitivePackages {
-		pkg := pkg
 		t.Run(pkg, func(t *testing.T) {
 			t.Parallel()
 			for _, imp := range productionImports(t, pkg) {
@@ -67,7 +65,7 @@ func TestGoModHasNoRequirements(t *testing.T) {
 		t.Fatalf("read %s: %v", path, err)
 	}
 
-	for _, line := range strings.Split(string(data), "\n") {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "require") || strings.HasPrefix(line, "replace") {
 			t.Errorf("%s must not have a require/replace line, found: %q", path, line)

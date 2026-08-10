@@ -83,7 +83,7 @@ func TestLargeAppendAtSet(t *testing.T) {
 
 	const n = 2000
 	r := Empty[int]()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		r = r.Append(i * 10)
 	}
 	if r.Len() != n {
@@ -161,7 +161,7 @@ func TestAppendAcrossTailPushAndLevelOverflow(t *testing.T) {
 
 	// Cross the first tail→trie push (32) and root overflow (1024+32).
 	r := Empty[int]()
-	for i := 0; i < 1100; i++ {
+	for i := range 1100 {
 		r = r.Append(i)
 	}
 	for _, i := range []int{0, 31, 32, 33, 1023, 1024, 1099} {

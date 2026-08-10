@@ -153,10 +153,7 @@ func TestMapAll(t *testing.T) {
 	source := map[string]int{"a": 1, "b": 2, "c": 3}
 	m := immutable.MapOf(source)
 
-	got := map[string]int{}
-	for k, v := range m.All() {
-		got[k] = v
-	}
+	got := maps.Collect(m.All())
 	if !maps.Equal(got, source) {
 		t.Fatalf("All() collected = %v, want %v", got, source)
 	}

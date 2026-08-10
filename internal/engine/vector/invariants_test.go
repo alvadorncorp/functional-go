@@ -58,7 +58,7 @@ func TestAllMatchesAtAcrossTrieAndTail(t *testing.T) {
 	// deeper root (past 1024) so All's sequential walk is checked against At.
 	for _, n := range []int{0, 1, 31, 32, 33, 64, 100, 1100} {
 		r := Empty[int]()
-		for i := 0; i < n; i++ {
+		for i := range n {
 			r = r.Append(i * 3)
 		}
 		seen := 0
@@ -84,7 +84,7 @@ func TestPublishedNodesHaveNilOwner(t *testing.T) {
 	t.Parallel()
 
 	r := Empty[int]()
-	for i := 0; i < 40; i++ {
+	for i := range 40 {
 		r = r.Append(i)
 	}
 	if r.root == nil {

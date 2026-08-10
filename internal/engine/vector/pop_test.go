@@ -51,7 +51,7 @@ func TestPopTailRoomPreservesPrior(t *testing.T) {
 	if next.Len() != 4 {
 		t.Fatalf("Len = %d, want 4", next.Len())
 	}
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		if g := next.At(i); g != i {
 			t.Fatalf("next At(%d)=%d", i, g)
 		}
@@ -60,7 +60,7 @@ func TestPopTailRoomPreservesPrior(t *testing.T) {
 	if r.Len() != 5 {
 		t.Fatalf("prior Len = %d", r.Len())
 	}
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		if g := r.At(i); g != i {
 			t.Fatalf("prior At(%d)=%d", i, g)
 		}
@@ -76,7 +76,7 @@ func TestPopPullsLeafFromTrie(t *testing.T) {
 
 	for _, n := range []int{33, 34, 65} {
 		r := Empty[int]()
-		for i := 0; i < n; i++ {
+		for i := range n {
 			r = r.Append(i)
 		}
 		prior := r
@@ -109,7 +109,7 @@ func TestPopRoundTripBeyondLevelOverflow(t *testing.T) {
 			t.Parallel()
 
 			r := Empty[int]()
-			for i := 0; i < n; i++ {
+			for i := range n {
 				r = r.Append(i)
 			}
 			if r.Len() != n {
@@ -169,13 +169,13 @@ func TestPopRoundTripBeyondLevelOverflow(t *testing.T) {
 
 			// Round-trip rebuild matches the preserved prior.
 			rebuilt := Empty[int]()
-			for i := 0; i < n; i++ {
+			for i := range n {
 				rebuilt = rebuilt.Append(i)
 			}
 			if rebuilt.shift != r.shift {
 				t.Fatalf("rebuild shift = %d, want %d", rebuilt.shift, r.shift)
 			}
-			for i := 0; i < n; i++ {
+			for i := range n {
 				if rebuilt.At(i) != r.At(i) {
 					t.Fatalf("rebuild mismatch at %d", i)
 				}
@@ -191,7 +191,7 @@ func TestPopCompressesShiftAtOverflowBoundary(t *testing.T) {
 	// overflow leaf and must compress shift back to 5.
 	const n = 1057
 	r := Empty[int]()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		r = r.Append(i)
 	}
 	if r.shift < 2*bitsPerLevel {
@@ -242,7 +242,7 @@ func TestAppendAfterPopPastOverflow(t *testing.T) {
 	// past it, and confirm values + shift stay correct.
 	const n = 1100
 	r := Empty[int]()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		r = r.Append(i)
 	}
 	if r.shift < 2*bitsPerLevel {
@@ -274,7 +274,7 @@ func TestAppendAfterPopPastOverflow(t *testing.T) {
 	if cur.shift < 2*bitsPerLevel {
 		t.Fatalf("expected re-overflow shift>=%d, got %d", 2*bitsPerLevel, cur.shift)
 	}
-	for i := 0; i < target; i++ {
+	for i := range target {
 		if g := cur.At(i); g != i {
 			t.Fatalf("after re-Append At(%d)=%d", i, g)
 		}
@@ -294,7 +294,7 @@ func TestTransientPopDeepExclusiveAndCOW(t *testing.T) {
 	const pullN = 1089
 
 	base := Empty[int]()
-	for i := 0; i < deepN; i++ {
+	for i := range deepN {
 		base = base.Append(i)
 	}
 	if base.shift < 2*bitsPerLevel {
@@ -318,7 +318,7 @@ func TestTransientPopDeepExclusiveAndCOW(t *testing.T) {
 
 	// Published deep pull (tail len==1): must COW the root under a new owner.
 	pullBase := Empty[int]()
-	for i := 0; i < pullN; i++ {
+	for i := range pullN {
 		pullBase = pullBase.Append(i)
 	}
 	if pullBase.shift < 2*bitsPerLevel {
@@ -360,7 +360,7 @@ func TestTransientPopDeepExclusiveAndCOW(t *testing.T) {
 	// Exclusive build + TransientPop across the overflow boundary under one owner.
 	ownerExcl := ownership.New()
 	excl := Empty[int]()
-	for i := 0; i < deepN; i++ {
+	for i := range deepN {
 		excl = excl.TransientAppend(ownerExcl, i)
 	}
 	if excl.shift < 2*bitsPerLevel {
@@ -443,7 +443,7 @@ func TestPopStructuralSharing(t *testing.T) {
 	// n=65 → two trie leaves (0..31, 32..63) + one-element tail.
 	// Pop pulls the second leaf into the tail; the first leaf must stay shared.
 	r := Empty[int]()
-	for i := 0; i < 65; i++ {
+	for i := range 65 {
 		r = r.Append(i)
 	}
 	old := r
@@ -477,7 +477,7 @@ func TestTransientPopMultiUnderSameOwner(t *testing.T) {
 	// Build to n=33 so the first TransientPop pulls a trie leaf (len(tail)==1).
 	owner := ownership.New()
 	r := Empty[int]()
-	for i := 0; i < 33; i++ {
+	for i := range 33 {
 		r = r.TransientAppend(owner, i)
 	}
 	if r.root == nil || len(r.tail) != 1 {
@@ -511,7 +511,7 @@ func TestTransientPopMultiUnderSameOwner(t *testing.T) {
 	// Published n=65: two trie leaves + one-element tail. TransientPop under a
 	// fresh owner must COW the root and share the untouched sibling leaf.
 	base := Empty[int]()
-	for i := 0; i < 65; i++ {
+	for i := range 65 {
 		base = base.Append(i)
 	}
 	owner2 := ownership.New()
@@ -564,7 +564,7 @@ func TestTransientPopDoesNotMutatePublished(t *testing.T) {
 	t.Parallel()
 
 	pub := Empty[int]()
-	for i := 0; i < 40; i++ {
+	for i := range 40 {
 		pub = pub.Append(i)
 	}
 	owner := ownership.New()
@@ -578,7 +578,7 @@ func TestTransientPopDoesNotMutatePublished(t *testing.T) {
 	if pub.Len() != 40 {
 		t.Fatalf("published Len = %d", pub.Len())
 	}
-	for i := 0; i < 40; i++ {
+	for i := range 40 {
 		if g := pub.At(i); g != i {
 			t.Fatalf("published At(%d)=%d", i, g)
 		}
@@ -620,7 +620,7 @@ func TestPopAfterAppendLoopOrder(t *testing.T) {
 	// and a deeper size.
 	for _, n := range []int{1, 2, 32, 33, 64, 65, 100, 1025, 1057, 1100} {
 		r := Empty[int]()
-		for i := 0; i < n; i++ {
+		for i := range n {
 			r = r.Append(i * 7)
 		}
 		for remain := n; remain > 0; remain-- {

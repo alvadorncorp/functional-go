@@ -76,7 +76,7 @@ func TestOwnerNilOnPublishedNodes(t *testing.T) {
 	t.Parallel()
 
 	r := Empty[int, int]()
-	for i := 0; i < 40; i++ {
+	for i := range 40 {
 		r = r.Set(i, i)
 	}
 	assertOwnersNil(t, r.node)
@@ -92,7 +92,7 @@ func TestPathCompressionDoesNotElevateBitmap(t *testing.T) {
 	// (so they live under an internal bitmap), while sibling sits in a different
 	// root slot as a leaf. Deleting sibling must NOT elevate the nested bitmap.
 	const keyLimit = 2000
-	for trial := 0; trial < 64; trial++ {
+	for range 64 {
 		r0 := Empty[int, int]()
 		seed := r0.seed
 
@@ -106,7 +106,7 @@ func TestPathCompressionDoesNotElevateBitmap(t *testing.T) {
 				if hb&levelMask != ia || ha == hb {
 					continue
 				}
-				for s := 0; s < keyLimit; s++ {
+				for s := range keyLimit {
 					if s == a || s == b {
 						continue
 					}

@@ -2,6 +2,7 @@ package immutable
 
 import (
 	"iter"
+	"maps"
 
 	"github.com/alvadorncorp/gopackages/functional/internal/core/transient"
 	"github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
@@ -127,9 +128,7 @@ func (m Map[K, V]) Values() iter.Seq[V] {
 // never reach a map returned earlier.
 func (m Map[K, V]) Items() map[K]V {
 	out := make(map[K]V, m.root.Len())
-	for k, v := range m.root.All() {
-		out[k] = v
-	}
+	maps.Insert(out, m.root.All())
 	return out
 }
 

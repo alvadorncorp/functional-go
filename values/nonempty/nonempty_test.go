@@ -98,7 +98,6 @@ func TestAppendDefensiveCopyOfCallerValues(t *testing.T) {
 func TestAtPanicsOutsideBounds(t *testing.T) {
 	t.Parallel()
 	for _, index := range []int{-1, 2} {
-		index := index
 		t.Run("bounds", func(t *testing.T) {
 			defer func() {
 				if got := recover(); got != "functional/values/nonempty: index out of range" {

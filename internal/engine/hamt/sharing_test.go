@@ -7,7 +7,7 @@ func TestStructuralSharingUntouchedSubtree(t *testing.T) {
 
 	// Populate enough keys that the root is a multi-child bitmap node.
 	r := Empty[int, int]()
-	for i := 0; i < 64; i++ {
+	for i := range 64 {
 		r = r.Set(i, i)
 	}
 	old := r
@@ -25,7 +25,7 @@ func TestStructuralSharingUntouchedSubtree(t *testing.T) {
 	}
 
 	shared := 0
-	for idx := uint(0); idx < 32; idx++ {
+	for idx := range uint(32) {
 		bit := bitpos(idx)
 		if ob.bitmap&bit == 0 || nb.bitmap&bit == 0 {
 			continue
