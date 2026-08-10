@@ -18,7 +18,10 @@ const (
 	modelingModule      = "github.com/alvadorncorp/gopackages/modeling"
 	functionalModule    = "github.com/alvadorncorp/gopackages/functional"
 	functionalImmutable = functionalModule + "/immutable"
+	functionalOptional  = functionalModule + "/values/optional"
+	functionalPredicate = functionalModule + "/primitives/predicate"
 	archtestPackage     = modelingModule + "/internal/archtest"
+	policyPackage       = modelingModule + "/policy"
 )
 
 type listedPackage struct {
@@ -98,14 +101,21 @@ func dependencyAllowed(pkg *listedPackage) bool {
 		strings.HasPrefix(pkg.ImportPath, functionalModule+"/")
 }
 
-func directImportForbidden(importPath string) bool {
+func directImportForbidden(importingPackage, importPath string) bool {
 	if _, forbidden := forbiddenDirectImports[importPath]; forbidden {
 		return true
 	}
-	if importPath == functionalModule || strings.HasPrefix(importPath, functionalModule+"/") {
-		return importPath != functionalImmutable
+	if importPath != functionalModule && !strings.HasPrefix(importPath, functionalModule+"/") {
+		return false
 	}
-	return false
+	switch importingPackage {
+	case internalDecisionPackage:
+		return importPath != functionalImmutable
+	case policyPackage:
+		return importPath != functionalOptional && importPath != functionalPredicate
+	default:
+		return true
+	}
 }
 
 func externallyImportable(importPath string) bool {
@@ -129,7 +139,7 @@ func TestNoForbiddenDirectImports(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		t.Run(production.ImportPath, func(t *testing.T) {
 			for _, imported := range production.Imports {
-				if directImportForbidden(imported) {
+				if directImportForbidden(production.ImportPath, imported) {
 					t.Errorf("%s directly imports forbidden %s", production.ImportPath, imported)
 				}
 			}
@@ -158,9 +168,9 @@ func TestExternallyImportableClassification(t *testing.T) {
 	}
 }
 
-func TestNoFunctionalTypesInPublicAPI(t *testing.T) {
+func TestFunctionalTypesDoNotLeakOutsidePolicy(t *testing.T) {
 	for _, production := range productionPackages(t) {
-		if !externallyImportable(production.ImportPath) {
+		if !externallyImportable(production.ImportPath) || production.ImportPath == policyPackage {
 			continue
 		}
 		t.Run(production.ImportPath, func(t *testing.T) {
@@ -238,12 +248,22 @@ func TestDependencyGateCanFail(t *testing.T) {
 		functionalModule + "/internal/core",
 		functionalModule + "/values/result",
 	} {
-		if !directImportForbidden(imported) {
-			t.Errorf("direct-import gate accepted %s", imported)
+		if !directImportForbidden(modelingModule, imported) {
+			t.Errorf("root direct-import gate accepted %s", imported)
 		}
 	}
-	if directImportForbidden(functionalImmutable) {
-		t.Fatalf("direct-import gate rejected approved %s", functionalImmutable)
+	if directImportForbidden(internalDecisionPackage, functionalImmutable) {
+		t.Fatalf("internal decision gate rejected %s", functionalImmutable)
+	}
+	for _, imported := range []string{functionalPredicate, functionalOptional} {
+		if directImportForbidden(policyPackage, imported) {
+			t.Errorf("policy direct-import gate rejected %s", imported)
+		}
+	}
+	for _, imported := range []string{functionalImmutable, functionalModule + "/values/result"} {
+		if !directImportForbidden(policyPackage, imported) {
+			t.Errorf("policy direct-import gate accepted %s", imported)
+		}
 	}
 	functionalExpression, err := parser.ParseExpr("immutable.List[int]")
 	if err != nil {
