@@ -1,14 +1,14 @@
 ---
 type: tdd
-id: tdd:modeling:v0-5-change-state-evolution
+id: tdd:modeling:change
 context: modeling
-title: Modeling v0.5 Change and state evolution
+title: Modeling Change and state evolution
 status: Aceito
 tags: [modeling, change, state, composition, endomorphism, testing]
-related: [adr:modeling:001, adr:modeling:004, tdd:modeling:v0-3-rules-requirements]
+related: [adr:modeling:001, adr:modeling:004, tdd:modeling:rules-requirements]
 date: 2026-08-10
 ---
-# TDD: Modeling v0.5 Change and state evolution
+# TDD: Modeling Change and state evolution
 
 ## Technical scope
 
@@ -18,13 +18,13 @@ modeling module. It does not re-export from the root or use
 `functional/primitives/function.Transform` values while keeping every public
 signature modeling-owned.
 
-The repository currently has no v0.4 Reducer/Replay implementation or release.
+The repository currently has no Reducer/Replay implementation or release.
 Change has no dependency on those concepts. This technical contract authorizes
 only the Change capability; tagging and release numbering remain separate.
 
 ## Public contracts
 
-v0.5 adds exactly:
+Change adds exactly:
 
 ```go
 type Change[S any] func(S) S

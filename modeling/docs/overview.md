@@ -108,7 +108,7 @@ nil-function behavior rather than Rule/Requirement eager validation.
 order. `Emit` and `AppendEvents` preserve the input snapshot. `Combine` selects
 the right state and concatenates left-before-right events. FlatMap, negation,
 predicate bridges, rule accumulation, conditional changes, guarded changes,
-validation hooks, and alias spellings are not part of v0.5.
+validation hooks, and alias spellings are out of scope for Change.
 
 ## Immutability and cost
 
@@ -132,8 +132,8 @@ concrete application-domain type.
 
 Change is not a Patch, Diff, state manager, Reducer implementation, Replay
 engine, Transition replacement, event producer, validator, guard, runtime,
-builder, or fluent API. The v0.5 capability does not add v0.4 or release/tag
-work.
+builder, or fluent API. The Change capability does not add Reducer/Replay or
+release/tag work.
 
 `functional/state` and `functional/immutable` are optional capabilities for
 applications with larger state. They are not superclasses, and their internal

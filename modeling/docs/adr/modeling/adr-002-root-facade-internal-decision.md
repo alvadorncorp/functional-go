@@ -6,7 +6,7 @@ title: Root facade over an internal Decision package
 status: Aceita
 tags: [modeling, decision, packages, compatibility, immutability]
 deciders: [alvadorn]
-related: [adr:modeling:001, tdd:modeling:v0-2-decision-composition]
+related: [adr:modeling:001, tdd:modeling:decision-composition]
 date: 2026-08-10
 ---
 # ADR-002: Root facade over an internal Decision package
@@ -23,7 +23,7 @@ an import route and change the conceptual or observable type origin.
 ## Decision drivers
 
 - preserve `modeling.Decision[S,E]` as the canonical defined public type;
-- preserve `Decide[E,S](state)` and every v0.1 method signature;
+- preserve `Decide[E,S](state)` and every existing Decision method signature;
 - make the implementation boundary enforceable by Go import rules;
 - keep persistent storage and algorithms reusable by the five root functions;
 - expose no functional collection type and add no runtime or infrastructure.
@@ -69,9 +69,9 @@ production package for dependency, runtime, and global-state constraints, but
 the functional-type public-signature gate examines only externally importable
 packages.
 
-The only v0.2 public additions are `MapState`, `MapEvents`, `Emit`,
-`AppendEvents`, and `Combine`. Transition and Invariant remain in the root;
-moving them is a separate refactor.
+The only Decision-composition public additions are `MapState`, `MapEvents`,
+`Emit`, `AppendEvents`, and `Combine`. Transition and Invariant remain in the
+root; moving them is a separate refactor.
 
 ## Consequences
 

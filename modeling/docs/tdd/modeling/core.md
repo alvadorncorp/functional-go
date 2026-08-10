@@ -1,14 +1,14 @@
 ---
 type: tdd
-id: tdd:modeling:v0-1-core
+id: tdd:modeling:core
 context: modeling
-title: Modeling v0.1 behavioral core
+title: Modeling behavioral core
 status: Aceito
 tags: [modeling, decision, transition, invariant, testing]
 related: [adr:modeling:001, adr:functional:003, adr:functional:006, adr:functional:007, adr:functional:010]
 date: 2026-08-09
 ---
-# TDD: Modeling v0.1 behavioral core
+# TDD: Modeling behavioral core
 
 ## Technical scope
 
@@ -67,5 +67,5 @@ magic names and package-level mutable variables are rejected by AST tests.
 ## Verification and release
 
 Run module test/race/vet/tidy, root test/lint/race/bench/check, exact release-TOML
-validation, and GOWORK=off tidy/list/test against functional v1.0.1. Publish only as
-the independent tag `modeling/v0.1.0`; publication itself is outside this plan.
+validation, and GOWORK=off tidy/list/test against functional v1.0.1. Publication
+uses an independent module-scoped tag; publication itself is outside this plan.

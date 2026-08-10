@@ -5,7 +5,7 @@ context: modeling
 title: Modeling Policy
 status: Aceito
 tags: [modeling, policy, generics, optional, predicate, testing]
-related: [adr:modeling:005, tdd:modeling:v0-3-rules-requirements]
+related: [adr:modeling:005, tdd:modeling:rules-requirements]
 date: 2026-08-10
 ---
 # TDD: Modeling Policy

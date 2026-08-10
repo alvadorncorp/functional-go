@@ -18,10 +18,10 @@ catalog and must not acquire a `docs/` tree.
 
 ## Technical designs
 
-- [TDD: v0.1 core](tdd/modeling/v0-1-core.md)
-- [TDD: v0.2 Decision composition](tdd/modeling/v0-2-decision-composition.md)
-- [TDD: v0.3 Rules and Requirements](tdd/modeling/v0-3-rules-requirements.md)
-- [TDD: v0.5 Change and state evolution](tdd/modeling/v0-5-change-state-evolution.md)
+- [TDD: behavioral core](tdd/modeling/core.md)
+- [TDD: Decision composition](tdd/modeling/decision-composition.md)
+- [TDD: Rules and Requirements](tdd/modeling/rules-requirements.md)
+- [TDD: Change and state evolution](tdd/modeling/change.md)
 - [TDD: Policy](tdd/modeling/policy.md)
 
 Formal records use the module-owned AKB spine; no copy belongs at repository root.

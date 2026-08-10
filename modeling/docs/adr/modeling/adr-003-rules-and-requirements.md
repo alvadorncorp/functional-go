@@ -6,7 +6,7 @@ title: Nominal rules and operation requirements
 status: Aceita
 tags: [modeling, rule, requirement, composition, generics]
 deciders: [alvadorn]
-related: [adr:modeling:001, adr:modeling:002, tdd:modeling:v0-3-rules-requirements]
+related: [adr:modeling:001, adr:modeling:002, tdd:modeling:rules-requirements]
 date: 2026-08-10
 ---
 # ADR-003: Nominal rules and operation requirements
@@ -85,6 +85,7 @@ Existing Decision, Transition, and Invariant contracts remain unchanged. The
 module does not add negation, predicate bridges, accumulated violations,
 fluent methods, engines, registries, runners, handlers, or automatic pipelines.
 
-Before consumer adoption, rollback is a revert of the v0.3 commits. After
-adoption, removing or changing any new exported signature or behavior is a
-breaking public-contract decision requiring separate approval and release work.
+Before consumer adoption, rollback is a revert of the Rules and Requirements
+commits. After adoption, removing or changing any new exported signature or
+behavior is a breaking public-contract decision requiring separate approval and
+release work.

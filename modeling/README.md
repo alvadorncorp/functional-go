@@ -40,10 +40,10 @@ No Policy symbol is reexported from the root package.
 - [ADR-003: nominal rules and operation requirements](docs/adr/modeling/adr-003-rules-and-requirements.md)
 - [ADR-004: public Change capability boundary](docs/adr/modeling/adr-004-change-capability-boundary.md)
 - [ADR-005: additive Policy capability boundary](docs/adr/modeling/adr-005-policy-capability-boundary.md)
-- [TDD: v0.1 core](docs/tdd/modeling/v0-1-core.md)
-- [TDD: v0.2 Decision composition](docs/tdd/modeling/v0-2-decision-composition.md)
-- [TDD: v0.3 Rules and Requirements](docs/tdd/modeling/v0-3-rules-requirements.md)
-- [TDD: v0.5 Change and state evolution](docs/tdd/modeling/v0-5-change-state-evolution.md)
+- [TDD: behavioral core](docs/tdd/modeling/core.md)
+- [TDD: Decision composition](docs/tdd/modeling/decision-composition.md)
+- [TDD: Rules and Requirements](docs/tdd/modeling/rules-requirements.md)
+- [TDD: Change and state evolution](docs/tdd/modeling/change.md)
 - [TDD: Policy](docs/tdd/modeling/policy.md)
 
 ## Development

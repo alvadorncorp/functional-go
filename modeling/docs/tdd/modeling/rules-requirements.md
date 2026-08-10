@@ -1,14 +1,14 @@
 ---
 type: tdd
-id: tdd:modeling:v0-3-rules-requirements
+id: tdd:modeling:rules-requirements
 context: modeling
-title: Modeling v0.3 rules and requirements
+title: Modeling rules and requirements
 status: Aceito
 tags: [modeling, rule, requirement, composition, generics, testing]
-related: [adr:modeling:001, adr:modeling:003, tdd:modeling:v0-1-core, tdd:modeling:v0-2-decision-composition]
+related: [adr:modeling:001, adr:modeling:003, tdd:modeling:core, tdd:modeling:decision-composition]
 date: 2026-08-10
 ---
-# TDD: Modeling v0.3 rules and requirements
+# TDD: Modeling rules and requirements
 
 ## Technical scope
 
@@ -19,7 +19,7 @@ root files. `modeling/internal/decision` stays Decision-only;
 
 ## Public contracts
 
-v0.3 adds exactly:
+Rules and Requirements add exactly:
 
 ```go
 type Rule[T any] func(T) error
@@ -88,4 +88,4 @@ Run focused Rule/Requirement tests, then module test, race, vet, tidy-diff,
 uncapped lint, and exact package listing. Finish with workspace `make test-unit`,
 `make test-race`, `make lint`, `make vet`, and `git diff --check`. No database
 integration, migration, benchmark expansion, dependency update, tag, or release
-execution belongs to v0.3.
+execution belongs to this design.

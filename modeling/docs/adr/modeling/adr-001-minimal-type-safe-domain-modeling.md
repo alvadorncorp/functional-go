@@ -6,7 +6,7 @@ title: Minimal explicit and type-safe domain metamodel
 status: Aceita
 tags: [modeling, generics, immutability, domain, architecture]
 deciders: [alvadorn]
-related: [adr:functional:003, adr:functional:004, adr:functional:005, adr:functional:006, adr:functional:007, adr:functional:010, tdd:modeling:v0-1-core]
+related: [adr:functional:003, adr:functional:004, adr:functional:005, adr:functional:006, adr:functional:007, adr:functional:010, tdd:modeling:core]
 date: 2026-08-09
 ---
 # ADR-001: Minimal explicit and type-safe domain metamodel
@@ -54,7 +54,7 @@ functional never imports modeling. modeling imports no functional/internal path.
 No reflection, runtime discovery, global registry, magic dispatch, infrastructure,
 or concrete business model is part of the module.
 
-The exact public v0.1 contract is recorded in `tdd:modeling:v0-1-core`. Its
+The exact public core contract is recorded in `tdd:modeling:core`. Its
 signature order, zero values, event order, shallow immutability, error identity,
 and invariant evaluation behavior are compatibility surface.
 

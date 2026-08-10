@@ -6,7 +6,7 @@ title: Public Change capability boundary
 status: Aceita
 tags: [modeling, change, state, composition, generics, package-boundary]
 deciders: [alvadorn]
-related: [adr:modeling:001, adr:modeling:002, adr:modeling:003, tdd:modeling:v0-5-change-state-evolution]
+related: [adr:modeling:001, adr:modeling:002, adr:modeling:003, tdd:modeling:change]
 date: 2026-08-10
 ---
 # ADR-004: Public Change capability boundary
@@ -19,9 +19,9 @@ Invariant validates a result, Rule and Requirement express conditions, and
 Decision carries state plus events. Reusing any of those names would erase the
 meaning of a captured state change.
 
-The accepted v0.1-v0.3 architecture exposed product primitives from the root
-package. The Change specification instead requires a capability-oriented public
-package and forbids root re-exports. That new import route is an additive public
+The accepted architecture exposed product primitives from the root package.
+The Change specification instead requires a capability-oriented public package
+and forbids root re-exports. That new import route is an additive public
 contract and therefore needs an explicit boundary decision.
 
 ## Decision drivers
@@ -91,9 +91,9 @@ Implementation converts `Change[S]` values to and from
 existing functional requirement from v1.0.1 to v1.1.0 and permits direct imports
 only from `functional/immutable` and `functional/primitives/function`.
 
-The current repository has no v0.4 Reducer/Replay capability. Change is
-structurally independent, so this decision neither introduces nor claims v0.4,
-and it authorizes no tag or release action.
+The current repository has no Reducer/Replay capability. Change is
+structurally independent, so this decision neither introduces nor claims those
+concepts, and it authorizes no tag or release action.
 
 ## Consequences
 

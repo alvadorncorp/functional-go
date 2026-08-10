@@ -1,14 +1,14 @@
 ---
 type: tdd
-id: tdd:modeling:v0-2-decision-composition
+id: tdd:modeling:decision-composition
 context: modeling
-title: Modeling v0.2 Decision composition
+title: Modeling Decision composition
 status: Aceito
 tags: [modeling, decision, composition, generics, immutability, testing]
-related: [adr:modeling:001, adr:modeling:002, tdd:modeling:v0-1-core]
+related: [adr:modeling:001, adr:modeling:002, tdd:modeling:core]
 date: 2026-08-10
 ---
-# TDD: Modeling v0.2 Decision composition
+# TDD: Modeling Decision composition
 
 ## Technical scope
 
@@ -19,7 +19,7 @@ public-surface constraints. Transition and Invariant stay unchanged.
 
 ## Public contracts
 
-The v0.1 Decision type, constructor, and methods retain their exact signatures:
+The Decision type, constructor, and methods retain their exact signatures:
 
 ```go
 type Decision[S, E any] struct { /* private */ }
@@ -30,7 +30,7 @@ func (Decision[S, E]) EventCount() int
 func (Decision[S, E]) Events() iter.Seq[E]
 ```
 
-v0.2 adds exactly:
+Decision composition adds exactly:
 
 ```go
 func MapState[S, T, E any](Decision[S, E], func(S) T) Decision[T, E]
