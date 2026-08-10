@@ -11,6 +11,8 @@ infrastructure, persistence, or concrete business model.
 
 - [Documentation index](docs/README.md)
 - [Architecture overview](docs/overview.md)
+- [ADR-001: minimal type-safe domain modeling](docs/adr/modeling/adr-001-minimal-type-safe-domain-modeling.md)
+- [TDD: v0.1 core](docs/tdd/modeling/v0-1-core.md)
 
 ## Development
 
