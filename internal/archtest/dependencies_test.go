@@ -53,6 +53,7 @@ const (
 // The only permitted public sibling edge is values/validated to values/nonempty.
 var publicPackages = []string{
 	pkgFunction,
+	pkgPredicate,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
@@ -81,6 +82,7 @@ var publicAllowedEdges = map[string][]string{
 // later for the engine contract.
 var publicPackagesNoCore = []string{
 	pkgFunction,
+	pkgPredicate,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
@@ -111,6 +113,7 @@ var enginePackages = []string{
 // internal/core, and internal/engine packages.
 var allPackages = []string{
 	pkgFunction,
+	pkgPredicate,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",

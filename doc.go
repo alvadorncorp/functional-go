@@ -3,7 +3,8 @@
 // package, which exports nothing.
 //
 // Each concept lives in its own subpackage: function (six stateless,
-// standard-library-only combinators for ordinary Go function values), optional
+// standard-library-only combinators for ordinary Go function values), predicate
+// (a standard-library-only Boolean algebra and quantifiers for generic values), optional
 // (Optional[T] and its combinators), persistent (immutable collections with functional writes:
 // HAMT Map/Set and a 32-way vector List; Builders use an exclusive-owner
 // transient window with O(1) Freeze), state (pure semantic evolution over T:

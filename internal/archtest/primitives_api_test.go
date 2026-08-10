@@ -6,7 +6,8 @@ import (
 )
 
 var expectedPrimitiveAPI = map[string][]string{
-	pkgFunction: {"Compose", "Constant", "Flip", "Identity", "Pipe", "Tap"},
+	pkgFunction:  {"Compose", "Constant", "Flip", "Identity", "Pipe", "Tap"},
+	pkgPredicate: {"All", "And", "Any", "EqualTo", "None", "Not", "NotEqualTo", "OneOf", "Or", "Predicate"},
 }
 
 func TestPrimitivesPublicAPI(t *testing.T) {

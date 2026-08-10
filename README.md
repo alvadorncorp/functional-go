@@ -11,7 +11,7 @@ go      1.26+
 
 **The root package exports nothing.** `functional` is documentation only —
 this README and the file it mirrors, [`doc.go`](doc.go). Each concept lives
-in its own subpackage: [`function`](function/), [`optional`](optional/),
+in its own subpackage: [`function`](function/), [`predicate`](predicate/), [`optional`](optional/),
 [`persistent`](persistent/), [`state`](state/), [`valueobject`](valueobject/), or one of the
 [`values`](values/) packages.
 
@@ -40,6 +40,7 @@ This README is the **documentation index**. Guides live under
 | Document | Package |
 |---|---|
 | [docs/packages/function.md](docs/packages/function.md) | `github.com/alvadorncorp/gopackages/functional/function` |
+| [docs/packages/predicate.md](docs/packages/predicate.md) | `github.com/alvadorncorp/gopackages/functional/predicate` |
 | [docs/packages/optional.md](docs/packages/optional.md) | `github.com/alvadorncorp/gopackages/functional/optional` |
 | [docs/packages/persistent.md](docs/packages/persistent.md) | `github.com/alvadorncorp/gopackages/functional/persistent` |
 | [docs/packages/state.md](docs/packages/state.md) | `github.com/alvadorncorp/gopackages/functional/state` |
@@ -75,6 +76,7 @@ This README is the **documentation index**. Guides live under
 | Package | Role | Core types |
 |---|---|---|
 | [`function`](function/) | Stateless, standard-library-only function combinators | `Identity`, `Constant`, `Compose`, `Pipe`, `Flip`, `Tap` |
+| [`predicate`](predicate/) | Stateless, standard-library-only Boolean predicates and quantifiers | `Predicate[T]`, `Not`, `And`, `Or`, `All`, `Any`, `None` |
 | [`optional`](optional/) | Explicit absence: an operation that may or may not produce a value | `optional.Optional[T]` |
 | [`values/optional`](values/optional/), [`values/result`](values/result/), [`values/either`](values/either/), [`values/nonempty`](values/nonempty/), [`values/validated`](values/validated/) | Independent algebraic value types; see the [family guide](docs/packages/values.md) | `Optional[T]`, `Result[T,E]`, `Either[L,R]`, `NonEmpty[T]`, `Validated[T,E]` |
 | [`persistent`](persistent/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List; Builders use exclusive-owner transient + O(1) Freeze) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |
@@ -91,6 +93,7 @@ import (
 
     "github.com/alvadorncorp/gopackages/functional/function"
     "github.com/alvadorncorp/gopackages/functional/optional"
+	"github.com/alvadorncorp/gopackages/functional/predicate"
     "github.com/alvadorncorp/gopackages/functional/persistent"
     "github.com/alvadorncorp/gopackages/functional/state"
 )
@@ -106,6 +109,9 @@ _ = s.Materialize() // 1; Apply is lazy, Materialize re-applies the plan
 length := func(value string) int { return len(value) }
 double := func(value int) int { return value * 2 }
 fmt.Println(function.Pipe(length, double)("abcd")) // 8
+
+positiveEven := predicate.And[int](func(v int) bool { return v > 0 }, func(v int) bool { return v%2 == 0 })
+fmt.Println(positiveEven(4), positiveEven(3)) // true false
 ```
 
 See **[docs/examples.md](docs/examples.md)** for more sketches.

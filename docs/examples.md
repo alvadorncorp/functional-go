@@ -15,6 +15,7 @@ Illustrative sketches for common uses. For API contracts see
 6. [Versioned pure state with `state.Of` / `Apply` / `Materialize`](#6-versioned-pure-state-with-stateof--apply--materialize)
 7. [Parsing with Result and independent Validated checks](#7-parsing-with-result-and-independent-validated-checks)
 8. [Function composition with `Pipe`](#8-function-composition-with-pipe)
+9. [Predicate composition with `And`](#9-predicate-composition-with-and)
 
 ---
 
@@ -291,7 +292,33 @@ import (
 func printDoubledLength() {
 	length := func(value string) int { return len(value) }
 	double := func(value int) int { return value * 2 }
-	fmt.Println(function.Pipe(length, double)("abcd")) // 8
+fmt.Println(function.Pipe(length, double)("abcd")) // 8
+}
+```
+
+---
+
+## 9. Predicate composition with `And`
+
+`predicate.And` composes ordinary predicates left to right and stops at the
+first false result. It is a standard-library-only leaf and needs no collection
+or function-combinator dependency.
+
+```go
+package eligibility
+
+import (
+	"fmt"
+
+	"github.com/alvadorncorp/gopackages/functional/predicate"
+)
+
+func printPositiveEven() {
+	positiveEven := predicate.And[int](
+		func(v int) bool { return v > 0 },
+		func(v int) bool { return v%2 == 0 },
+	)
+	fmt.Println(positiveEven(4), positiveEven(3)) // true false
 }
 ```
 
@@ -301,6 +328,7 @@ func printDoubledLength() {
 
 - [overview](overview.md)
 - [package API: function](packages/function.md)
+- [package API: predicate](packages/predicate.md)
 - [functional values family](packages/values.md)
 - [values Optional](packages/values-optional.md)
 - [values Result](packages/values-result.md)
