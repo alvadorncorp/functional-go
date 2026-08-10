@@ -20,6 +20,9 @@
 // Combine. Decision remains the canonical root-package type; persistent
 // mechanics live behind a Go internal package and are not consumer surface.
 //
+// Fact-to-state evolution lives in the separate modeling/reducer capability.
+// It defines Reducer and ordered Replay without moving or changing root types.
+//
 // The package has no engine, runner, registry, reflection, dispatcher, state
 // manager, persistence, transport, or infrastructure responsibility. Exported
 // signatures remain ordinary Go and standard-library types.

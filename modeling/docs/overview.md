@@ -4,31 +4,29 @@
 
 ```text
 application domain
-      ├── specializes modeling root primitives
-      ├── composes modeling/change values
-      └── uses modeling/policy strategies
-
-modeling root facade
-      ↓ delegates privately
-modeling/internal/decision
-      ↓ uses public capabilities
-functional/immutable
-
-modeling/change
-      ↓ privately adapts
-functional/primitives/function.Transform v1.1.0
-
-modeling/policy
-      ↓ uses public capabilities
-functional/values/optional
-functional/primitives/predicate
+      ├── specializes → modeling root facade
+      │                     ↓ delegates privately
+      │               modeling/internal/decision
+      │                     ↓ uses
+      │               functional/immutable
+      ├── specializes → modeling/change
+      │                     ↓ privately adapts
+      │               functional/primitives/function
+      ├── specializes → modeling/policy
+      │                     ↓ uses
+      │               functional/primitives/predicate
+      │               functional/values/optional
+      └── specializes → modeling/reducer
+                            ↓ uses
+                     functional/immutable
 ```
 
 Applications import the root package for Decision, Transition, Invariant, Rule,
 and Requirement. They import `modeling/change` when they need named pure state
-evolution and `modeling/policy` for context-derived strategies. The root does
-not re-export Change or Policy symbols. The internal Decision package remains
-an enforceable implementation boundary, not another public API.
+evolution, `modeling/policy` for context-derived strategies, and
+`modeling/reducer` for fact-to-state replay. The root does not re-export Change,
+Policy, or Reducer symbols. The internal Decision package remains an enforceable
+implementation boundary, not another public API.
 
 ## Structural semantics
 
@@ -50,6 +48,9 @@ The root public contract contains:
 - `Transition[S,I,O]` and `FallibleTransition[S,I,O]` for next-state computation;
 - `Invariant[S]` for resulting-state validity, with fail-fast or accumulating
   error composition.
+- `reducer.Reducer[S,E]` for fact-to-state evolution and
+  `reducer.Replay` for a synchronous ordered left fold over
+  `immutable.List[E]` (see the dedicated reducer section).
 
 The `modeling/change` public capability contains exactly `Change[S]`,
 `Identity`, `Compose`, `Pipe`, `Apply`, and `ApplyAll`. Change maps `S -> S`,
@@ -74,6 +75,24 @@ Policy is not Rule (`T → error`), Requirement (`S × I → error`), Transition
 (`S × I → O`), Change (`S → S`), or Reducer (`S × E → S`). It executes no
 effects and imports no sibling modeling capability. Applicability is Optional,
 never error. Multiple inputs belong in an application-owned context struct.
+
+## Reducer and Replay
+
+`Reducer[S,E]` is an ordinary `func(S,E) S`: a fact that already occurred is
+materialized into the next state. It is deliberately distinct from Transition,
+which computes from intention/input, from Decision, which carries state plus
+emitted events, and from Policy, which derives a strategy from context.
+
+`reducer.Replay(initial, events, reduce)` applies each `immutable.List` event
+exactly once in encounter order. Empty replay returns the initial state, and
+replaying concatenated lists is equivalent to replaying the left list and then
+the right list. Applications own heterogeneous event unions and may convert a
+Decision event sequence with `immutable.CollectList(decisionValue.Events())`
+when those events reconstruct state.
+
+Replay is a pure fold, not an Event Sourcing runtime. It does not load streams,
+persist events, serialize versions, create snapshots/projections, register
+handlers, dispatch messages, or compare Decision state with reduced state.
 
 ## Explicit domain flow
 
