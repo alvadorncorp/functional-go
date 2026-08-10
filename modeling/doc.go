@@ -1,12 +1,16 @@
 // Package modeling provides explicit, compile-time-safe primitives for
 // describing domain decisions. Applications own their concrete domain types,
-// errors, commands, events, entities, and aggregates.
+// errors, policies, commands, events, entities, and aggregates.
 //
 // Rule checks one value; Requirement checks state plus operation input;
 // Transition computes the next state; Invariant validates the result. The
 // application invokes those functions explicitly before constructing a
 // Decision. AllRules and AllRequirements are ordered fail-fast composition;
 // AnyRule and AnyRequirement are non-empty ordered first-success composition.
+//
+// Pure S-to-S state evolution lives in the separate public subpackage
+// github.com/alvadorncorp/gopackages/modeling/change. The root package does not
+// re-export Change or manage its execution.
 //
 // The policy subpackage derives pure domain results from an explicit context.
 // It owns transformation and Optional-based conditional selection without
@@ -16,6 +20,7 @@
 // Combine. Decision remains the canonical root-package type; persistent
 // mechanics live behind a Go internal package and are not consumer surface.
 //
-// The module has no engine, runner, registry, reflection, dispatcher,
-// persistence, transport, or infrastructure responsibility.
+// The package has no engine, runner, registry, reflection, dispatcher, state
+// manager, persistence, transport, or infrastructure responsibility. Exported
+// signatures remain ordinary Go and standard-library types.
 package modeling

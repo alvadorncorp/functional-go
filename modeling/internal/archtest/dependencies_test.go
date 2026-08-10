@@ -277,7 +277,12 @@ func TestDependencyGateCanFail(t *testing.T) {
 	if directImportForbidden(changePackage, functionalFunction) {
 		t.Fatalf("change direct-import gate rejected %s", functionalFunction)
 	}
-	for _, imported := range []string{functionalImmutable, functionalOptional, functionalPredicate, functionalModule + "/values/result"} {
+	for _, imported := range []string{
+		functionalImmutable,
+		functionalOptional,
+		functionalPredicate,
+		functionalModule + "/values/result",
+	} {
 		if !directImportForbidden(changePackage, imported) {
 			t.Errorf("change direct-import gate accepted %s", imported)
 		}
