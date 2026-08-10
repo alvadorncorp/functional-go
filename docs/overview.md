@@ -23,6 +23,10 @@ dependencies outside the standard library, permanently**:
 - **`fold`** — iterative left/right folds, typed reductions, and a preallocated
   left scan over slices. It imports exactly `values/optional` and
   `values/nonempty`.
+- **[`tuple`](tuple/)** — `Tuple2`/`Tuple3` heterogeneous structural carriers and type-changing component maps; stdlib-only.
+- **`lazy`** — concurrent-safe deferred computations that memoize a value or panic; stdlib-only.
+- **[`iterator`](iterator/)** — lazy transforms, limits, tuple Zip/Enumerate, folds and searches over native `iter.Seq`; imports only tuple.
+- **[`optics`](optics/)** — typed Lens access, immutable updates, Modify, and explicit composition; imports no sibling package.
 - **`optional`** — `Optional[T]`, a value type for an operation that may or
   may not produce a `T`. Explicit absence, not a nil check.
 - **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
@@ -31,6 +35,8 @@ dependencies outside the standard library, permanently**:
   persistent vector. Builders open an exclusive transient window and
   `Freeze` in O(1) via owner invalidation. Use the same types for
   read-only snapshots (never call write methods) and for versioned state.
+  `persistent` may produce `iter.Seq` values for consumers, but
+  `iterator` never imports `persistent`.
 - **`state`** — `State[T]`: pure semantic evolution over an opaque `T`.
   `Apply` records reverse-linked plan steps without running them;
   `Materialize` re-applies the full plan (no cache); `Begin`/`Transaction`
@@ -56,8 +62,9 @@ dependency on the others, defeating the point of splitting them into
 subpackages in the first place. So the root package carries only the
 module-level doc comment, and every concept lives one import path down:
 `functional/function`, `functional/predicate`, `functional/order`,
-`functional/fold`, `functional/optional`, `functional/persistent`, `functional/state`,
-`functional/valueobject`, or one of the five
+`functional/fold`, `functional/tuple`, `functional/lazy`, `functional/iterator`,
+`functional/optics`, `functional/optional`, `functional/persistent`,
+`functional/state`, `functional/valueobject`, or one of the five
 `functional/values/*` packages.
 
 `functional/optional` remains the established legacy API and is supported
@@ -143,14 +150,15 @@ into `ownership`), and `TestPublicPackagesDoNotImportCore` (`optional` /
 
 ## No public subpackage imports another (in production code)
 
-`function`, `predicate`, `order`, `fold`, `optional`, `persistent`, `state`,
-and `valueobject` do not import each other **in production code**, except for
-the two directed fold-to-values edges. This is also proven, not just documented:
-`TestPublicDependencyDAG` in `functional/internal/archtest` walks each public
-subpackage's dependency list, via `go list -deps -json` without `-test`, and
-fails if it contains another public subpackage's import path except the
-explicitly allowed edges: `values/validated` → `values/nonempty`,
-`fold` → `values/optional`, and `fold` → `values/nonempty`.
+`function`, `predicate`, `order`, `fold`, `tuple`, `lazy`, `iterator`, `optics`,
+`optional`, `persistent`, `state`, and `valueobject` do not import each other
+**in production code**, except for the explicitly allowed sibling edges. This is
+also proven, not just documented: `TestPublicDependencyDAG` in
+`functional/internal/archtest` walks each public subpackage's dependency list,
+via `go list -deps -json` without `-test`, and fails if it contains another
+public subpackage's import path except the explicitly allowed edges:
+`values/validated` → `values/nonempty`, `fold` → `values/optional`,
+`fold` → `values/nonempty`, and `iterator` → `tuple`.
 
 The invariant is scoped to production imports by design. Test code MAY
 import a sibling public package to exercise or demonstrate cross-package
@@ -186,10 +194,13 @@ conventions.
 
 ### Primitive production gates
 
-`function`, `predicate`, and `order` are standard-library-only leaves. `fold`
-imports exactly `values/optional` and `values/nonempty`. `TestPrimitiveDependencyDAG`
-and `TestPrimitivesNoReflectOrUnsafe` enforce this production DAG and reject
-`reflect` or `unsafe` in every primitive.
+`function`, `predicate`, `order`, `tuple`, `lazy`, and `optics` are
+standard-library-only leaves. `fold` imports exactly `values/optional` and
+`values/nonempty`. `iterator` imports exactly `tuple`.
+`TestPrimitiveDependencyDAG` and `TestPrimitivesNoReflectOrUnsafe` enforce this
+production DAG and reject `reflect` or `unsafe` in every primitive.
+`persistent` may produce `iter.Seq` values, but `iterator` never imports
+`persistent`.
 
 ```mermaid
 flowchart TB
@@ -198,6 +209,10 @@ flowchart TB
   predicate[predicate]
   order[order]
   fold[fold]
+  tuple[tuple]
+  lazy[lazy]
+  iterator[iterator]
+  optics[optics]
   valuesOptional[values/optional]
   valuesResult[values/result]
   valuesEither[values/either]
@@ -218,6 +233,7 @@ flowchart TB
   optional --> eq
   fold --> valuesOptional
   fold --> valuesNonEmpty
+  iterator --> tuple
   valuesValidated --> valuesNonEmpty
   persistent --> eq
   persistent --> transient
@@ -280,6 +296,10 @@ descent.
 - [Package API: predicate](packages/predicate.md)
 - [Package API: order](packages/order.md)
 - [Package API: fold](packages/fold.md)
+- [Package API: tuple](packages/tuple.md)
+- [Package API: lazy](packages/lazy.md)
+- [Package API: iterator](packages/iterator.md)
+- [Package API: optics](packages/optics.md)
 - [Package API: optional](packages/optional.md)
 - [Package API: persistent](packages/persistent.md)
 - [Package API: state](packages/state.md)
@@ -300,3 +320,4 @@ descent.
 - [ADR-006 — State semantic layer](adr/functional/adr-006-state-semantic-layer.md)
 - [ADR-007 — Values family dependency boundary](adr/functional/adr-007-values-family-dependency-boundary.md)
 - [ADR-008 — Functional primitives and fold dependency boundary](adr/functional/adr-008-functional-primitives-and-fold-boundary.md)
+- [ADR-009 — Tuplas, lazy, iteradores e optics sobre contratos nativos de Go](adr/functional/adr-009-structural-primitives-and-iterator-boundary.md)

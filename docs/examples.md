@@ -18,6 +18,10 @@ Illustrative sketches for common uses. For API contracts see
 9. [Predicate composition with `And`](#9-predicate-composition-with-and)
 10. [Ordering with `By`](#10-ordering-with-by)
 11. [Accumulating states with `ScanLeft`](#11-accumulating-states-with-scanleft)
+12. [Tuple carriers](#12-tuple-carriers)
+13. [Deferred memoized computation](#13-deferred-memoized-computation)
+14. [Native iterator pipeline](#14-native-iterator-pipeline)
+15. [Immutable nested update](#15-immutable-nested-update)
 
 ---
 
@@ -376,6 +380,106 @@ func printRunningTotals() {
 
 ---
 
+## 12. Tuple carriers
+
+```go
+package pipeline
+
+import "github.com/alvadorncorp/gopackages/functional/tuple"
+
+func tupleCarrier() tuple.Tuple2[int, string] {
+	pair := tuple.Of2("Ada", 36)
+	return tuple.Swap(pair)
+}
+```
+
+The returned value is `tuple.Tuple2[int,string]{First: 36, Second: "Ada"}`;
+the generic parameters are inferred from the constructor arguments.
+
+---
+
+## 13. Deferred memoized computation
+
+```go
+package config
+
+import "github.com/alvadorncorp/gopackages/functional/lazy"
+
+type Config struct{ Name string }
+
+func loadConfig() Config { return Config{Name: "production"} }
+
+func deferredConfigName() string {
+	config := lazy.New(loadConfig) // loadConfig has not run.
+	name := lazy.Map(config, func(value Config) string { return value.Name })
+	return name.Get() // Evaluates and memoizes the chain.
+}
+```
+
+---
+
+## 14. Native iterator pipeline
+
+```go
+package pipeline
+
+import (
+	"slices"
+	"strings"
+
+	"github.com/alvadorncorp/gopackages/functional/iterator"
+	"github.com/alvadorncorp/gopackages/functional/tuple"
+)
+
+func zipPeople(ids []int, names []string) []tuple.Tuple2[int, string] {
+	active := iterator.Filter(iterator.FromSlice(names), func(name string) bool {
+		return name != ""
+	})
+	normalized := iterator.Map(active, strings.ToUpper)
+	return slices.Collect(iterator.Zip(iterator.FromSlice(ids), normalized))
+}
+```
+
+---
+
+## 15. Immutable nested update
+
+```go
+package people
+
+import "github.com/alvadorncorp/gopackages/functional/optics"
+
+type Address struct{ City string }
+
+type Person struct {
+	Name    string
+	Address Address
+}
+
+func move(person Person, city string) Person {
+	personAddress := optics.NewLens(
+		func(source Person) Address { return source.Address },
+		func(source Person, value Address) Person {
+			source.Address = value
+			return source
+		},
+	)
+	addressCity := optics.NewLens(
+		func(source Address) string { return source.City },
+		func(source Address, value string) Address {
+			source.City = value
+			return source
+		},
+	)
+	return optics.Compose(personAddress, addressCity).Set(person, city)
+}
+```
+
+Get-Set, Set-Get, and Set-Set are obligations of the getter/setter supplied by
+the caller and are not checked at runtime.
+
+---
+
 ## See also
 
 - [overview](overview.md)
@@ -383,6 +487,8 @@ func printRunningTotals() {
 - [package API: predicate](packages/predicate.md)
 - [package API: order](packages/order.md)
 - [package API: fold](packages/fold.md)
+- [package API: iterator](packages/iterator.md)
+- [package API: optics](packages/optics.md)
 - [functional values family](packages/values.md)
 - [values Optional](packages/values-optional.md)
 - [values Result](packages/values-result.md)

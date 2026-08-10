@@ -1,16 +1,16 @@
 // Package archtest proves dependency invariants of the functional module
 // mechanically, so they stay true rather than merely documented: the module
-// has zero non-stdlib dependencies outside itself, public subpackages have
-// exactly three permitted sibling edges (values/validated to values/nonempty,
-// fold to values/optional, and fold to values/nonempty; functional/internal/eq
-// is the one shared internal exception every public package may use), the
-// internal/core DAG stays a star into ownership
-// with no peer edges and no reflect, internal/eq production code imports
-// neither reflect nor unsafe, persistent and state production code import
-// neither reflect nor unsafe, and internal/engine packages obey their own
-// import allow-lists (keyhash: stdlib only; hamt: ownership/cow/sharing/keyhash
-// only among functional packages; vector: ownership/cow/sharing only among
-// functional packages).
+// has zero non-stdlib dependencies outside itself, public subpackages
+// (including optics) have exactly four permitted sibling edges
+// (values/validated to values/nonempty, fold to values/optional, fold to
+// values/nonempty, and iterator to tuple; functional/internal/eq is the one
+// shared internal exception every public package may use), the internal/core
+// DAG stays a star into ownership with no peer edges and no reflect,
+// internal/eq production code imports neither reflect nor unsafe, persistent
+// and state production code import neither reflect nor unsafe, and
+// internal/engine packages obey their own import allow-lists (keyhash: stdlib
+// only; hamt: ownership/cow/sharing/keyhash only among functional packages;
+// vector: ownership/cow/sharing only among functional packages).
 package archtest
 
 import (
@@ -39,6 +39,10 @@ const (
 	pkgKeyhash         = "github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
 	pkgHamt            = "github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
 	pkgVector          = "github.com/alvadorncorp/gopackages/functional/internal/engine/vector"
+	pkgTuple           = "github.com/alvadorncorp/gopackages/functional/tuple"
+	pkgLazy            = "github.com/alvadorncorp/gopackages/functional/lazy"
+	pkgIterator        = "github.com/alvadorncorp/gopackages/functional/iterator"
+	pkgOptics          = "github.com/alvadorncorp/gopackages/functional/optics"
 	pkgPersistent      = "github.com/alvadorncorp/gopackages/functional/persistent"
 	pkgState           = "github.com/alvadorncorp/gopackages/functional/state"
 	pkgValuesOptional  = "github.com/alvadorncorp/gopackages/functional/values/optional"
@@ -57,6 +61,10 @@ var publicPackages = []string{
 	pkgPredicate,
 	pkgOrder,
 	pkgFold,
+	pkgTuple,
+	pkgLazy,
+	pkgIterator,
+	pkgOptics,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
@@ -79,6 +87,7 @@ var valuesPackages = []string{
 var publicAllowedEdges = map[string][]string{
 	pkgValuesValidated: {pkgValuesNonEmpty},
 	pkgFold:            {pkgValuesOptional, pkgValuesNonEmpty},
+	pkgIterator:        {pkgTuple},
 }
 
 // publicPackagesNoCore are the public packages that must never import
@@ -89,6 +98,10 @@ var publicPackagesNoCore = []string{
 	pkgPredicate,
 	pkgOrder,
 	pkgFold,
+	pkgTuple,
+	pkgLazy,
+	pkgIterator,
+	pkgOptics,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
@@ -122,6 +135,10 @@ var allPackages = []string{
 	pkgPredicate,
 	pkgOrder,
 	pkgFold,
+	pkgTuple,
+	pkgLazy,
+	pkgIterator,
+	pkgOptics,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",

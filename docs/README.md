@@ -10,6 +10,10 @@ The module root [README](../README.md) is a short **index**. Content lives here.
 | [packages/predicate.md](packages/predicate.md) | Public API of the standard-library-only `github.com/alvadorncorp/gopackages/functional/predicate` leaf |
 | [packages/order.md](packages/order.md) | Public API of the standard-library-only `github.com/alvadorncorp/gopackages/functional/order` leaf |
 | [packages/fold.md](packages/fold.md) | Public API of `github.com/alvadorncorp/gopackages/functional/fold`, with the two directed values edges authorized by ADR-008 |
+| [packages/tuple.md](packages/tuple.md) | `Tuple2`/`Tuple3` heterogeneous structural carriers and type-changing component maps; stdlib-only. |
+| [packages/lazy.md](packages/lazy.md) | concurrent-safe deferred computations that memoize a value or panic; stdlib-only. |
+| [packages/iterator.md](packages/iterator.md) | [`iterator`](iterator/) — lazy transforms, limits, tuple Zip/Enumerate, folds and searches over native `iter.Seq`; imports only tuple. |
+| [packages/optics.md](packages/optics.md) | [`optics`](optics/) — typed Lens access, immutable updates, Modify, and explicit composition; imports no sibling package. |
 | [packages/optional.md](packages/optional.md) | Public API of `github.com/alvadorncorp/gopackages/functional/optional`<br>The established `functional/optional` API remains supported and unchanged.<br>The smaller baseline API at `functional/values/optional` is an independent type; this plan adds no alias, conversion, or migration between them. |
 | [packages/persistent.md](packages/persistent.md) | Public API of `github.com/alvadorncorp/gopackages/functional/persistent`, including measured Append-loop vs. Builder benchmarks |
 | [packages/state.md](packages/state.md) | Public API of `github.com/alvadorncorp/gopackages/functional/state` (pure `State[T]`, lineage, Tx, Diff) |
@@ -39,3 +43,4 @@ Current decisions:
 - [ADR-006 — State semantic layer](adr/functional/adr-006-state-semantic-layer.md)
 - [ADR-007 — Values family dependency boundary](adr/functional/adr-007-values-family-dependency-boundary.md)
 - [ADR-008 — Functional primitives and fold dependency boundary](adr/functional/adr-008-functional-primitives-and-fold-boundary.md)
+- [ADR-009 — Tuplas, lazy, iteradores e optics sobre contratos nativos de Go](adr/functional/adr-009-structural-primitives-and-iterator-boundary.md)

@@ -7,12 +7,18 @@
 // (a standard-library-only Boolean algebra and quantifiers for generic values),
 // order (sign-based total orders, projections, and lexicographic composition),
 // fold (iterative slice folds, typed reductions, and a preallocated left scan),
-// optional (Optional[T] and its combinators), persistent (immutable collections with functional writes:
-// HAMT Map/Set and a 32-way vector List; Builders use an exclusive-owner
-// transient window with O(1) Freeze), state (pure semantic evolution over T:
-// reverse-linked plans, Version, single-use Transaction, structural Diff),
-// and valueobject (reflective verification of structural immutability, a
-// test helper).
+// tuple (Tuple2/Tuple3 heterogeneous structural carriers and type-changing
+// component maps; stdlib-only), lazy (concurrent-safe deferred computations that
+// memoize a value or panic; stdlib-only), iterator (lazy transforms, limits,
+// tuple Zip/Enumerate, folds and searches over native iter.Seq; imports only
+// tuple), optics (typed Lens access, immutable updates, Modify, and explicit
+// composition; imports no sibling package), optional (Optional[T] and its
+// combinators), persistent (immutable collections with functional writes: HAMT
+// Map/Set and a 32-way vector List; Builders use an exclusive-owner transient
+// window with O(1) Freeze), state (pure semantic evolution over T:
+// reverse-linked plans, Version, single-use Transaction, structural Diff), and
+// valueobject (reflective verification of structural immutability, a test
+// helper).
 //
 // The nested values family contains independent algebraic value packages:
 // values/optional, values/result, values/either, values/nonempty, and
@@ -22,15 +28,15 @@
 //
 // The module has zero dependencies outside the standard library, permanently.
 // Public sibling imports are restricted to the ADR-007 values/validated ->
-// values/nonempty edge and the ADR-008 fold -> values/optional and fold ->
-// values/nonempty edges. Function, predicate, and order are standard-library-
-// only public leaves. Shared internals
-// include functional/internal/eq (Equal resolution: method, then ==;
-// non-comparable types without Equal return false — no reflect),
-// functional/internal/core (thin ownership / cow /
-// sharing / transient substrate — laws, not engines), and
-// functional/internal/engine (hamt, vector, keyhash representations used by
-// persistent). Production state does not import core or engines.
+// values/nonempty edge, the ADR-008 fold -> values/optional and fold ->
+// values/nonempty edges, and the ADR-009 iterator -> tuple edge. Function,
+// predicate, order, tuple, lazy, and optics are standard-library-only public
+// leaves. Shared internals include functional/internal/eq (Equal resolution:
+// method, then ==; non-comparable types without Equal return false — no
+// reflect), functional/internal/core (thin ownership / cow / sharing /
+// transient substrate — laws, not engines), and functional/internal/engine
+// (hamt, vector, keyhash representations used by persistent). Production state
+// does not import core or engines.
 //
 // The exported type is always Optional, never Option: Option already names
 // the functional-options pattern elsewhere in this repository (eventbus,
