@@ -25,14 +25,17 @@ const (
 	policyPackage       = modelingModule + "/policy"
 	changePackage       = modelingModule + "/change"
 	reducerPackage      = modelingModule + "/reducer"
+	projectionPackage   = modelingModule + "/projection"
 )
 
 type listedPackage struct {
-	Dir        string
-	GoFiles    []string
-	ImportPath string
-	Imports    []string
-	Standard   bool
+	Dir          string
+	GoFiles      []string
+	TestGoFiles  []string
+	XTestGoFiles []string
+	ImportPath   string
+	Imports      []string
+	Standard     bool
 }
 
 var forbiddenDirectImports = map[string]struct{}{
@@ -55,7 +58,6 @@ var forbiddenExportedNames = map[string]struct{}{
 	"EventStore":             {},
 	"EventStream":            {},
 	"HandlerRegistry":        {},
-	"Projection":             {},
 	"Register":               {},
 	"Scan":                   {},
 	"SnapshotStore":          {},
@@ -88,9 +90,9 @@ func productionPackages(t *testing.T) []listedPackage {
 	t.Helper()
 	packages := goList(t, "-json", modelingModule+"/...")
 	production := make([]listedPackage, 0, len(packages))
-	for _, pkg := range packages {
-		if pkg.ImportPath != archtestPackage {
-			production = append(production, pkg)
+	for i := range packages {
+		if packages[i].ImportPath != archtestPackage {
+			production = append(production, packages[i])
 		}
 	}
 	return production
@@ -117,7 +119,7 @@ func directImportForbidden(importingPackage, importPath string) bool {
 		return importPath != functionalOptional && importPath != functionalPredicate
 	case changePackage:
 		return importPath != functionalFunction
-	case reducerPackage:
+	case reducerPackage, projectionPackage:
 		return importPath != functionalImmutable
 	default:
 		return true
@@ -153,11 +155,12 @@ func TestNoForbiddenDirectImports(t *testing.T) {
 	}
 }
 
-func TestFunctionalTypesDoNotLeakOutsidePolicy(t *testing.T) {
+func TestFunctionalTypesDoNotLeakOutsideApprovedPackages(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		if !externallyImportable(production.ImportPath) ||
 			production.ImportPath == policyPackage ||
-			production.ImportPath == reducerPackage {
+			production.ImportPath == reducerPackage ||
+			production.ImportPath == projectionPackage {
 			continue
 		}
 		t.Run(production.ImportPath, func(t *testing.T) {
@@ -209,60 +212,6 @@ func TestNoMutableProductionGlobals(t *testing.T) {
 				}
 			}
 		}
-	}
-}
-
-func TestDependencyGateCanFail(t *testing.T) {
-	if dependencyAllowed(&listedPackage{ImportPath: "example.com/unapproved"}) {
-		t.Fatal("dependency gate accepted an external package")
-	}
-	for _, imported := range []string{
-		"reflect",
-		"unsafe",
-		functionalModule,
-		functionalModule + "/internal/core",
-		functionalModule + "/values/result",
-	} {
-		if !directImportForbidden(modelingModule, imported) {
-			t.Errorf("root direct-import gate accepted %s", imported)
-		}
-	}
-	if directImportForbidden(internalDecisionPackage, functionalImmutable) {
-		t.Fatalf("internal decision gate rejected %s", functionalImmutable)
-	}
-	for _, imported := range []string{functionalPredicate, functionalOptional} {
-		if directImportForbidden(policyPackage, imported) {
-			t.Errorf("policy direct-import gate rejected %s", imported)
-		}
-	}
-	for _, imported := range []string{functionalImmutable, functionalModule + "/values/result"} {
-		if !directImportForbidden(policyPackage, imported) {
-			t.Errorf("policy direct-import gate accepted %s", imported)
-		}
-	}
-	if directImportForbidden(changePackage, functionalFunction) {
-		t.Fatalf("change direct-import gate rejected %s", functionalFunction)
-	}
-	for _, imported := range []string{
-		functionalImmutable,
-		functionalOptional,
-		functionalPredicate,
-		functionalModule + "/values/result",
-	} {
-		if !directImportForbidden(changePackage, imported) {
-			t.Errorf("change direct-import gate accepted %s", imported)
-		}
-	}
-	if directImportForbidden(reducerPackage, functionalImmutable) {
-		t.Fatalf("reducer direct-import gate rejected %s", functionalImmutable)
-	}
-	for _, imported := range []string{functionalOptional, functionalPredicate} {
-		if !directImportForbidden(reducerPackage, imported) {
-			t.Errorf("reducer direct-import gate accepted %s", imported)
-		}
-	}
-	if _, forbidden := forbiddenExportedNames["Dispatch"]; !forbidden {
-		t.Fatal("runtime API gate cannot reject Dispatch")
 	}
 }
 

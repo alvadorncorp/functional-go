@@ -7,6 +7,7 @@ catalog and must not acquire a `docs/` tree.
 
 - [Architecture overview](overview.md)
 - [Change package](packages/change.md)
+- [Projection package](packages/projection.md)
 
 ## Architecture decisions
 
@@ -16,6 +17,7 @@ catalog and must not acquire a `docs/` tree.
 - [ADR-004: public Change capability boundary](adr/modeling/adr-004-change-capability-boundary.md)
 - [ADR-005: additive Policy capability boundary](adr/modeling/adr-005-policy-capability-boundary.md)
 - [ADR-006: additive reducer capability boundary](adr/modeling/adr-006-reducer-capability-boundary.md)
+- [ADR-007: additive projection capability boundary](adr/modeling/adr-007-projection-capability-boundary.md)
 
 ## Technical designs
 
@@ -25,5 +27,6 @@ catalog and must not acquire a `docs/` tree.
 - [TDD: Change and state evolution](tdd/modeling/change.md)
 - [TDD: Policy](tdd/modeling/policy.md)
 - [TDD: Reducer and Replay](tdd/modeling/reducer-replay.md)
+- [TDD: Projection and Project](tdd/modeling/projection.md)
 
 Formal records use the module-owned AKB spine; no copy belongs at repository root.

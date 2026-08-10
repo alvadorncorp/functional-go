@@ -16,17 +16,21 @@ application domain
       │                     ↓ uses
       │               functional/primitives/predicate
       │               functional/values/optional
-      └── specializes → modeling/reducer
+      ├── specializes → modeling/reducer
+                            ↓ uses
+                     functional/immutable
+      └── specializes → modeling/projection
                             ↓ uses
                      functional/immutable
 ```
 
 Applications import the root package for Decision, Transition, Invariant, Rule,
 and Requirement. They import `modeling/change` when they need named pure state
-evolution, `modeling/policy` for context-derived strategies, and
-`modeling/reducer` for fact-to-state replay. The root does not re-export Change,
-Policy, or Reducer symbols. The internal Decision package remains an enforceable
-implementation boundary, not another public API.
+evolution, `modeling/policy` for context-derived strategies,
+`modeling/reducer` for fact-to-state replay, and `modeling/projection` for
+fact-to-derived-representation projection. The root does not re-export Change,
+Policy, Reducer, Projection, or Project symbols. The internal Decision package
+remains an enforceable implementation boundary, not another public API.
 
 ## Structural semantics
 
@@ -51,6 +55,8 @@ The root public contract contains:
 - `reducer.Reducer[S,E]` for fact-to-state evolution and
   `reducer.Replay` for a synchronous ordered left fold over
   `immutable.List[E]` (see the dedicated reducer section).
+- `projection.Projection[P,E]` for fact-to-derived-representation evolution and
+  `projection.Project` for the corresponding ordered batch fold.
 
 The `modeling/change` public capability contains exactly `Change[S]`,
 `Identity`, `Compose`, `Pipe`, `Apply`, and `ApplyAll`. Change maps `S -> S`,
@@ -72,9 +78,10 @@ adapt policies. `When` turns a Policy into `I → Optional[O]`,
 restores a total Policy.
 
 Policy is not Rule (`T → error`), Requirement (`S × I → error`), Transition
-(`S × I → O`), Change (`S → S`), or Reducer (`S × E → S`). It executes no
-effects and imports no sibling modeling capability. Applicability is Optional,
-never error. Multiple inputs belong in an application-owned context struct.
+(`S × I → O`), Change (`S → S`), Reducer (`S × E → S`), or Projection
+(`P × E → P`). It executes no effects and imports no sibling modeling
+capability. Applicability is Optional, never error. Multiple inputs belong in
+an application-owned context struct.
 
 ## Reducer and Replay
 
@@ -93,6 +100,28 @@ when those events reconstruct state.
 Replay is a pure fold, not an Event Sourcing runtime. It does not load streams,
 persist events, serialize versions, create snapshots/projections, register
 handlers, dispatch messages, or compare Decision state with reduced state.
+
+## Projection and Project
+
+`Projection[P,E]` is an ordinary `func(P,E) P` that derives the next read model,
+summary, index, statistic, or other application-owned representation from a
+fact. `projection.Project(initial, events, project)` applies the same operation
+to an `immutable.List` in encounter order, so batch rebuild and incremental
+updates share one semantic function.
+
+Projection is deliberately distinct from Reducer. Reducer explains what facts
+mean for domain state; Projection explains what they mean for a derived
+representation. The two packages are siblings, import neither one another nor
+the modeling root, and independently consume application-owned events.
+
+Project iterates `events.Values()` directly. Empty input returns initial; the
+concatenation law is `Project(p,A++B,f) = Project(Project(p,A,f),B,f)`.
+Determinism and shallow immutability remain the supplied function's
+responsibility.
+
+Projection is not a CQRS runtime and performs no persistence. Repositories,
+databases, brokers, subscriptions, offsets, checkpoints, event loading,
+background processing, and eventual consistency stay outside modeling.
 
 ## Explicit domain flow
 
@@ -146,7 +175,7 @@ machine-independent performance cap.
 
 The module has no reflection, annotations, scanner, registry, service locator,
 dependency-injection container, magic dispatch, command bus, event bus, event
-store, projection, repository, ORM, database, HTTP, broker, filesystem, or
+store, projection worker/runtime, repository, ORM, database, HTTP, broker, filesystem, or
 concrete application-domain type.
 
 Change is not a Patch, Diff, state manager, Reducer implementation, Replay

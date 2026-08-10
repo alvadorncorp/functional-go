@@ -8,9 +8,10 @@ import (
 
 func reducerProductionPackage(t *testing.T) *listedPackage {
 	t.Helper()
-	for _, production := range productionPackages(t) {
-		if production.ImportPath == reducerPackage {
-			return &production
+	productions := productionPackages(t)
+	for i := range productions {
+		if productions[i].ImportPath == reducerPackage {
+			return &productions[i]
 		}
 	}
 	t.Fatalf("package enumeration is missing %s", reducerPackage)
@@ -48,7 +49,7 @@ func TestReplayNameIsReducerOnly(t *testing.T) {
 }
 
 func TestPackageEnumerationIsComplete(t *testing.T) {
-	got := make([]string, 0, 6)
+	got := make([]string, 0, 7)
 	for _, pkg := range goList(t, "-json", modelingModule+"/...") {
 		got = append(got, pkg.ImportPath)
 	}
@@ -60,6 +61,7 @@ func TestPackageEnumerationIsComplete(t *testing.T) {
 		archtestPackage,
 		modelingModule + "/internal/decision",
 		policyPackage,
+		projectionPackage,
 		reducerPackage,
 	}
 	slices.Sort(want)
@@ -78,6 +80,7 @@ func TestExternallyImportableClassification(t *testing.T) {
 		{name: "root", importPath: modelingModule, want: true},
 		{name: "public change", importPath: changePackage, want: true},
 		{name: "public policy", importPath: policyPackage, want: true},
+		{name: "public projection", importPath: projectionPackage, want: true},
 		{name: "public reducer", importPath: reducerPackage, want: true},
 		{name: "internal root", importPath: modelingModule + "/internal", want: false},
 		{name: "internal child", importPath: modelingModule + "/internal/decision", want: false},
