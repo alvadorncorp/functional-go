@@ -1,22 +1,28 @@
 # modeling
 
 `modeling` is an explicit, compile-time-safe Go metamodel for application-owned
-domain types and behavior. It sits above the public capabilities in
+domain types and behavior. It sits above selected public capabilities in
 [`functional`](../functional/) and below concrete application domains.
 
 The module intentionally contains no reflection, runtime registry, dispatcher,
-infrastructure, persistence, or concrete business model.
+state manager, infrastructure, persistence, or concrete business model.
 
-Decision composition is available from the root package through `MapState`,
-`MapEvents`, `Emit`, `AppendEvents`, and `Combine`. The canonical public type
-remains `modeling.Decision`; persistent mechanics are isolated behind a Go
-internal package and are not a second consumer API.
+The root package owns Decision, Transition, Invariant, Rule, and Requirement.
+Decision composition is available through `MapState`, `MapEvents`, `Emit`,
+`AppendEvents`, and `Combine`; persistent mechanics remain private under
+`internal/decision`.
 
-Rules and operation preconditions are explicit root-package functions:
+Pure state evolution is available from the public capability package
+[`modeling/change`](docs/packages/change.md). `Change[S]` names an endomorphism
+`S -> S`; `Identity`, `Compose`, `Pipe`, `Apply`, and `ApplyAll` provide closed
+composition and value-first application without a runtime or root re-export.
+
+Rules and operation preconditions remain explicit root-package functions:
 `Rule[T]` composes value conditions with `AllRules` and non-empty `AnyRule`;
 `Requirement[S,I]` composes state-plus-input preconditions with
 `AllRequirements` and non-empty `AnyRequirement`. Applications explicitly run
-Requirement, Transition, Invariant, and Decision; modeling provides no runner.
+Requirement, Transition, Invariant, Change, and Decision as their domain flow
+requires; modeling provides no runner.
 
 Context-derived domain strategies live in the public
 [`modeling/policy`](policy/) capability. `Policy[I,O]` is a pure function type;
@@ -28,13 +34,16 @@ No Policy symbol is reexported from the root package.
 
 - [Documentation index](docs/README.md)
 - [Architecture overview](docs/overview.md)
+- [Change package guide](docs/packages/change.md)
 - [ADR-001: minimal type-safe domain modeling](docs/adr/modeling/adr-001-minimal-type-safe-domain-modeling.md)
 - [ADR-002: root facade over an internal Decision package](docs/adr/modeling/adr-002-root-facade-internal-decision.md)
+- [ADR-003: nominal rules and operation requirements](docs/adr/modeling/adr-003-rules-and-requirements.md)
+- [ADR-004: public Change capability boundary](docs/adr/modeling/adr-004-change-capability-boundary.md)
+- [ADR-005: additive Policy capability boundary](docs/adr/modeling/adr-005-policy-capability-boundary.md)
 - [TDD: v0.1 core](docs/tdd/modeling/v0-1-core.md)
 - [TDD: v0.2 Decision composition](docs/tdd/modeling/v0-2-decision-composition.md)
-- [ADR-003: nominal rules and operation requirements](docs/adr/modeling/adr-003-rules-and-requirements.md)
 - [TDD: v0.3 Rules and Requirements](docs/tdd/modeling/v0-3-rules-requirements.md)
-- [ADR-005: additive Policy capability boundary](docs/adr/modeling/adr-005-policy-capability-boundary.md)
+- [TDD: v0.5 Change and state evolution](docs/tdd/modeling/v0-5-change-state-evolution.md)
 - [TDD: Policy](docs/tdd/modeling/policy.md)
 
 ## Development
