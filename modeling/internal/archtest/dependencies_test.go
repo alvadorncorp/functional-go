@@ -108,6 +108,11 @@ func directImportForbidden(importPath string) bool {
 	return false
 }
 
+func externallyImportable(importPath string) bool {
+	relative := strings.TrimPrefix(importPath, modelingModule)
+	return relative != "/internal" && !strings.HasPrefix(relative, "/internal/")
+}
+
 func TestOnlyApprovedDependencyClosure(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		t.Run(production.ImportPath, func(t *testing.T) {
@@ -132,8 +137,32 @@ func TestNoForbiddenDirectImports(t *testing.T) {
 	}
 }
 
+func TestExternallyImportableClassification(t *testing.T) {
+	tests := []struct {
+		name       string
+		importPath string
+		want       bool
+	}{
+		{name: "root", importPath: modelingModule, want: true},
+		{name: "public child", importPath: modelingModule + "/decision", want: true},
+		{name: "internal root", importPath: modelingModule + "/internal", want: false},
+		{name: "internal child", importPath: modelingModule + "/internal/decision", want: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := externallyImportable(test.importPath); got != test.want {
+				t.Fatalf("externallyImportable(%q) = %t, want %t", test.importPath, got, test.want)
+			}
+		})
+	}
+}
+
 func TestNoFunctionalTypesInPublicAPI(t *testing.T) {
 	for _, production := range productionPackages(t) {
+		if !externallyImportable(production.ImportPath) {
+			continue
+		}
 		t.Run(production.ImportPath, func(t *testing.T) {
 			files := productionFiles(t, &production)
 			origins := functionalTypeOrigins(files)
