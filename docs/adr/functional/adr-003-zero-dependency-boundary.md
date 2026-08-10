@@ -6,9 +6,15 @@ title: Zero-dependency boundary, v0 public-signature restraint, and the pgtype/O
 status: Aceita
 tags: [functional, dependencies, versioning, mvs, postgres]
 deciders: [alvadorn]
-related: [adr:postgres:001, adr:postgres:002]
 date: 2026-08-07
 ---
+> **Status note (v1.0.0).** Sub-decision 2 of this ADR — the pre-v1.0.0
+> restraint on library modules putting `optional.Optional[T]` in their
+> exported signatures — lapsed at the `functional/v1.0.0` release and is no
+> longer in force (the module is at v1.1.0). Sub-decisions 1 (zero
+> dependencies, tested) and 3 (the `pgtype`/`Optional` boundary) remain
+> unchanged.
+
 # ADR-003: Zero-dependency boundary, v0 public-signature restraint, and the pgtype/Optional split
 
 ## Context and problem
@@ -104,7 +110,9 @@ minor, by semver's own v0 rules) would break the exported signature of an
 already-published library module with no version signal of its own to warn
 consumers. Application code carries neither risk in the same way: it is not
 itself a dependency other modules resolve through MVS, and it can be fixed
-in place the moment `functional` changes underneath it.
+in place the moment `functional` changes underneath it. *(This restraint
+lapsed at the `functional/v1.0.0` release — see the status note at the top
+of this ADR.)*
 
 **3. `postgres/pgtype.X.Valid` is a persistence representation;
 `optional.Optional[T]` is a domain representation; the conversion happens in
@@ -133,9 +141,9 @@ compiler-enforced one — nothing currently fails a build if a library module
 violates it before `functional` reaches v1.0.0; catching a violation depends
 on the same review discipline this workspace already relies on elsewhere.
 
-**Neutral:** This ADR does not commit to a v1.0.0 timeline; the module
-README documents "two independent adopters" as the informal signal that
-the API is ready to be promised stable.
+**Neutral:** This ADR did not commit to a v1.0.0 timeline; at the time,
+the module README cited "two independent adopters" as the informal signal
+that the API was ready to be promised stable.
 
 ADR-009 adiciona `functional/structural/iterator -> functional/structural/tuple` como a única aresta
 pública do novo conjunto tuple/lazy/iterator/optics. Tuple, lazy e optics
