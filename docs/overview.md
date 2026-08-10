@@ -18,8 +18,8 @@ group directory itself; ADR-011):
 
 ### `primitives/`
 
-- **`primitives/function`** — six stateless generic combinators for ordinary Go
-  function values (stdlib-only leaf).
+- **`primitives/function`** — stateless generic function combinators plus
+  `Transform[T]` homogeneous pipelines (stdlib-only leaf).
 - **`primitives/predicate`** — Boolean composition and quantifiers (stdlib-only
   leaf, left-to-right short-circuit).
 - **`primitives/order`** — sign-based total orders, projections, reversal, and
