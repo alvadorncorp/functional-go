@@ -26,48 +26,49 @@ not a database row or repository record.
 
 The public contract contains:
 
-- `Decision[S,E]` with its valid zero value, constructor, and observation methods;
-- `MapState`, `MapEvents`, `Emit`, `AppendEvents`, and `Combine` for typed
-  Decision composition;
-- `Transition[S,I,O]` and `FallibleTransition[S,I,O]` as first-class domain
-  functions;
-- `Invariant[S]` with fail-fast or accumulating error composition.
+- `Decision[S,E]` with its valid zero value, constructor, observations, and
+  typed composition functions;
+- `Rule[T]` for an explanatory condition over one value, composed by ordered
+  `AllRules` or non-empty `AnyRule`;
+- `Requirement[S,I]` for an operation precondition over state plus input,
+  composed by ordered `AllRequirements` or non-empty `AnyRequirement`;
+- `Transition[S,I,O]` and `FallibleTransition[S,I,O]` for next-state computation;
+- `Invariant[S]` for resulting-state validity, with fail-fast or accumulating
+  error composition.
 
-Rule and Policy remain ordinary application functions until a concrete generic
-behavior justifies another public type. Command means intent and Event means an
-occurred fact; neither requires a marker interface or runtime bus.
+Rule and Invariant deliberately remain distinct nominal types even though both
+return error. Requirement answers whether an input may be applied to current
+state; it is not a Transition hook. Ordinary functions remain assignable and
+all returned errors remain application-owned.
 
-## Decision pipeline
+## Explicit decision flow
 
 ```text
-Current State + Command/Intent
-              ↓
-Transition / FallibleTransition
-              ↓
-application Rules and Policies
-              ↓
-Next State → Invariants
-              ↓ valid
-Decision[State, Event]
-              ↓
-typed map / emit / append / combine
+Current State + Input
+          ↓
+Requirement[S,I] ── failure → application error
+          ↓ valid
+Transition[S,I,O]
+          ↓
+Invariant[O] ────── failure → application error
+          ↓ valid
+Decision[O,E]
 ```
 
-Commands remain intentions. Events remain facts. A Decision knows only its next
-state and typed events; it has no topic, offset, outbox, store, transport, or
-serialization concern. Fallible transitions return ordinary Go errors and do
-not require a modeling-owned Result hierarchy.
+The application explicitly invokes each step. modeling has no pipeline,
+runner, command handler, rules engine, registry, dispatcher, persistence, or
+transport responsibility.
 
-`MapState` changes only state; `MapEvents` changes only events in order. `Emit`
-and `AppendEvents` preserve the input snapshot. `Combine` selects the right
-state and concatenates left-before-right events. The mapping operations obey
-identity and composition observationally, and Combine is observationally
-associative. FlatMap and alias spellings are not part of v0.2.
+AllRules and AllRequirements preserve declaration order, stop at the first
+failure, preserve its identity, and accept zero operands. AnyRule and
+AnyRequirement require a first operand, stop at the first success, and return
+the final evaluated error when all operands fail. Nil constituents panic while
+composition is built, matching the existing Invariant programmer-error policy.
 
-`FailFast` returns the first invariant error unchanged. `Accumulate` evaluates
-every invariant and uses `errors.Join`, preserving `errors.Is` and `errors.As`.
-Nil invariants panic while the composition is built, rather than becoming a
-hidden runtime rule.
+`MapState` changes only Decision state; `MapEvents` changes only events in
+order. `Emit` and `AppendEvents` preserve the input snapshot. `Combine` selects
+the right state and concatenates left-before-right events. FlatMap, negation,
+predicate bridges, rule accumulation, and alias spellings are not part of v0.3.
 
 ## Immutability and cost
 

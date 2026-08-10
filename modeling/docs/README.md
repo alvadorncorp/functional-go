@@ -10,5 +10,7 @@ catalog and must not acquire a `docs/` tree.
 - [ADR-002: root facade over an internal Decision package](adr/modeling/adr-002-root-facade-internal-decision.md)
 - [TDD: v0.1 core](tdd/modeling/v0-1-core.md)
 - [TDD: v0.2 Decision composition](tdd/modeling/v0-2-decision-composition.md)
+- [ADR-003: nominal rules and operation requirements](adr/modeling/adr-003-rules-and-requirements.md)
+- [TDD: v0.3 Rules and Requirements](tdd/modeling/v0-3-rules-requirements.md)
 
 Formal records use the module-owned AKB spine; no copy belongs at repository root.
