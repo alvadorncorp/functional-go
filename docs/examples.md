@@ -14,6 +14,10 @@ Illustrative sketches for common uses. For API contracts see
 5. [`persistent.MapOf` / `SetOf` snapshots](#5-persistentmapof--setof-snapshots)
 6. [Versioned pure state with `state.Of` / `Apply` / `Materialize`](#6-versioned-pure-state-with-stateof--apply--materialize)
 7. [Parsing with Result and independent Validated checks](#7-parsing-with-result-and-independent-validated-checks)
+8. [Function composition with `Pipe`](#8-function-composition-with-pipe)
+9. [Predicate composition with `And`](#9-predicate-composition-with-and)
+10. [Ordering with `By`](#10-ordering-with-by)
+11. [Accumulating states with `ScanLeft`](#11-accumulating-states-with-scanleft)
 
 ---
 
@@ -273,9 +277,112 @@ independent checks. The values packages intentionally add no conversion API.
 
 ---
 
+## 8. Function composition with `Pipe`
+
+`function.Pipe` applies ordinary Go functions left to right. `Compose` is the
+same operation with arguments named in execution-reverse order.
+
+```go
+package presentation
+
+import (
+	"fmt"
+
+	"github.com/alvadorncorp/gopackages/functional/function"
+)
+
+func printDoubledLength() {
+	length := func(value string) int { return len(value) }
+	double := func(value int) int { return value * 2 }
+fmt.Println(function.Pipe(length, double)("abcd")) // 8
+}
+```
+
+---
+
+## 9. Predicate composition with `And`
+
+`predicate.And` composes ordinary predicates left to right and stops at the
+first false result. It is a standard-library-only leaf and needs no collection
+or function-combinator dependency.
+
+```go
+package eligibility
+
+import (
+	"fmt"
+
+	"github.com/alvadorncorp/gopackages/functional/predicate"
+)
+
+func printPositiveEven() {
+	positiveEven := predicate.And[int](
+		func(v int) bool { return v > 0 },
+		func(v int) bool { return v%2 == 0 },
+	)
+fmt.Println(positiveEven(4), positiveEven(3)) // true false
+}
+```
+
+---
+
+## 10. Ordering with `By`
+
+`order.By` compares a value through a projection. The result carries sign
+semantics: callers use `Less`, `Greater`, or `Equal` instead of assuming a
+specific negative or positive magnitude. `order` is a standard-library-only
+leaf and does not depend on the other primitive packages.
+
+```go
+package people
+
+import (
+	"fmt"
+
+	"github.com/alvadorncorp/gopackages/functional/order"
+)
+
+type person struct{ age int }
+
+func younger() {
+	byAge := order.By(func(value person) int { return value.age }, order.Natural[int]())
+	fmt.Println(order.Less(byAge)(person{age: 20}, person{age: 30})) // true
+}
+```
+
+---
+
+## 11. Accumulating states with `ScanLeft`
+
+`fold.ScanLeft` retains the initial state and every intermediate left-fold
+state. Its result has one more item than the input slice.
+
+```go
+package counters
+
+import (
+	"fmt"
+
+	"github.com/alvadorncorp/gopackages/functional/fold"
+)
+
+func printRunningTotals() {
+	totals := fold.ScanLeft([]int{1, 2, 3}, 0, func(total, value int) int {
+		return total + value
+	})
+	fmt.Println(totals) // [0 1 3 6]
+}
+```
+
+---
+
 ## See also
 
 - [overview](overview.md)
+- [package API: function](packages/function.md)
+- [package API: predicate](packages/predicate.md)
+- [package API: order](packages/order.md)
+- [package API: fold](packages/fold.md)
 - [functional values family](packages/values.md)
 - [values Optional](packages/values-optional.md)
 - [values Result](packages/values-result.md)

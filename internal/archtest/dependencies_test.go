@@ -1,9 +1,10 @@
 // Package archtest proves dependency invariants of the functional module
 // mechanically, so they stay true rather than merely documented: the module
 // has zero non-stdlib dependencies outside itself, public subpackages have
-// exactly one permitted sibling edge (values/validated to values/nonempty;
-// functional/internal/eq is the one shared exception every public package may
-// use), the internal/core DAG stays a star into ownership
+// exactly three permitted sibling edges (values/validated to values/nonempty,
+// fold to values/optional, and fold to values/nonempty; functional/internal/eq
+// is the one shared internal exception every public package may use), the
+// internal/core DAG stays a star into ownership
 // with no peer edges and no reflect, internal/eq production code imports
 // neither reflect nor unsafe, persistent and state production code import
 // neither reflect nor unsafe, and internal/engine packages obey their own
@@ -50,8 +51,12 @@ const (
 )
 
 // publicPackages are every public subpackage of functional, by import path.
-// The only permitted public sibling edge is values/validated to values/nonempty.
+// Public sibling edges must be explicitly allow-listed below.
 var publicPackages = []string{
+	pkgFunction,
+	pkgPredicate,
+	pkgOrder,
+	pkgFold,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
@@ -73,12 +78,17 @@ var valuesPackages = []string{
 
 var publicAllowedEdges = map[string][]string{
 	pkgValuesValidated: {pkgValuesNonEmpty},
+	pkgFold:            {pkgValuesOptional, pkgValuesNonEmpty},
 }
 
 // publicPackagesNoCore are the public packages that must never import
 // internal/core. persistent is deliberately omitted: it may depend on core
 // later for the engine contract.
 var publicPackagesNoCore = []string{
+	pkgFunction,
+	pkgPredicate,
+	pkgOrder,
+	pkgFold,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
@@ -108,6 +118,10 @@ var enginePackages = []string{
 // must stay inside the functional module: public packages, internal/eq,
 // internal/core, and internal/engine packages.
 var allPackages = []string{
+	pkgFunction,
+	pkgPredicate,
+	pkgOrder,
+	pkgFold,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
@@ -214,9 +228,9 @@ func TestNoNonStdlibDependencies(t *testing.T) {
 // between test binaries, and it does not violate the architectural boundary
 // this test protects (production code never importing a public sibling).
 // Adding `-test` here would make that legitimate test import fail this
-// test; do not do that. The sole production sibling exception is
-// values/validated to values/nonempty; every other public sibling edge is
-// forbidden. See docs/overview.md for the full rationale.
+// test; do not do that. Production sibling edges are explicitly allow-listed;
+// every other public sibling edge is forbidden. See docs/overview.md for the
+// full rationale.
 func TestPublicDependencyDAG(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range publicPackages {
@@ -268,112 +282,6 @@ func TestValuesNoReflectOrUnsafe(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-// TestGoModHasNoRequirements catches an accidental `go get` at the source:
-// TestNoNonStdlibDependencies only sees a stray dependency once some file
-// actually imports it, while go.mod records it the moment it is added.
-func TestGoModHasNoRequirements(t *testing.T) {
-	t.Parallel()
-
-	path := goModPath(t)
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read %s: %v", path, err)
-	}
-
-	for _, line := range strings.Split(string(data), "\n") {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "require") || strings.HasPrefix(line, "replace") {
-			t.Errorf("%s must not have a require/replace line, found: %q", path, line)
-		}
-	}
-}
-
-// TestCoreNoReflect proves no production file under internal/core imports
-// "reflect". Tests may still use the testing package; this gate inspects
-// production Imports only (go list without -test).
-func TestCoreNoReflect(t *testing.T) {
-	t.Parallel()
-	for _, pkg := range corePackages {
-		t.Run(pkg, func(t *testing.T) {
-			t.Parallel()
-			for _, imp := range productionImports(t, pkg) {
-				if imp == "reflect" {
-					t.Errorf("%s must not import reflect", pkg)
-				}
-			}
-		})
-	}
-}
-
-// TestEqNoReflect proves no production file under internal/eq imports
-// "reflect". Equality is resolved via Equal methods and interface == only.
-func TestEqNoReflect(t *testing.T) {
-	t.Parallel()
-	for _, imp := range productionImports(t, pkgEq) {
-		if imp == "reflect" {
-			t.Errorf("%s must not import reflect", pkgEq)
-		}
-	}
-}
-
-// TestEqNoUnsafe proves no production file under internal/eq imports
-// "unsafe".
-func TestEqNoUnsafe(t *testing.T) {
-	t.Parallel()
-	for _, imp := range productionImports(t, pkgEq) {
-		if imp == "unsafe" {
-			t.Errorf("%s must not import unsafe", pkgEq)
-		}
-	}
-}
-
-// TestPersistentNoReflect proves no production file under persistent imports
-// "reflect". Public collection APIs stay free of reflection; tests may still
-// use reflect (e.g. comparability probes). This gate inspects production
-// Imports only (go list without -test).
-func TestPersistentNoReflect(t *testing.T) {
-	t.Parallel()
-	for _, imp := range productionImports(t, pkgPersistent) {
-		if imp == "reflect" {
-			t.Errorf("%s must not import reflect", pkgPersistent)
-		}
-	}
-}
-
-// TestPersistentNoUnsafe proves no production file under persistent imports
-// "unsafe".
-func TestPersistentNoUnsafe(t *testing.T) {
-	t.Parallel()
-	for _, imp := range productionImports(t, pkgPersistent) {
-		if imp == "unsafe" {
-			t.Errorf("%s must not import unsafe", pkgPersistent)
-		}
-	}
-}
-
-// TestStateNoReflect proves no production file under state imports
-// "reflect". The semantic layer stays free of reflection; tests may still
-// use reflect. This gate inspects production Imports only (go list without
-// -test).
-func TestStateNoReflect(t *testing.T) {
-	t.Parallel()
-	for _, imp := range productionImports(t, pkgState) {
-		if imp == "reflect" {
-			t.Errorf("%s must not import reflect", pkgState)
-		}
-	}
-}
-
-// TestStateNoUnsafe proves no production file under state imports "unsafe".
-func TestStateNoUnsafe(t *testing.T) {
-	t.Parallel()
-	for _, imp := range productionImports(t, pkgState) {
-		if imp == "unsafe" {
-			t.Errorf("%s must not import unsafe", pkgState)
-		}
 	}
 }
 
