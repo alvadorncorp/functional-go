@@ -18,6 +18,12 @@ Rules and operation preconditions are explicit root-package functions:
 `AllRequirements` and non-empty `AnyRequirement`. Applications explicitly run
 Requirement, Transition, Invariant, and Decision; modeling provides no runner.
 
+Context-derived domain strategies live in the public
+[`modeling/policy`](policy/) capability. `Policy[I,O]` is a pure function type;
+`Constant`, `Map`, and `Contramap` adapt it, while `When`,
+`FirstApplicable`, and `Fallback` provide ordered Optional-based selection.
+No Policy symbol is reexported from the root package.
+
 ## Documentation
 
 - [Documentation index](docs/README.md)
@@ -28,6 +34,8 @@ Requirement, Transition, Invariant, and Decision; modeling provides no runner.
 - [TDD: v0.2 Decision composition](docs/tdd/modeling/v0-2-decision-composition.md)
 - [ADR-003: nominal rules and operation requirements](docs/adr/modeling/adr-003-rules-and-requirements.md)
 - [TDD: v0.3 Rules and Requirements](docs/tdd/modeling/v0-3-rules-requirements.md)
+- [ADR-005: additive Policy capability boundary](docs/adr/modeling/adr-005-policy-capability-boundary.md)
+- [TDD: Policy](docs/tdd/modeling/policy.md)
 
 ## Development
 

@@ -12,8 +12,10 @@ modeling/internal/decision
 functional/immutable
 ```
 
-Applications import only the root package. The internal Decision package is an
-enforceable implementation boundary, not another public API.
+Applications import the root package for Decision, Rule, Requirement,
+Transition, and Invariant. Context-derived strategies live in the distinct
+`modeling/policy` capability; the root does not reexport Policy symbols. The
+internal Decision package remains an enforceable implementation boundary.
 
 ## Structural semantics
 
@@ -40,6 +42,19 @@ Rule and Invariant deliberately remain distinct nominal types even though both
 return error. Requirement answers whether an input may be applied to current
 state; it is not a Transition hook. Ordinary functions remain assignable and
 all returned errors remain application-owned.
+
+## Policy capability
+
+`modeling/policy` represents `I → O`: a pure strategy that derives a domain
+result from one explicit context. `Constant`, `Map`, and `Contramap` reuse and
+adapt policies. `When` turns a Policy into `I → Optional[O]`,
+`FirstApplicable` selects the first Some in declaration order, and `Fallback`
+restores a total Policy.
+
+Policy is not Rule (`T → error`), Requirement (`S × I → error`), Transition
+(`S × I → O`), Change (`S → S`), or Reducer (`S × E → S`). It executes no
+effects and imports no sibling modeling capability. Applicability is Optional,
+never error. Multiple inputs belong in an application-owned context struct.
 
 ## Explicit decision flow
 

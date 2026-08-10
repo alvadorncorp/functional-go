@@ -12,5 +12,7 @@ catalog and must not acquire a `docs/` tree.
 - [TDD: v0.2 Decision composition](tdd/modeling/v0-2-decision-composition.md)
 - [ADR-003: nominal rules and operation requirements](adr/modeling/adr-003-rules-and-requirements.md)
 - [TDD: v0.3 Rules and Requirements](tdd/modeling/v0-3-rules-requirements.md)
+- [ADR-005: additive Policy capability boundary](adr/modeling/adr-005-policy-capability-boundary.md)
+- [TDD: Policy](tdd/modeling/policy.md)
 
 Formal records use the module-owned AKB spine; no copy belongs at repository root.
