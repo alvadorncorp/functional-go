@@ -6,19 +6,19 @@ title: Capability pública e aditiva de Policy
 status: Aceita
 tags: [modeling, policy, generics, optional, predicate, architecture]
 deciders: [alvadorn]
-related: [adr:modeling:001, adr:modeling:002, adr:modeling:003, tdd:modeling:v0-6-policy]
+related: [adr:modeling:001, adr:modeling:002, adr:modeling:003, tdd:modeling:policy]
 date: 2026-08-10
 ---
 # ADR-005: Capability pública e aditiva de Policy
 
 ## Contexto e problema
 
-O baseline entregue de modeling está em v0.3 e expõe primitives na raiz. Uma
-Policy responde qual resultado ou estratégia deriva de um contexto; ela não
-valida, não evolui estado e não executa efeitos. O pedido exige uma capability
-própria `modeling/policy`, sem aliases na raiz, e seleção condicional por
-Predicate e Optional. Isso contradiz deliberadamente o limite root-only e a
-proibição geral de tipos functional em APIs públicas.
+O baseline entregue de modeling expõe primitives na raiz. Uma Policy responde
+qual resultado ou estratégia deriva de um contexto; ela não valida, não evolui
+estado e não executa efeitos. O pedido exige uma capability própria
+`modeling/policy`, sem aliases na raiz, e seleção condicional por Predicate e
+Optional. Isso contradiz deliberadamente o limite root-only e a proibição geral
+de tipos functional em APIs públicas.
 
 O ID 004 permanece reservado ao predecessor planejado Reducer/Replay; Policy usa
 005 sem reescrever ou antecipar Change/Reducer/Replay.
@@ -28,7 +28,7 @@ O ID 004 permanece reservado ao predecessor planejado Reducer/Replay; Policy usa
 - manter funções puras, tipos de primeira classe e um único input genérico;
 - dar valor próprio à capability por transformação e seleção condicional;
 - representar não aplicabilidade como Optional, nunca error;
-- preservar todas as APIs v0.1–v0.3 e impedir runtime/dispatch dinâmico;
+- preservar todas as APIs existentes e impedir runtime/dispatch dinâmico;
 - limitar a exceção functional aos dois tipos realmente necessários.
 
 ## Opções consideradas

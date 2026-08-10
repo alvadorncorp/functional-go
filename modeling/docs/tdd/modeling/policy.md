@@ -1,20 +1,20 @@
 ---
 type: tdd
-id: tdd:modeling:v0-6-policy
+id: tdd:modeling:policy
 context: modeling
-title: Modeling v0.6 Policy
+title: Modeling Policy
 status: Aceito
 tags: [modeling, policy, generics, optional, predicate, testing]
 related: [adr:modeling:005, tdd:modeling:v0-3-rules-requirements]
 date: 2026-08-10
 ---
-# TDD: Modeling v0.6 Policy
+# TDD: Modeling Policy
 
 ## Escopo técnico
 
 Criar o package público `modeling/policy`, independente da raiz e de outras
-capabilities. O baseline observado é v0.3; Change/Reducer/Replay não são
-pré-requisitos nem fazem parte desta entrega.
+capabilities. Change/Reducer/Replay não são pré-requisitos nem fazem parte
+desta entrega.
 
 ## Contrato público
 
@@ -58,9 +58,10 @@ When → FirstApplicable → Fallback sem efeitos.
 
 ## Compatibilidade
 
-A API v0.1–v0.3 permanece intacta. Testes rodam no workspace e com `GOWORK=off`
-contra functional v1.1.0. A única mudança de metadata é o bump v1.0.1→v1.1.0;
-não há mudança de go.work, migração, config, benchmark ou publicação.
+A API pública existente permanece intacta. Testes rodam no workspace e com
+`GOWORK=off` contra functional v1.1.0. A única mudança de metadata é o bump
+autorizado de functional para v1.1.0; não há mudança de go.work, migração,
+config, benchmark ou publicação.
 
 ## Superfície excluída
 

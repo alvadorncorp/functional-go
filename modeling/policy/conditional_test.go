@@ -71,5 +71,7 @@ func TestConditionalsRejectNil(t *testing.T) {
 		policy.FirstApplicable(func(int) optional.Optional[int] { return optional.None[int]() }, nilConditional)
 	})
 	assertPanic(t, "modeling/policy: nil conditional", func() { policy.Fallback(nilConditional, p) })
-	assertPanic(t, "modeling/policy: nil policy", func() { policy.Fallback(func(int) optional.Optional[int] { return optional.None[int]() }, nilPolicy) })
+	assertPanic(t, "modeling/policy: nil policy", func() {
+		policy.Fallback(func(int) optional.Optional[int] { return optional.None[int]() }, nilPolicy)
+	})
 }
