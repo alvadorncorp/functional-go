@@ -23,6 +23,10 @@
 // Fact-to-state evolution lives in the separate modeling/reducer capability.
 // It defines Reducer and ordered Replay without moving or changing root types.
 //
+// Derived-representation evolution lives in the separate modeling/projection
+// capability. It defines Projection and ordered Project without root aliases,
+// persistence, subscriptions, or CQRS runtime behavior.
+//
 // The package has no engine, runner, registry, reflection, dispatcher, state
 // manager, persistence, transport, or infrastructure responsibility. Exported
 // signatures remain ordinary Go and standard-library types.

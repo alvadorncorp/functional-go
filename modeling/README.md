@@ -36,6 +36,12 @@ Reducer materializes facts into state; Replay is a synchronous left fold, not an
 Event Sourcing runtime. Every existing root-package, change, and policy contract
 remains unchanged.
 
+The orthogonal [`modeling/projection`](projection/) capability defines
+`Projection[P,E] func(P,E) P` and ordered `Project` over `immutable.List[E]`.
+Projection derives read models and summaries; it is not a Reducer alias,
+persistence adapter, broker consumer, or CQRS runtime. No Projection symbol is
+reexported from the root package.
+
 ## Documentation
 
 - [Documentation index](docs/README.md)
@@ -53,6 +59,9 @@ remains unchanged.
 - [TDD: Policy](docs/tdd/modeling/policy.md)
 - [ADR-006: additive reducer capability boundary](docs/adr/modeling/adr-006-reducer-capability-boundary.md)
 - [TDD: Reducer and Replay](docs/tdd/modeling/reducer-replay.md)
+- [Projection package guide](docs/packages/projection.md)
+- [ADR-007: additive projection capability boundary](docs/adr/modeling/adr-007-projection-capability-boundary.md)
+- [TDD: Projection and Project](docs/tdd/modeling/projection.md)
 
 ## Development
 
