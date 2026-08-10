@@ -91,7 +91,7 @@ func productionPackages(t *testing.T) []listedPackage {
 	return production
 }
 
-func dependencyAllowed(pkg listedPackage) bool {
+func dependencyAllowed(pkg *listedPackage) bool {
 	return pkg.Standard || pkg.ImportPath == modelingModule ||
 		strings.HasPrefix(pkg.ImportPath, modelingModule+"/") ||
 		pkg.ImportPath == functionalModule ||
@@ -112,7 +112,7 @@ func TestOnlyApprovedDependencyClosure(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		t.Run(production.ImportPath, func(t *testing.T) {
 			for _, dependency := range goList(t, "-deps", "-json", production.ImportPath) {
-				if !dependencyAllowed(dependency) {
+				if !dependencyAllowed(&dependency) {
 					t.Errorf("%s depends on unapproved %s", production.ImportPath, dependency.ImportPath)
 				}
 			}
@@ -135,7 +135,7 @@ func TestNoForbiddenDirectImports(t *testing.T) {
 func TestNoFunctionalTypesInPublicAPI(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		t.Run(production.ImportPath, func(t *testing.T) {
-			files := productionFiles(t, production)
+			files := productionFiles(t, &production)
 			origins := functionalTypeOrigins(files)
 			for _, file := range files {
 				aliases, dotImport := functionalImportAliases(file)
@@ -165,7 +165,7 @@ func TestFunctionalDoesNotDependOnModeling(t *testing.T) {
 
 func TestNoMagicRuntimeAPI(t *testing.T) {
 	for _, production := range productionPackages(t) {
-		for _, name := range productionNames(t, production) {
+		for _, name := range productionNames(t, &production) {
 			if _, forbidden := forbiddenExportedNames[name]; forbidden {
 				t.Errorf("%s exports forbidden runtime API %s", production.ImportPath, name)
 			}
@@ -175,7 +175,7 @@ func TestNoMagicRuntimeAPI(t *testing.T) {
 
 func TestNoMutableProductionGlobals(t *testing.T) {
 	for _, production := range productionPackages(t) {
-		for _, file := range productionFiles(t, production) {
+		for _, file := range productionFiles(t, &production) {
 			for _, declaration := range file.Decls {
 				generic, ok := declaration.(*ast.GenDecl)
 				if ok && generic.Tok == token.VAR {
@@ -199,7 +199,7 @@ func TestPackageEnumerationIsComplete(t *testing.T) {
 }
 
 func TestDependencyGateCanFail(t *testing.T) {
-	if dependencyAllowed(listedPackage{ImportPath: "example.com/unapproved"}) {
+	if dependencyAllowed(&listedPackage{ImportPath: "example.com/unapproved"}) {
 		t.Fatal("dependency gate accepted an external package")
 	}
 	for _, imported := range []string{
@@ -439,7 +439,7 @@ func functionalTypeInExpr(
 	return found
 }
 
-func productionFiles(t *testing.T, pkg listedPackage) []*ast.File {
+func productionFiles(t *testing.T, pkg *listedPackage) []*ast.File {
 	t.Helper()
 	files := make([]*ast.File, 0, len(pkg.GoFiles))
 	for _, name := range pkg.GoFiles {
@@ -453,7 +453,7 @@ func productionFiles(t *testing.T, pkg listedPackage) []*ast.File {
 	return files
 }
 
-func productionNames(t *testing.T, pkg listedPackage) []string {
+func productionNames(t *testing.T, pkg *listedPackage) []string {
 	t.Helper()
 	var names []string
 	for _, file := range productionFiles(t, pkg) {

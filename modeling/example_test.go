@@ -9,9 +9,11 @@ import (
 	"github.com/alvadorncorp/gopackages/modeling"
 )
 
-type exampleOrderID string
-type exampleProductID string
-type exampleQuantity int
+type (
+	exampleOrderID   string
+	exampleProductID string
+	exampleQuantity  int
+)
 
 type exampleMoney struct {
 	cents    int64
@@ -71,18 +73,16 @@ var exampleOrderInvariant = modeling.FailFast(
 )
 
 func exampleAddItemTransition(
-	current exampleOrderState,
+	current *exampleOrderState,
 	command exampleAddItem,
 ) (modeling.Decision[exampleOrderState, exampleOrderEvent], error) {
-	unchanged := modeling.Decide[exampleOrderEvent](current)
+	unchanged := modeling.Decide[exampleOrderEvent](*current)
 	if !current.open {
 		return unchanged, errExampleClosedOrder
 	}
 
-	next := current
-	next.items = next.items.Append(exampleOrderItem{
-		product: command.product, quantity: command.quantity, price: command.price,
-	})
+	next := *current
+	next.items = next.items.Append(exampleOrderItem(command))
 	if err := exampleOrderInvariant(next); err != nil {
 		return unchanged, err
 	}
@@ -97,17 +97,16 @@ func Example() {
 	current := exampleOrderState{id: "order-1", open: true}
 	command := exampleAddItem{product: "book", quantity: 2, price: price}
 	var transition modeling.FallibleTransition[
-		exampleOrderState,
+		*exampleOrderState,
 		exampleAddItem,
 		modeling.Decision[exampleOrderState, exampleOrderEvent],
 	] = exampleAddItemTransition
 
-	decision, err := transition.Apply(current, command)
+	decision, err := transition.Apply(&current, command)
 	fmt.Println(decision.State().id, decision.State().items.Len(), decision.EventCount(), err)
 	for event := range decision.Events() {
-		switch event := event.(type) {
-		case exampleOrderItemAdded:
-			fmt.Println("added", event.product, event.quantity)
+		if added, ok := event.(exampleOrderItemAdded); ok {
+			fmt.Println("added", added.product, added.quantity)
 		}
 	}
 
