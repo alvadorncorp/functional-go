@@ -1,17 +1,17 @@
-package persistent_test
+package immutable_test
 
 import (
 	"maps"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 )
 
 func TestMapOf(t *testing.T) {
 	t.Parallel()
 
 	source := map[string]int{"a": 1, "b": 2}
-	m := persistent.MapOf(source)
+	m := immutable.MapOf(source)
 
 	if got, want := m.Len(), 2; got != want {
 		t.Fatalf("Len() = %d, want %d", got, want)
@@ -33,7 +33,7 @@ func TestCollectMap(t *testing.T) {
 	t.Parallel()
 
 	seq := maps.All(map[string]int{"x": 1, "y": 2})
-	m := persistent.CollectMap(seq)
+	m := immutable.CollectMap(seq)
 
 	if got, want := m.Len(), 2; got != want {
 		t.Fatalf("Len() = %d, want %d", got, want)
@@ -46,7 +46,7 @@ func TestCollectMap(t *testing.T) {
 func TestMapGet(t *testing.T) {
 	t.Parallel()
 
-	m := persistent.MapOf(map[string]int{"a": 1})
+	m := immutable.MapOf(map[string]int{"a": 1})
 
 	tests := []struct {
 		name    string
@@ -72,7 +72,7 @@ func TestMapGet(t *testing.T) {
 func TestMapHas(t *testing.T) {
 	t.Parallel()
 
-	m := persistent.MapOf(map[string]int{"a": 1})
+	m := immutable.MapOf(map[string]int{"a": 1})
 
 	if !m.Has("a") {
 		t.Error(`Has("a") = false, want true`)
@@ -85,7 +85,7 @@ func TestMapHas(t *testing.T) {
 func TestMapSet(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.MapOf(map[string]int{"a": 1})
+	base := immutable.MapOf(map[string]int{"a": 1})
 	before := maps.Clone(base.Items())
 
 	updated := base.Set("b", 2)
@@ -105,7 +105,7 @@ func TestMapSet(t *testing.T) {
 func TestMapSetOverwritesExistingKey(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.MapOf(map[string]int{"a": 1})
+	base := immutable.MapOf(map[string]int{"a": 1})
 	updated := base.Set("a", 999)
 
 	if got, ok := updated.Get("a"); got != 999 || !ok {
@@ -119,7 +119,7 @@ func TestMapSetOverwritesExistingKey(t *testing.T) {
 func TestMapDelete(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.MapOf(map[string]int{"a": 1, "b": 2})
+	base := immutable.MapOf(map[string]int{"a": 1, "b": 2})
 	before := base.Items()
 
 	deleted := base.Delete("a")
@@ -139,7 +139,7 @@ func TestMapDelete(t *testing.T) {
 func TestMapDeleteAbsentKeyIsNoOp(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.MapOf(map[string]int{"a": 1})
+	base := immutable.MapOf(map[string]int{"a": 1})
 	result := base.Delete("missing")
 
 	if !result.Equal(base) {
@@ -151,7 +151,7 @@ func TestMapAll(t *testing.T) {
 	t.Parallel()
 
 	source := map[string]int{"a": 1, "b": 2, "c": 3}
-	m := persistent.MapOf(source)
+	m := immutable.MapOf(source)
 
 	got := map[string]int{}
 	for k, v := range m.All() {
@@ -165,7 +165,7 @@ func TestMapAll(t *testing.T) {
 func TestMapKeys(t *testing.T) {
 	t.Parallel()
 
-	m := persistent.MapOf(map[string]int{"a": 1, "b": 2})
+	m := immutable.MapOf(map[string]int{"a": 1, "b": 2})
 	got := map[string]bool{}
 	for k := range m.Keys() {
 		got[k] = true
@@ -178,7 +178,7 @@ func TestMapKeys(t *testing.T) {
 func TestMapValues(t *testing.T) {
 	t.Parallel()
 
-	m := persistent.MapOf(map[string]int{"a": 1, "b": 2})
+	m := immutable.MapOf(map[string]int{"a": 1, "b": 2})
 	sum := 0
 	for v := range m.Values() {
 		sum += v
@@ -191,7 +191,7 @@ func TestMapValues(t *testing.T) {
 func TestMapItemsCopies(t *testing.T) {
 	t.Parallel()
 
-	m := persistent.MapOf(map[string]int{"a": 1})
+	m := immutable.MapOf(map[string]int{"a": 1})
 	items := m.Items()
 	items["a"] = 999
 	items["new"] = 1
@@ -207,7 +207,7 @@ func TestMapItemsCopies(t *testing.T) {
 func TestMapItemsIsNeverNil(t *testing.T) {
 	t.Parallel()
 
-	var zero persistent.Map[string, int]
+	var zero immutable.Map[string, int]
 	items := zero.Items()
 	// Must be safe to write into: a nil map here would panic on assignment.
 	items["a"] = 1
@@ -221,33 +221,33 @@ func TestMapEqual(t *testing.T) {
 
 	tests := []struct {
 		name string
-		a    persistent.Map[string, int]
-		b    persistent.Map[string, int]
+		a    immutable.Map[string, int]
+		b    immutable.Map[string, int]
 		want bool
 	}{
-		{"both empty", persistent.MapOf(map[string]int{}), persistent.MapOf(map[string]int{}), true},
+		{"both empty", immutable.MapOf(map[string]int{}), immutable.MapOf(map[string]int{}), true},
 		{
 			"same entries",
-			persistent.MapOf(map[string]int{"a": 1, "b": 2}),
-			persistent.MapOf(map[string]int{"b": 2, "a": 1}),
+			immutable.MapOf(map[string]int{"a": 1, "b": 2}),
+			immutable.MapOf(map[string]int{"b": 2, "a": 1}),
 			true,
 		},
 		{
 			"different value",
-			persistent.MapOf(map[string]int{"a": 1}),
-			persistent.MapOf(map[string]int{"a": 2}),
+			immutable.MapOf(map[string]int{"a": 1}),
+			immutable.MapOf(map[string]int{"a": 2}),
 			false,
 		},
 		{
 			"different key set",
-			persistent.MapOf(map[string]int{"a": 1}),
-			persistent.MapOf(map[string]int{"b": 1}),
+			immutable.MapOf(map[string]int{"a": 1}),
+			immutable.MapOf(map[string]int{"b": 1}),
 			false,
 		},
 		{
 			"different length",
-			persistent.MapOf(map[string]int{"a": 1}),
-			persistent.MapOf(map[string]int{"a": 1, "b": 2}),
+			immutable.MapOf(map[string]int{"a": 1}),
+			immutable.MapOf(map[string]int{"a": 1, "b": 2}),
 			false,
 		},
 	}
@@ -264,14 +264,14 @@ func TestMapEqual(t *testing.T) {
 func TestMapIsEmpty(t *testing.T) {
 	t.Parallel()
 
-	var zero persistent.Map[string, int]
+	var zero immutable.Map[string, int]
 	if !zero.IsEmpty() {
 		t.Fatal("zero Map.IsEmpty() = false, want true")
 	}
-	if !persistent.MapOf(map[string]int{}).IsEmpty() {
+	if !immutable.MapOf(map[string]int{}).IsEmpty() {
 		t.Fatal("empty MapOf.IsEmpty() = false, want true")
 	}
-	if persistent.MapOf(map[string]int{"a": 1}).IsEmpty() {
+	if immutable.MapOf(map[string]int{"a": 1}).IsEmpty() {
 		t.Fatal("non-empty Map.IsEmpty() = true, want false")
 	}
 }
@@ -284,51 +284,51 @@ func TestMapEqualFunc(t *testing.T) {
 
 	tests := []struct {
 		name string
-		a    persistent.Map[string, int]
-		b    persistent.Map[string, int]
+		a    immutable.Map[string, int]
+		b    immutable.Map[string, int]
 		eq   func(int, int) bool
 		want bool
 	}{
-		{"both empty", persistent.MapOf(map[string]int{}), persistent.MapOf(map[string]int{}), eq, true},
+		{"both empty", immutable.MapOf(map[string]int{}), immutable.MapOf(map[string]int{}), eq, true},
 		{
 			"same entries",
-			persistent.MapOf(map[string]int{"a": 1, "b": 2}),
-			persistent.MapOf(map[string]int{"b": 2, "a": 1}),
+			immutable.MapOf(map[string]int{"a": 1, "b": 2}),
+			immutable.MapOf(map[string]int{"b": 2, "a": 1}),
 			eq,
 			true,
 		},
 		{
 			"different value",
-			persistent.MapOf(map[string]int{"a": 1}),
-			persistent.MapOf(map[string]int{"a": 2}),
+			immutable.MapOf(map[string]int{"a": 1}),
+			immutable.MapOf(map[string]int{"a": 2}),
 			eq,
 			false,
 		},
 		{
 			"different key set same length",
-			persistent.MapOf(map[string]int{"a": 1}),
-			persistent.MapOf(map[string]int{"b": 1}),
+			immutable.MapOf(map[string]int{"a": 1}),
+			immutable.MapOf(map[string]int{"b": 1}),
 			eq,
 			false,
 		},
 		{
 			"different length",
-			persistent.MapOf(map[string]int{"a": 1}),
-			persistent.MapOf(map[string]int{"a": 1, "b": 2}),
+			immutable.MapOf(map[string]int{"a": 1}),
+			immutable.MapOf(map[string]int{"a": 1, "b": 2}),
 			eq,
 			false,
 		},
 		{
 			"eq rejects value",
-			persistent.MapOf(map[string]int{"a": 1}),
-			persistent.MapOf(map[string]int{"a": 1}),
+			immutable.MapOf(map[string]int{"a": 1}),
+			immutable.MapOf(map[string]int{"a": 1}),
 			alwaysFalse,
 			false,
 		},
 		{
 			"custom abs equality",
-			persistent.MapOf(map[string]int{"a": 1, "b": -2}),
-			persistent.MapOf(map[string]int{"a": -1, "b": 2}),
+			immutable.MapOf(map[string]int{"a": 1, "b": -2}),
+			immutable.MapOf(map[string]int{"a": -1, "b": 2}),
 			func(a, b int) bool {
 				if a < 0 {
 					a = -a
@@ -354,7 +354,7 @@ func TestMapEqualFunc(t *testing.T) {
 func TestMapSetPreservesOlderVersions(t *testing.T) {
 	t.Parallel()
 
-	v1 := persistent.MapOf(map[string]int{"a": 1, "b": 2})
+	v1 := immutable.MapOf(map[string]int{"a": 1, "b": 2})
 	v2 := v1.Set("c", 3)
 	v3 := v2.Set("a", 99).Set("d", 4)
 
@@ -372,7 +372,7 @@ func TestMapSetPreservesOlderVersions(t *testing.T) {
 func TestMapDeletePreservesOlderVersions(t *testing.T) {
 	t.Parallel()
 
-	v1 := persistent.MapOf(map[string]int{"a": 1, "b": 2, "c": 3})
+	v1 := immutable.MapOf(map[string]int{"a": 1, "b": 2, "c": 3})
 	v2 := v1.Delete("b")
 	v3 := v2.Delete("a").Set("d", 4)
 
@@ -390,7 +390,7 @@ func TestMapDeletePreservesOlderVersions(t *testing.T) {
 func TestMapZeroValueSet(t *testing.T) {
 	t.Parallel()
 
-	var m persistent.Map[string, int]
+	var m immutable.Map[string, int]
 	if got := m.Len(); got != 0 {
 		t.Fatalf("zero Map Len() = %d, want 0", got)
 	}
@@ -413,7 +413,7 @@ func TestMapZeroValueSet(t *testing.T) {
 func TestMapZeroValueDelete(t *testing.T) {
 	t.Parallel()
 
-	var m persistent.Map[string, int]
+	var m immutable.Map[string, int]
 	// Delete on a zero Map must materialize a seeded empty root rather than
 	// freezing a zero seed into the lineage.
 	deleted := m.Delete("missing")
@@ -433,7 +433,7 @@ func TestMapZeroValueDelete(t *testing.T) {
 func TestMapZeroValueBuilder(t *testing.T) {
 	t.Parallel()
 
-	var m persistent.Map[string, int]
+	var m immutable.Map[string, int]
 	built := m.Builder().Set("a", 1).Set("b", 2).Build()
 
 	if got, want := built.Len(), 2; got != want {
@@ -453,7 +453,7 @@ func TestMapZeroValueBuilder(t *testing.T) {
 func TestMapIndependentZeroValues(t *testing.T) {
 	t.Parallel()
 
-	var a, b persistent.Map[string, int]
+	var a, b immutable.Map[string, int]
 	a1 := a.Set("x", 1)
 	b1 := b.Set("y", 2)
 

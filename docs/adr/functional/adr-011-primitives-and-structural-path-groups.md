@@ -21,7 +21,7 @@ descoberta sem criar facade de reexport nem pasta `runtime/`.
 
 - Manter um conceito ≈ um pacote Go (sem package nos diretórios de grupo).
 - Preservar o DAG e as arestas já archtestadas (só mudam os import paths).
-- Evitar `runtime/` — `persistent` e `state` permanecem no root do módulo.
+- Evitar `runtime/` — `immutable` e `state` permanecem no root do módulo.
 - Aceitar breaking change de paths (módulo ainda v0).
 
 ## Opções Consideradas
@@ -32,7 +32,7 @@ Zero churn de import; descoberta só por docs.
 
 ### Opção 2: `primitives/`, `structural/`, e `runtime/`
 
-Inclui collections/state sob um prefixo; rejeitada — `persistent`/`state` não
+Inclui collections/state sob um prefixo; rejeitada — `immutable`/`state` não
 compartilham lei de família com os leves e o prefixo `runtime` sugere
 infraestrutura que o módulo não pretende unificar.
 
@@ -40,7 +40,7 @@ infraestrutura que o módulo não pretende unificar.
 
 - `primitives/{function,predicate,order,fold}`
 - `structural/{tuple,lazy,iterator,optics}`
-- `values/*`, `persistent`, `state` inalterados em posição relativa
+- `values/*`, `immutable`, `state` inalterados em posição relativa
 
 ## Decisão
 

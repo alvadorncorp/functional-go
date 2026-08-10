@@ -26,7 +26,7 @@ the module's existing sibling-import rule globally.
 - Preserve useful, documented zero values and value-type cost semantics.
 - Keep Optional, Result, Either, and NonEmpty standard-library-only.
 - Permit Validated to depend only on NonEmpty.
-- Keep existing core, engine, persistent, state, valueobject, and optional APIs untouched.
+- Keep existing core, engine, immutable, state, valueobject, and optional APIs untouched.
 - Enforce the dependency matrix and no-reflect/no-unsafe rule mechanically.
 
 ## Options considered
@@ -60,7 +60,7 @@ validated  -> nonempty
 ```
 
 All values packages are forbidden from importing legacy public siblings,
-`internal/core`, `internal/engine`, `persistent`, `state`, `reflect`, or
+`internal/core`, `internal/engine`, `immutable`, `state`, `reflect`, or
 `unsafe`.
 
 Architecture tests enumerate all five packages, allow only the directed edge

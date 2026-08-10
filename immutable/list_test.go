@@ -1,16 +1,16 @@
-package persistent_test
+package immutable_test
 
 import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 )
 
 func TestListOf(t *testing.T) {
 	t.Parallel()
 
-	l := persistent.ListOf(1, 2, 3)
+	l := immutable.ListOf(1, 2, 3)
 	if got, want := l.Len(), 3; got != want {
 		t.Fatalf("Len() = %d, want %d", got, want)
 	}
@@ -18,7 +18,7 @@ func TestListOf(t *testing.T) {
 	// The caller's backing array must not be retained: mutating the source
 	// slice after construction must not reach the List.
 	source := []int{1, 2, 3}
-	fromSlice := persistent.ListOf(source...)
+	fromSlice := immutable.ListOf(source...)
 	source[0] = 999
 	if got := fromSlice.At(0); got != 1 {
 		t.Fatalf("At(0) = %d after external mutation of source, want 1 (unaffected)", got)
@@ -29,7 +29,7 @@ func TestCollectList(t *testing.T) {
 	t.Parallel()
 
 	seq := slices.Values([]string{"a", "b", "c"})
-	l := persistent.CollectList(seq)
+	l := immutable.CollectList(seq)
 
 	if got, want := l.Items(), []string{"a", "b", "c"}; !slices.Equal(got, want) {
 		t.Fatalf("Items() = %v, want %v", got, want)
@@ -39,7 +39,7 @@ func TestCollectList(t *testing.T) {
 func TestListAt(t *testing.T) {
 	t.Parallel()
 
-	l := persistent.ListOf("x", "y", "z")
+	l := immutable.ListOf("x", "y", "z")
 
 	tests := []struct {
 		name string
@@ -63,7 +63,7 @@ func TestListAt(t *testing.T) {
 func TestListAtPanicsOutOfRange(t *testing.T) {
 	t.Parallel()
 
-	l := persistent.ListOf(1, 2, 3)
+	l := immutable.ListOf(1, 2, 3)
 
 	tests := []struct {
 		name string
@@ -80,7 +80,7 @@ func TestListAtPanicsOutOfRange(t *testing.T) {
 
 			target := l
 			if tt.name == "empty list index 0" {
-				target = persistent.ListOf[int]()
+				target = immutable.ListOf[int]()
 			}
 
 			defer func() {
@@ -88,8 +88,8 @@ func TestListAtPanicsOutOfRange(t *testing.T) {
 				if r == nil {
 					t.Fatal("At did not panic")
 				}
-				if r != "persistent: index out of range" {
-					t.Fatalf("panic value = %v, want %q", r, "persistent: index out of range")
+				if r != "immutable: index out of range" {
+					t.Fatalf("panic value = %v, want %q", r, "immutable: index out of range")
 				}
 			}()
 			_ = target.At(tt.i)
@@ -100,7 +100,7 @@ func TestListAtPanicsOutOfRange(t *testing.T) {
 func TestListAppend(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.ListOf(1, 2)
+	base := immutable.ListOf(1, 2)
 	before := slices.Collect(base.Values())
 
 	appended := base.Append(3, 4)
@@ -118,7 +118,7 @@ func TestListAppend(t *testing.T) {
 func TestListAppendNoArgs(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.ListOf(1, 2)
+	base := immutable.ListOf(1, 2)
 	result := base.Append()
 	if !result.Equal(base) {
 		t.Fatalf("Append() with no args = %v, want equal to base %v", result.Items(), base.Items())
@@ -128,7 +128,7 @@ func TestListAppendNoArgs(t *testing.T) {
 func TestListSet(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.ListOf("a", "b", "c")
+	base := immutable.ListOf("a", "b", "c")
 	before := slices.Collect(base.Values())
 
 	updated := base.Set(1, "B")
@@ -145,12 +145,12 @@ func TestListSet(t *testing.T) {
 func TestListSetPanicsOutOfRange(t *testing.T) {
 	t.Parallel()
 
-	l := persistent.ListOf(1, 2, 3)
+	l := immutable.ListOf(1, 2, 3)
 
 	defer func() {
 		r := recover()
-		if r != "persistent: index out of range" {
-			t.Fatalf("panic value = %v, want %q", r, "persistent: index out of range")
+		if r != "immutable: index out of range" {
+			t.Fatalf("panic value = %v, want %q", r, "immutable: index out of range")
 		}
 	}()
 	_ = l.Set(-1, 0)
@@ -159,7 +159,7 @@ func TestListSetPanicsOutOfRange(t *testing.T) {
 func TestListDelete(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.ListOf(1, 2, 3, 4)
+	base := immutable.ListOf(1, 2, 3, 4)
 	before := slices.Collect(base.Values())
 
 	deleted := base.Delete(1)
@@ -176,12 +176,12 @@ func TestListDelete(t *testing.T) {
 func TestListDeletePanicsOutOfRange(t *testing.T) {
 	t.Parallel()
 
-	l := persistent.ListOf(1, 2, 3)
+	l := immutable.ListOf(1, 2, 3)
 
 	defer func() {
 		r := recover()
-		if r != "persistent: index out of range" {
-			t.Fatalf("panic value = %v, want %q", r, "persistent: index out of range")
+		if r != "immutable: index out of range" {
+			t.Fatalf("panic value = %v, want %q", r, "immutable: index out of range")
 		}
 	}()
 	_ = l.Delete(3)
@@ -190,7 +190,7 @@ func TestListDeletePanicsOutOfRange(t *testing.T) {
 func TestListValues(t *testing.T) {
 	t.Parallel()
 
-	l := persistent.ListOf(1, 2, 3)
+	l := immutable.ListOf(1, 2, 3)
 	var got []int
 	for v := range l.Values() {
 		got = append(got, v)
@@ -203,7 +203,7 @@ func TestListValues(t *testing.T) {
 func TestListValuesStopsEarly(t *testing.T) {
 	t.Parallel()
 
-	l := persistent.ListOf(1, 2, 3, 4, 5)
+	l := immutable.ListOf(1, 2, 3, 4, 5)
 	var got []int
 	for v := range l.Values() {
 		got = append(got, v)
@@ -219,7 +219,7 @@ func TestListValuesStopsEarly(t *testing.T) {
 func TestListAll(t *testing.T) {
 	t.Parallel()
 
-	l := persistent.ListOf("a", "b", "c")
+	l := immutable.ListOf("a", "b", "c")
 	var gotIdx []int
 	var gotVal []string
 	for i, v := range l.All() {
@@ -237,7 +237,7 @@ func TestListAll(t *testing.T) {
 func TestListItemsCopies(t *testing.T) {
 	t.Parallel()
 
-	l := persistent.ListOf(1, 2, 3)
+	l := immutable.ListOf(1, 2, 3)
 	items := l.Items()
 	items[0] = 999
 
@@ -251,15 +251,15 @@ func TestListEqual(t *testing.T) {
 
 	tests := []struct {
 		name string
-		a    persistent.List[int]
-		b    persistent.List[int]
+		a    immutable.List[int]
+		b    immutable.List[int]
 		want bool
 	}{
-		{"both empty", persistent.ListOf[int](), persistent.ListOf[int](), true},
-		{"same elements same order", persistent.ListOf(1, 2, 3), persistent.ListOf(1, 2, 3), true},
-		{"different order", persistent.ListOf(1, 2, 3), persistent.ListOf(3, 2, 1), false},
-		{"different length", persistent.ListOf(1, 2), persistent.ListOf(1, 2, 3), false},
-		{"different values", persistent.ListOf(1, 2, 3), persistent.ListOf(1, 9, 3), false},
+		{"both empty", immutable.ListOf[int](), immutable.ListOf[int](), true},
+		{"same elements same order", immutable.ListOf(1, 2, 3), immutable.ListOf(1, 2, 3), true},
+		{"different order", immutable.ListOf(1, 2, 3), immutable.ListOf(3, 2, 1), false},
+		{"different length", immutable.ListOf(1, 2), immutable.ListOf(1, 2, 3), false},
+		{"different values", immutable.ListOf(1, 2, 3), immutable.ListOf(1, 9, 3), false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -274,14 +274,14 @@ func TestListEqual(t *testing.T) {
 func TestListIsEmpty(t *testing.T) {
 	t.Parallel()
 
-	var zero persistent.List[int]
+	var zero immutable.List[int]
 	if !zero.IsEmpty() {
 		t.Fatal("zero List.IsEmpty() = false, want true")
 	}
-	if !persistent.ListOf[int]().IsEmpty() {
+	if !immutable.ListOf[int]().IsEmpty() {
 		t.Fatal("empty ListOf.IsEmpty() = false, want true")
 	}
-	if persistent.ListOf(1).IsEmpty() {
+	if immutable.ListOf(1).IsEmpty() {
 		t.Fatal("non-empty List.IsEmpty() = true, want false")
 	}
 }
@@ -294,20 +294,20 @@ func TestListEqualFunc(t *testing.T) {
 
 	tests := []struct {
 		name string
-		a    persistent.List[int]
-		b    persistent.List[int]
+		a    immutable.List[int]
+		b    immutable.List[int]
 		eq   func(int, int) bool
 		want bool
 	}{
-		{"both empty", persistent.ListOf[int](), persistent.ListOf[int](), eq, true},
-		{"same elements", persistent.ListOf(1, 2, 3), persistent.ListOf(1, 2, 3), eq, true},
-		{"different order", persistent.ListOf(1, 2, 3), persistent.ListOf(3, 2, 1), eq, false},
-		{"different length", persistent.ListOf(1, 2), persistent.ListOf(1, 2, 3), eq, false},
-		{"eq rejects pair", persistent.ListOf(1, 2, 3), persistent.ListOf(1, 2, 3), alwaysFalse, false},
+		{"both empty", immutable.ListOf[int](), immutable.ListOf[int](), eq, true},
+		{"same elements", immutable.ListOf(1, 2, 3), immutable.ListOf(1, 2, 3), eq, true},
+		{"different order", immutable.ListOf(1, 2, 3), immutable.ListOf(3, 2, 1), eq, false},
+		{"different length", immutable.ListOf(1, 2), immutable.ListOf(1, 2, 3), eq, false},
+		{"eq rejects pair", immutable.ListOf(1, 2, 3), immutable.ListOf(1, 2, 3), alwaysFalse, false},
 		{
 			"custom abs equality",
-			persistent.ListOf(1, -2, 3),
-			persistent.ListOf(-1, 2, -3),
+			immutable.ListOf(1, -2, 3),
+			immutable.ListOf(-1, 2, -3),
 			func(a, b int) bool {
 				if a < 0 {
 					a = -a
@@ -333,7 +333,7 @@ func TestListEqualFunc(t *testing.T) {
 func TestListAppendPreservesOlderVersions(t *testing.T) {
 	t.Parallel()
 
-	v1 := persistent.ListOf(1)
+	v1 := immutable.ListOf(1)
 	v2 := v1.Append(2)
 	v3 := v2.Append(3, 4)
 
@@ -351,7 +351,7 @@ func TestListAppendPreservesOlderVersions(t *testing.T) {
 func TestListSetPreservesOlderVersions(t *testing.T) {
 	t.Parallel()
 
-	v1 := persistent.ListOf(10, 20, 30)
+	v1 := immutable.ListOf(10, 20, 30)
 	v2 := v1.Set(1, 200)
 	v3 := v2.Set(0, 100).Set(2, 300)
 
@@ -369,7 +369,7 @@ func TestListSetPreservesOlderVersions(t *testing.T) {
 func TestListDeletePreservesOlderVersions(t *testing.T) {
 	t.Parallel()
 
-	v1 := persistent.ListOf(1, 2, 3, 4)
+	v1 := immutable.ListOf(1, 2, 3, 4)
 	v2 := v1.Delete(1) // drop 2 → [1, 3, 4]
 	v3 := v2.Delete(0) // drop 1 → [3, 4]
 	v4 := v3.Append(5) // [3, 4, 5]

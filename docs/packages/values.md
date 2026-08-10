@@ -84,12 +84,12 @@ chosen by the caller, such as two input formats or a routing decision.
 therefore the appropriate type for fail-fast operation outcomes. Neither type
 provides a conversion API to the other.
 
-## NonEmpty versus persistent.List
+## NonEmpty versus immutable.List
 
 `NonEmpty` guarantees minimum cardinality and makes defensive copies at its
-slice boundary. `persistent.List` is an immutable, structurally shared
+slice boundary. `immutable.List` is an immutable, structurally shared
 collection that may be empty. Use `NonEmpty` when "at least one" is the
-invariant; use `persistent.List` when persistent collection operations and
+invariant; use `immutable.List` when immutable collection operations and
 structural sharing are the concern.
 
 ## Functional values versus domain value objects

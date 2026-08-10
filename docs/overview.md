@@ -46,13 +46,13 @@ group directory itself; ADR-011):
   values for presence, fail-fast outcomes, neutral alternatives, minimum
   cardinality, and accumulating validation. See the
   [functional values family guide](packages/values.md).
-- **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
+- **`immutable`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
   that write functionally (every update returns a new value). Engines use
   path-copy structural sharing: Map/Set are a HAMT; List is a 32-way
-  persistent vector. `persistent` may produce `iter.Seq` values for consumers,
-  but `structural/iterator` never imports `persistent`.
+  persistent vector. `immutable` may produce `iter.Seq` values for consumers,
+  but `structural/iterator` never imports `immutable`.
 - **`state`** — `State[T]`: pure semantic evolution over an opaque `T`.
-  Mesh-isolated from `persistent` in production code.
+  Mesh-isolated from `immutable` in production code.
 
 ## Why the root package is doc-only
 
@@ -64,7 +64,7 @@ root package that re-exported all of them would give every consumer of any one
 concept a compile-time dependency on the others. So the root package carries
 only the module-level doc comment, and every concept lives under a role prefix
 or at the module root: `functional/primitives/*`, `functional/structural/*`,
-`functional/values/*`, `functional/persistent`, or `functional/state`.
+`functional/values/*`, `functional/immutable`, or `functional/state`.
 
 ## The constraint that shapes the whole API: no type parameters on methods
 
@@ -109,10 +109,10 @@ Engines live under `functional/internal/engine/` (also internal):
 
 | Engine | Used by | Representation |
 |---|---|---|
-| `hamt` | `persistent.Map`, `persistent.Set` | 32-way HAMT; path-copy structural sharing; per-`Root` `maphash.Seed` via `maphash.Comparable` |
-| `vector` | `persistent.List` | 32-way persistent vector (trie + tail); path-copy on Set/Append/Pop (Pop O(1)/O(log n) internal); mid-index `Delete` O(n) |
+| `hamt` | `immutable.Map`, `immutable.Set` | 32-way HAMT; path-copy structural sharing; per-`Root` `maphash.Seed` via `maphash.Comparable` |
+| `vector` | `immutable.List` | 32-way persistent vector (trie + tail); path-copy on Set/Append/Pop (Pop O(1)/O(log n) internal); mid-index `Delete` O(n) |
 
-`persistent` Builders open a `transient.Window`, edit under the window's
+`immutable` Builders open a `transient.Window`, edit under the window's
 exclusive owner (engine transient paths mutate owned nodes in place), and
 `Freeze` on `Build` — O(1) publish by invalidating the owner token; no tree
 walk. Documented complexity bounds on the public API are upper-bound
@@ -137,7 +137,7 @@ proves it mechanically on every test run:
 
 Additional core gates: `TestCoreNoReflect`, `TestCoreDependencyDAG` (star
 into `ownership`), and `TestPublicPackagesDoNotImportCore` (public packages
-other than `persistent` must not import core; `persistent` may).
+other than `immutable` must not import core; `immutable` may).
 
 ## No public subpackage imports another (in production code)
 
@@ -156,7 +156,7 @@ behavior — that is a legitimate use of a real dependency between test
 binaries, not a violation of the architectural boundary the mechanism above
 protects. Concrete examples in this module:
 
-- `state` integration and bench tests may import `functional/persistent`
+- `state` integration and bench tests may import `functional/immutable`
   when `T` embeds Map/Set/List fields; production `state` still has no
   sibling edge.
 
@@ -185,9 +185,9 @@ standard-library-only leaves. `primitives/fold` imports exactly
 `values/optional` and `values/nonempty`. `structural/iterator` imports exactly
 `structural/tuple`. `TestPrimitiveDependencyDAG` and
 `TestPrimitivesNoReflectOrUnsafe` enforce this production DAG and reject
-`reflect` or `unsafe` in every package in that inventory. `persistent` may
+`reflect` or `unsafe` in every package in that inventory. `immutable` may
 produce `iter.Seq` values, but `structural/iterator` never imports
-`persistent`.
+`immutable`.
 
 ```mermaid
 flowchart TB
@@ -204,7 +204,7 @@ flowchart TB
   valuesEither[values/either]
   valuesNonEmpty[values/nonempty]
   valuesValidated[values/validated]
-  persistent[persistent]
+  immutable[immutable]
   state[state]
   eq["internal/eq (internal)"]
   ownership["internal/core/ownership"]
@@ -219,10 +219,10 @@ flowchart TB
   fold --> valuesNonEmpty
   iterator --> tuple
   valuesValidated --> valuesNonEmpty
-  persistent --> eq
-  persistent --> transient
-  persistent --> hamt
-  persistent --> vector
+  immutable --> eq
+  immutable --> transient
+  immutable --> hamt
+  immutable --> vector
   hamt --> ownership
   hamt --> cow
   hamt --> sharing
@@ -232,17 +232,17 @@ flowchart TB
   cow --> ownership
   sharing --> ownership
   transient --> ownership
-  state -.->|test-only composition| persistent
+  state -.->|test-only composition| immutable
 ```
 
 `state` has **no production edges** to siblings or to core/engine. The
-dashed `state` → `persistent` edge is test-only composition (never a
+dashed `state` → `immutable` edge is test-only composition (never a
 production import).
 
-### Distinctions: state vs persistent vs domain
+### Distinctions: state vs immutable vs domain
 
 ```
-state.Transaction ≠ persistent.Builder
+state.Transaction ≠ immutable.Builder
 state.Diff ≠ Domain Event
 state.Version ≠ DB revision
 state.Materialize ≠ deep clone
@@ -254,7 +254,7 @@ There is exactly **one** shared exception for equality: `functional/internal/eq`
 a small package that resolves value equality without `reflect` (an `Equal(T) bool`
 method on the dynamic value, then `==` when the dynamic values are
 comparable; non-comparable types without `Equal` return false — never
-deep-compare). `persistent.List[T].Equal` (and its `Map`/`Set` counterparts)
+deep-compare). `immutable.List[T].Equal` (and its `Map`/`Set` counterparts)
 delegates to it, so every generic `Equal` that uses `eq` in this module agrees
 on the answer for the same pair of values. Callers that need structural equality
 for slices or maps should use an `Equal` method on the element type or an
@@ -273,7 +273,7 @@ exception to. **`eq` is outside core** and, like core, must not use `reflect`.
 - [Package API: structural/lazy](packages/lazy.md)
 - [Package API: structural/iterator](packages/iterator.md)
 - [Package API: structural/optics](packages/optics.md)
-- [Package API: persistent](packages/persistent.md)
+- [Package API: immutable](packages/immutable.md)
 - [Package API: state](packages/state.md)
 - [Internal: core](packages/core.md)
 - [Functional values family](packages/values.md)

@@ -123,13 +123,13 @@ no nil check, and composes into `==`-comparable types when `T` allows it.
 
 **Negative:** `Optional[[]byte]` (or any reference-typed `T`) shares `T`'s
 own aliasing — `Optional` cannot make a mutable `T` immutable on its own;
-callers compose with an immutable `T` (e.g. `persistent.List`) when that
+callers compose with an immutable `T` (e.g. `immutable.List`) when that
 matters. `Map`/`FlatMap`/`MapErr`/`Zip`/`EqualFunc` read as package
 functions rather than a fluent method chain, which is a direct, permanent
 consequence of Go's method grammar, not a stylistic choice this module
 could revisit.
 
 **Neutral:** `Optional[T]`'s equality resolution is shared
-verbatim (via `functional/internal/eq`) with `persistent.List`/`Map`/`Set`,
+verbatim (via `functional/internal/eq`) with `immutable.List`/`Map`/`Set`,
 so every generic `Equal` in this module agrees on the same answer for the
 same pair of values.

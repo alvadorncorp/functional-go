@@ -14,7 +14,7 @@
 //   - values/optional, values/result, values/either, values/nonempty,
 //     values/validated — algebraic value types (validated imports only
 //     values/nonempty).
-//   - persistent and state — immutable collections and pure plan/Version
+//   - immutable and state — immutable collections and pure plan/Version
 //     evolution over T (mesh-isolated from each other in production).
 //
 // The module has zero dependencies outside the standard library, permanently.
@@ -22,6 +22,6 @@
 // values/nonempty edge, the ADR-008 fold -> values/optional and fold ->
 // values/nonempty edges, and the ADR-009 iterator -> tuple edge. Shared
 // internals include functional/internal/eq, functional/internal/core, and
-// functional/internal/engine (used by persistent). Production state does not
+// functional/internal/engine (used by immutable). Production state does not
 // import core or engines.
 package functional

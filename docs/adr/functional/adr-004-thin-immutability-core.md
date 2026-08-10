@@ -4,7 +4,7 @@ id: adr:functional:004
 context: functional
 title: Thin immutability core — ownership, cow, sharing, transient
 status: Aceita
-tags: [functional, core, ownership, cow, transient, sharing, persistent]
+tags: [functional, core, ownership, cow, transient, sharing, immutable]
 deciders: [alvadorn]
 related: [adr:functional:001, adr:functional:003, adr:functional:005]
 date: 2026-08-07
@@ -21,7 +21,7 @@ date: 2026-08-07
 
 ## Context and problem
 
-`persistent` already ships List/Map/Set with functional updates and Builders.
+`immutable` already ships List/Map/Set with functional updates and Builders.
 A previous plan framed the public API primarily as an "engine swap contract"
 (upper-bound log-n complexity, HAMT/RRB readiness). That framing overstated
 what the module implements and understated what was actually extracted:
@@ -43,9 +43,9 @@ shared core would couple every engine to one representation strategy.
 - Builders need a real mutation window that freezes on `Build` without
   walking nodes.
 - Archtests must enforce: zero non-stdlib deps; core DAG is a star into
-  `ownership`; no `reflect` in core; public leaves other than `persistent` do
+  `ownership`; no `reflect` in core; public leaves other than `immutable` do
   not import core.
-- Public panic strings stay `"persistent: ..."`; transient's own panic is
+- Public panic strings stay `"immutable: ..."`; transient's own panic is
   an internal detail builders must not leak.
 
 ## Options considered
@@ -111,11 +111,11 @@ No peer edges among cow/transient/sharing. Core imports neither
 `ListBuilder` / `MapBuilder` / `SetBuilder` each hold a `*transient.Window`
 opened on `Builder()`. Methods gate on a live window; `Build()` freezes the
 window and nils the field so later methods panic with the public string
-`"persistent: builder used after Build"` rather than leaking the transient
+`"immutable: builder used after Build"` rather than leaking the transient
 message. Builders still mutate a private full-copy buffer; the window is
 lifecycle/scope, not a node-stamping engine yet.
 
-### Relationship to public `persistent` complexity docs
+### Relationship to public `immutable` complexity docs
 
 List/Map/Set **still full-copy** on each immutable update over a slice or
 map. Documented O(log n) upper bounds and a future structure-sharing
@@ -123,7 +123,7 @@ engine remain **aspirational public-API headroom**, not a description of
 the thin core and not an implemented engine swap. The core is the substrate
 that makes a future engine able to share permission/window/publish rules
 without inventing them again. Acceptance of any future engine remains the
-external `package persistent_test` suite: public behavior only.
+external `package immutable_test` suite: public behavior only.
 
 ## Consequences
 

@@ -13,17 +13,17 @@ date: 2026-08-07
 
 ## Context and problem
 
-`functional` already ships `persistent` (and historically shipped other
+`functional` already ships `immutable` (and historically shipped other
 public leaves) as
 public packages under a zero-dependency module boundary (ADR-003), a thin
 immutability core (ADR-004), and structure-sharing engines behind
-`persistent` (ADR-005). Callers still lack a **semantic evolution layer**:
+`immutable` (ADR-005). Callers still lack a **semantic evolution layer**:
 a way to treat an arbitrary pure value `T` as versioned state with lineage,
 linked plans, single-use transactions, and structural diffs — without
 importing domain rules into the module and without coupling that layer to
 collection engines or to other public packages.
 
-The risk of putting this surface on `persistent` (or inside core/engine) is
+The risk of putting this surface on `immutable` (or inside core/engine) is
 clear: state is about **semantic versions of T**, not about List/Map/Set
 representation. Mixing those concerns would either force domain-shaped APIs
 into the collections package or pull core/engine imports into a package that
@@ -34,9 +34,9 @@ should stay mesh-independent.
 - `State[T]` must be **pure over T**: hold and evolve T without interpreting
   domain fields or embedding domain packages.
 - Production **mesh sibling law**: no public subpackage imports another
-  (`state` ↛ `persistent` and other public siblings, and the reverse).
+  (`state` ↛ `immutable` and other public siblings, and the reverse).
 - Production `state` must **not** import `internal/core` or
-  `internal/engine`; engines remain behind `persistent`.
+  `internal/engine`; engines remain behind `immutable`.
 - Lineage and **Version** identity must support linked plans (compare /
   join only within a shared root).
 - **Tx** is single-use: after Commit, further use panics with a stable
@@ -48,7 +48,7 @@ should stay mesh-independent.
 
 ## Options considered
 
-### Option 1: Extend `persistent` with versioned wrappers over collections
+### Option 1: Extend `immutable` with versioned wrappers over collections
 
 **Pros:** One public package for “immutable data.”
 **Cons:** Couples semantic evolution of arbitrary T to List/Map/Set engines;
@@ -64,11 +64,11 @@ state is a public semantic product, not a mutation-permission law.
 ### Option 3: New public package `functional/state` (chosen)
 
 **Pros:** Clear ownership of pure `State[T]`, lineage, Version, Tx, Diff;
-mesh isolation from `persistent`; no core/engine dependency in production;
-tests may still import `persistent` without weakening production mesh
+mesh isolation from `immutable`; no core/engine dependency in production;
+tests may still import `immutable` without weakening production mesh
 gates.
 **Cons:** Another public package to document and archtest; callers compose
-`state` with `persistent` at the application layer rather than via imports
+`state` with `immutable` at the application layer rather than via imports
 inside `state`.
 
 ## Decision
@@ -81,7 +81,7 @@ as the semantic evolution layer for `T any`.
 - `State[T]` evolves pure values of type T. The package does not define
   domain types, validation, or business rules.
 - Semantic immutability of the payload is as deep as T itself (same caveat
-  as `persistent` element types).
+  as `immutable` element types).
 - Shipped construction and evolution:
   - `Of[T](value T) State[T]` — Version 0, empty plan, fresh lineage token.
   - Zero `State[T]` is valid (zero `T`, Version 0). It uses the canonical
@@ -98,8 +98,8 @@ as the semantic evolution layer for `T any`.
 - Production imports: stdlib only among external modules; no sibling public
   packages; no `internal/core`; no `internal/engine`.
 - `TestNoPublicSiblingDependencies` remains absolute — **no**
-  `state` → `persistent` production exception.
-- Tests may import `persistent` to exercise composition; archtests continue
+  `state` → `immutable` production exception.
+- Tests may import `immutable` to exercise composition; archtests continue
   to use production-only `go list` (without `-test`).
 
 ### Linked plan, Version, Tx, Diff (shipped)
@@ -108,7 +108,7 @@ as the semantic evolution layer for `T any`.
 |---|---|
 | Lineage / Version | Unexported non-zero-size lineage token per `Of` root; zero States use one canonical zero-value lineage. `Version` is a monotonic `uint64` counter. Operations across unrelated lineages panic with `"state: unrelated lineages"`. Version is **not** a DB revision. |
 | Linked plan | Reverse-linked immutable plan nodes; sibling branches share the parent prefix by pointer. |
-| Tx single-use | `Begin` / `Transaction.Apply` / `Commit`. Commit is lazy (no Materialize). After Commit, further use panics with `"state: transaction used after Commit"`. Tx ≠ `persistent.Builder`. |
+| Tx single-use | `Begin` / `Transaction.Apply` / `Commit`. Commit is lazy (no Materialize). After Commit, further use panics with `"state: transaction used after Commit"`. Tx ≠ `immutable.Builder`. |
 | Diff | `DiffBetween(from, to)` captures plan steps when `to` is a descendant of `from` in the same lineage; `Diff.Apply` replays lazily. Diff ≠ domain event. No production `reflect` or `unsafe`. |
 | Mutation form | Pure `func(T) T` — not in-place mutation of T. |
 | Panic prefix | All public panics: `"state: …"`. |
@@ -116,7 +116,7 @@ as the semantic evolution layer for `T any`.
 ### Explicit non-goals (this ADR)
 
 - No domain model inside `functional/state`.
-- No production dependency on `persistent` or other public siblings.
+- No production dependency on `immutable` or other public siblings.
 - No production dependency on core/engine packages.
 - No reflect-based Diff.
 - No materialize result cache on `State`.
@@ -124,7 +124,7 @@ as the semantic evolution layer for `T any`.
 ## Consequences
 
 **Positive:** Clear package boundary for versioned pure T; mesh and
-zero-dependency gates stay enforceable; `persistent` remains the collection
+zero-dependency gates stay enforceable; `immutable` remains the collection
 engine surface; Of/Apply/Materialize/Snapshot/Tx/DiffBetween ship without
 reopening mesh or core laws.
 

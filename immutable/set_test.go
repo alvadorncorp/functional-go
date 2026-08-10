@@ -1,15 +1,15 @@
-package persistent_test
+package immutable_test
 
 import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 )
 
 // sortedItems returns s.Items() sorted, since Set iteration/Items order is
 // unspecified and tests must not depend on it.
-func sortedItems[T int | string](s persistent.Set[T]) []T {
+func sortedItems[T int | string](s immutable.Set[T]) []T {
 	items := s.Items()
 	slices.Sort(items)
 	return items
@@ -18,7 +18,7 @@ func sortedItems[T int | string](s persistent.Set[T]) []T {
 func TestSetOf(t *testing.T) {
 	t.Parallel()
 
-	s := persistent.SetOf(1, 2, 2, 3)
+	s := immutable.SetOf(1, 2, 2, 3)
 	if got, want := s.Len(), 3; got != want {
 		t.Fatalf("Len() = %d, want %d (duplicates must collapse)", got, want)
 	}
@@ -28,7 +28,7 @@ func TestCollectSet(t *testing.T) {
 	t.Parallel()
 
 	seq := slices.Values([]string{"a", "b", "a"})
-	s := persistent.CollectSet(seq)
+	s := immutable.CollectSet(seq)
 
 	if got, want := s.Len(), 2; got != want {
 		t.Fatalf("Len() = %d, want %d", got, want)
@@ -41,7 +41,7 @@ func TestCollectSet(t *testing.T) {
 func TestSetHas(t *testing.T) {
 	t.Parallel()
 
-	s := persistent.SetOf(1, 2, 3)
+	s := immutable.SetOf(1, 2, 3)
 
 	tests := []struct {
 		name string
@@ -64,7 +64,7 @@ func TestSetHas(t *testing.T) {
 func TestSetAdd(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.SetOf(1, 2)
+	base := immutable.SetOf(1, 2)
 	before := sortedItems(base)
 
 	added := base.Add(3, 4)
@@ -81,7 +81,7 @@ func TestSetAdd(t *testing.T) {
 func TestSetAddExistingIsNoOp(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.SetOf(1, 2)
+	base := immutable.SetOf(1, 2)
 	result := base.Add(1)
 
 	if !result.Equal(base) {
@@ -92,7 +92,7 @@ func TestSetAddExistingIsNoOp(t *testing.T) {
 func TestSetRemove(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.SetOf(1, 2, 3)
+	base := immutable.SetOf(1, 2, 3)
 	before := sortedItems(base)
 
 	removed := base.Remove(2)
@@ -109,7 +109,7 @@ func TestSetRemove(t *testing.T) {
 func TestSetRemoveAbsentIsNoOp(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.SetOf(1, 2)
+	base := immutable.SetOf(1, 2)
 	result := base.Remove(99)
 
 	if !result.Equal(base) {
@@ -120,7 +120,7 @@ func TestSetRemoveAbsentIsNoOp(t *testing.T) {
 func TestSetValues(t *testing.T) {
 	t.Parallel()
 
-	s := persistent.SetOf(1, 2, 3)
+	s := immutable.SetOf(1, 2, 3)
 	var got []int
 	for v := range s.Values() {
 		got = append(got, v)
@@ -134,7 +134,7 @@ func TestSetValues(t *testing.T) {
 func TestSetItemsCopies(t *testing.T) {
 	t.Parallel()
 
-	s := persistent.SetOf(1, 2, 3)
+	s := immutable.SetOf(1, 2, 3)
 	items := s.Items()
 	items[0] = 999
 
@@ -146,14 +146,14 @@ func TestSetItemsCopies(t *testing.T) {
 func TestSetIsEmpty(t *testing.T) {
 	t.Parallel()
 
-	var zero persistent.Set[int]
+	var zero immutable.Set[int]
 	if !zero.IsEmpty() {
 		t.Fatal("zero Set.IsEmpty() = false, want true")
 	}
-	if !persistent.SetOf[int]().IsEmpty() {
+	if !immutable.SetOf[int]().IsEmpty() {
 		t.Fatal("empty SetOf.IsEmpty() = false, want true")
 	}
-	if persistent.SetOf(1).IsEmpty() {
+	if immutable.SetOf(1).IsEmpty() {
 		t.Fatal("non-empty Set.IsEmpty() = true, want false")
 	}
 }
@@ -163,14 +163,14 @@ func TestSetEqual(t *testing.T) {
 
 	tests := []struct {
 		name string
-		a    persistent.Set[int]
-		b    persistent.Set[int]
+		a    immutable.Set[int]
+		b    immutable.Set[int]
 		want bool
 	}{
-		{"both empty", persistent.SetOf[int](), persistent.SetOf[int](), true},
-		{"same elements different insertion order", persistent.SetOf(1, 2, 3), persistent.SetOf(3, 1, 2), true},
-		{"different length", persistent.SetOf(1, 2), persistent.SetOf(1, 2, 3), false},
-		{"different elements", persistent.SetOf(1, 2, 3), persistent.SetOf(1, 2, 4), false},
+		{"both empty", immutable.SetOf[int](), immutable.SetOf[int](), true},
+		{"same elements different insertion order", immutable.SetOf(1, 2, 3), immutable.SetOf(3, 1, 2), true},
+		{"different length", immutable.SetOf(1, 2), immutable.SetOf(1, 2, 3), false},
+		{"different elements", immutable.SetOf(1, 2, 3), immutable.SetOf(1, 2, 4), false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -185,7 +185,7 @@ func TestSetEqual(t *testing.T) {
 func TestSetAddPreservesOlderVersions(t *testing.T) {
 	t.Parallel()
 
-	v1 := persistent.SetOf(1)
+	v1 := immutable.SetOf(1)
 	v2 := v1.Add(2)
 	v3 := v2.Add(3, 4)
 
@@ -203,7 +203,7 @@ func TestSetAddPreservesOlderVersions(t *testing.T) {
 func TestSetRemovePreservesOlderVersions(t *testing.T) {
 	t.Parallel()
 
-	v1 := persistent.SetOf(1, 2, 3, 4)
+	v1 := immutable.SetOf(1, 2, 3, 4)
 	v2 := v1.Remove(2)
 	v3 := v2.Remove(4).Add(5)
 
@@ -221,7 +221,7 @@ func TestSetRemovePreservesOlderVersions(t *testing.T) {
 func TestSetZeroValueAdd(t *testing.T) {
 	t.Parallel()
 
-	var s persistent.Set[string]
+	var s immutable.Set[string]
 	if got := s.Len(); got != 0 {
 		t.Fatalf("zero Set Len() = %d, want 0", got)
 	}
@@ -247,7 +247,7 @@ func TestSetZeroValueAdd(t *testing.T) {
 func TestSetZeroValueRemove(t *testing.T) {
 	t.Parallel()
 
-	var s persistent.Set[int]
+	var s immutable.Set[int]
 	// Remove on a zero Set must materialize a seeded empty root rather than
 	// freezing a zero seed into the lineage.
 	removed := s.Remove(99)
@@ -266,7 +266,7 @@ func TestSetZeroValueRemove(t *testing.T) {
 func TestSetZeroValueBuilder(t *testing.T) {
 	t.Parallel()
 
-	var s persistent.Set[string]
+	var s immutable.Set[string]
 	built := s.Builder().Add("a", "b").Build()
 
 	if got, want := built.Len(), 2; got != want {
@@ -283,7 +283,7 @@ func TestSetZeroValueBuilder(t *testing.T) {
 func TestSetIndependentZeroValues(t *testing.T) {
 	t.Parallel()
 
-	var a, b persistent.Set[string]
+	var a, b immutable.Set[string]
 	a1 := a.Add("x")
 	b1 := b.Add("y")
 

@@ -1,4 +1,4 @@
-package persistent
+package immutable
 
 import (
 	"iter"
@@ -150,7 +150,7 @@ func (s Set[T]) Builder() *SetBuilder[T] {
 // root, and permanently disables the builder.
 //
 // After Build runs, every method on the builder — including Build itself —
-// panics with "persistent: builder used after Build".
+// panics with "immutable: builder used after Build".
 type SetBuilder[T comparable] struct {
 	root hamt.Root[T, struct{}]
 	win  *transient.Window
@@ -189,7 +189,7 @@ func (b *SetBuilder[T]) Len() int {
 }
 
 // Has reports whether v is a member of the builder. After Build, Has panics
-// with "persistent: builder used after Build".
+// with "immutable: builder used after Build".
 func (b *SetBuilder[T]) Has(v T) bool {
 	b.checkNotBuilt()
 	_, ok := b.root.Get(v)
@@ -198,7 +198,7 @@ func (b *SetBuilder[T]) Has(v T) bool {
 
 // Build returns an immutable Set holding the builder's current root and
 // permanently disables the builder: every method, including a repeated
-// Build, panics with "persistent: builder used after Build" from this point
+// Build, panics with "immutable: builder used after Build" from this point
 // on. Freeze invalidates the owner token in O(1); nodes may retain stale
 // inactive stamps.
 func (b *SetBuilder[T]) Build() Set[T] {

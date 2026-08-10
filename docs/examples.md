@@ -9,9 +9,9 @@ Illustrative sketches for common uses. For API contracts see
 
 1. [Config precedence with `Or`](#1-config-precedence-with-or)
 2. [Fallible parse with `MapErr`](#2-fallible-parse-with-maperr)
-3. [Immutable collection field with `persistent.List`](#3-immutable-collection-field-with-persistentlist)
-4. [Building a `persistent.List` in a loop](#4-building-a-persistentlist-in-a-loop)
-5. [`persistent.MapOf` / `SetOf` snapshots](#5-persistentmapof--setof-snapshots)
+3. [Immutable collection field with `immutable.List`](#3-immutable-collection-field-with-immutablelist)
+4. [Building a `immutable.List` in a loop](#4-building-an-immutablelist-in-a-loop)
+5. [`immutable.MapOf` / `SetOf` snapshots](#5-immutablemapof--setof-snapshots)
 6. [Versioned pure state with `state.Of` / `Apply` / `Materialize`](#6-versioned-pure-state-with-stateof--apply--materialize)
 7. [Parsing with Result and independent Validated checks](#7-parsing-with-result-and-independent-validated-checks)
 8. [Function composition with `Pipe`](#8-function-composition-with-pipe)
@@ -79,10 +79,10 @@ func parsePort(raw optional.Optional[string]) (optional.Optional[int], error) {
 
 ---
 
-## 3. Immutable collection field with `persistent.List`
+## 3. Immutable collection field with `immutable.List`
 
-A value object with a collection field should use `persistent.List[T]` (or
-`persistent.Map[K,V]` / `Set[T]`), not a plain `[]T`. The zero `List` is
+A value object with a collection field should use `immutable.List[T]` (or
+`immutable.Map[K,V]` / `Set[T]`), not a plain `[]T`. The zero `List` is
 already a valid empty collection, so the field never needs a nil check, and
 no caller can reach the internal engine storage. Prefer not calling write
 methods on a field you intend as a pure snapshot.
@@ -90,18 +90,18 @@ methods on a field you intend as a pure snapshot.
 ```go
 package catalog
 
-import "github.com/alvadorncorp/gopackages/functional/persistent"
+import "github.com/alvadorncorp/gopackages/functional/immutable"
 
 type Product struct {
 	sku  string
-	tags persistent.List[string]
+	tags immutable.List[string]
 }
 
 func NewProduct(sku string, tags ...string) Product {
-	return Product{sku: sku, tags: persistent.ListOf(tags...)}
+	return Product{sku: sku, tags: immutable.ListOf(tags...)}
 }
 
-func (p Product) Tags() persistent.List[string] { return p.tags }
+func (p Product) Tags() immutable.List[string] { return p.tags }
 ```
 
 `ListOf` copies `tags` into the persistent vector; `Product.Tags` hands
@@ -113,22 +113,22 @@ object shape this fits into.
 
 ---
 
-## 4. Building a `persistent.List` in a loop
+## 4. Building a `immutable.List` in a loop
 
-A single `persistent.List.Append` path-copies along the vector depth (not a
+A single `immutable.List.Append` path-copies along the vector depth (not a
 full collection copy), but calling it `n` times in a loop still allocates
 `n` intermediate Lists. `Builder()` exists precisely for bulk construction:
 seed it once, batch every write under exclusive ownership, and call
 `Build()` once at the end (O(1) Freeze). See
-[packages/persistent.md](packages/persistent.md).
+[packages/immutable.md](packages/immutable.md).
 
 ```go
 package pipeline
 
-import "github.com/alvadorncorp/gopackages/functional/persistent"
+import "github.com/alvadorncorp/gopackages/functional/immutable"
 
-func collectEven(items []int) persistent.List[int] {
-	builder := persistent.ListOf[int]().Builder()
+func collectEven(items []int) immutable.List[int] {
+	builder := immutable.ListOf[int]().Builder()
 	for _, v := range items {
 		if v%2 == 0 {
 			builder.Append(v)
@@ -141,15 +141,15 @@ func collectEven(items []int) persistent.List[int] {
 `Build()` freezes the builder's transient window (O(1) owner invalidation),
 returns an immutable `List`, and permanently disables the builder — every
 method on it, including a repeated `Build`, panics with
-`"persistent: builder used after Build"` from that point on. Never keep
+`"immutable: builder used after Build"` from that point on. Never keep
 using a builder after calling `Build()`.
 
 Constructors are `ListOf` / `MapOf` / `SetOf` (not `New*`). Runnable
-godoc examples live in `persistent/example_test.go`.
+godoc examples live in `immutable/example_test.go`.
 
 ---
 
-## 5. `persistent.MapOf` / `SetOf` snapshots
+## 5. `immutable.MapOf` / `SetOf` snapshots
 
 `MapOf` copies a `map[K]V` into a persistent HAMT; `SetOf` deduplicates
 variadic items. Both return immutable values: further `Set`/`Add` calls
@@ -158,17 +158,17 @@ derive new collections.
 ```go
 package catalog
 
-import "github.com/alvadorncorp/gopackages/functional/persistent"
+import "github.com/alvadorncorp/gopackages/functional/immutable"
 
-func scoreboard() (persistent.Map[string, int], persistent.Set[string]) {
-	scores := persistent.MapOf(map[string]int{
+func scoreboard() (immutable.Map[string, int], immutable.Set[string]) {
+	scores := immutable.MapOf(map[string]int{
 		"alice": 10,
 		"bob":   7,
 	})
 	// Derive a new Map; scores is unchanged.
 	scores = scores.Set("carol", 12)
 
-	active := persistent.SetOf("alice", "bob", "bob")
+	active := immutable.SetOf("alice", "bob", "bob")
 	return scores, active
 }
 ```
@@ -209,7 +209,7 @@ func evolve() (int, state.Version) {
 Remember the distinctions:
 
 ```
-state.Transaction ≠ persistent.Builder
+state.Transaction ≠ immutable.Builder
 state.Diff ≠ Domain Event
 state.Version ≠ DB revision
 state.Materialize ≠ deep clone
@@ -500,6 +500,6 @@ the caller and are not checked at runtime.
 - [values Either](packages/values-either.md)
 - [values NonEmpty](packages/values-nonempty.md)
 - [values Validated](packages/values-validated.md)
-- [package API: persistent](packages/persistent.md)
+- [package API: immutable](packages/immutable.md)
 - [package API: state](packages/state.md)
 - [pattern: value objects](patterns/value-objects.md)

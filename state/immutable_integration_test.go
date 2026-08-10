@@ -3,24 +3,24 @@ package state_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 	"github.com/alvadorncorp/gopackages/functional/state"
 )
 
-// Store is a domain-shaped value whose fields are persistent collections.
+// Store is a domain-shaped value whose fields are immutable collections.
 // Mutations evolve the store by reassigning Map.Set / Set.Add / List.Append
 // results; they never convert collections to native map or slice mid-pipeline.
 type Store struct {
-	Users persistent.Map[string, string]
-	Tags  persistent.Set[string]
-	Log   persistent.List[string]
+	Users immutable.Map[string, string]
+	Tags  immutable.Set[string]
+	Log   immutable.List[string]
 }
 
 func emptyStore() Store {
 	return Store{
-		Users: persistent.MapOf[string, string](nil),
-		Tags:  persistent.SetOf[string](),
-		Log:   persistent.ListOf[string](),
+		Users: immutable.MapOf[string, string](nil),
+		Tags:  immutable.SetOf[string](),
+		Log:   immutable.ListOf[string](),
 	}
 }
 
@@ -74,12 +74,12 @@ func assertStoreEqual(t *testing.T, got Store, wantUsers map[string]string, want
 		}
 	}
 
-	if !got.Log.Equal(persistent.ListOf(wantLog...)) {
+	if !got.Log.Equal(immutable.ListOf(wantLog...)) {
 		t.Fatalf("Log = %v, want %v", got.Log.Items(), wantLog)
 	}
 }
 
-func TestPersistentStoreMaterializeAfterSeveralApplies(t *testing.T) {
+func TestImmutableStoreMaterializeAfterSeveralApplies(t *testing.T) {
 	t.Parallel()
 
 	s := state.Of(emptyStore()).
@@ -100,7 +100,7 @@ func TestPersistentStoreMaterializeAfterSeveralApplies(t *testing.T) {
 	}
 }
 
-func TestPersistentStoreOldVersionsRemainIntact(t *testing.T) {
+func TestImmutableStoreOldVersionsRemainIntact(t *testing.T) {
 	t.Parallel()
 
 	s0 := state.Of(emptyStore())
@@ -138,20 +138,20 @@ func TestPersistentStoreOldVersionsRemainIntact(t *testing.T) {
 	)
 }
 
-func TestPersistentStoreMutationsUsePersistentAPIsOnly(t *testing.T) {
+func TestImmutableStoreMutationsUseImmutableAPIsOnly(t *testing.T) {
 	t.Parallel()
 
-	// Mutations must keep field types as persistent collections throughout
+	// Mutations must keep field types as immutable collections throughout
 	// the plan: no conversion to native map/slice for intermediate writes.
 	// The putUser/addTag helpers reassign only Map.Set / Set.Add / List.Append
-	// results, so Materialize observes the same persistent types end-to-end.
+	// results, so Materialize observes the same immutable types end-to-end.
 	s := state.Of(emptyStore()).
 		Apply(func(st Store) Store {
 			st.Users = st.Users.Set("k", "v")
 			return st
 		}).
 		Apply(func(st Store) Store {
-			// Read via persistent Get (not Items map conversion) then write
+			// Read via immutable Get (not Items map conversion) then write
 			// via Set/Add/Append only.
 			name, _ := st.Users.Get("k")
 			st.Users = st.Users.Set("k", name+"!")
@@ -171,11 +171,11 @@ func TestPersistentStoreMutationsUsePersistentAPIsOnly(t *testing.T) {
 		t.Fatalf("Log = %v, want [step]", got.Log.Items())
 	}
 
-	// Field types remain the persistent collection types (Store fields);
+	// Field types remain the immutable collection types (Store fields);
 	// mutations reassign Map.Set / Set.Add / List.Append results only.
 }
 
-func TestPersistentStoreBranchingStatesIndependent(t *testing.T) {
+func TestImmutableStoreBranchingStatesIndependent(t *testing.T) {
 	t.Parallel()
 
 	parent := state.Of(emptyStore()).
@@ -230,7 +230,7 @@ func TestPersistentStoreBranchingStatesIndependent(t *testing.T) {
 	)
 }
 
-func TestPersistentStoreTransactionCommit(t *testing.T) {
+func TestImmutableStoreTransactionCommit(t *testing.T) {
 	t.Parallel()
 
 	parent := state.Of(emptyStore()).

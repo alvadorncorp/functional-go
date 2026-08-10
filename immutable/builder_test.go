@@ -1,4 +1,4 @@
-package persistent_test
+package immutable_test
 
 import (
 	"maps"
@@ -6,10 +6,10 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 )
 
-const wantBuilderUsedAfterBuildPanic = "persistent: builder used after Build"
+const wantBuilderUsedAfterBuildPanic = "immutable: builder used after Build"
 
 // expectPanic calls fn and fails the test unless it panics with exactly
 // want.
@@ -35,13 +35,13 @@ func TestListBuilderMethodsPanicAfterBuild(t *testing.T) {
 	// Build() already returned, so a subtest can assert the panicking
 	// post-Build call left that List untouched (recover() only swallows the
 	// panic; it proves nothing about the collection captured earlier).
-	newBuilder := func() (*persistent.ListBuilder[int], persistent.List[int]) {
-		b := persistent.ListOf(1, 2, 3).Builder()
+	newBuilder := func() (*immutable.ListBuilder[int], immutable.List[int]) {
+		b := immutable.ListOf(1, 2, 3).Builder()
 		built := b.Build()
 		return b, built
 	}
 
-	assertUnchanged := func(t *testing.T, built persistent.List[int]) {
+	assertUnchanged := func(t *testing.T, built immutable.List[int]) {
 		t.Helper()
 		if got, want := built.Items(), []int{1, 2, 3}; !slices.Equal(got, want) {
 			t.Errorf("List returned by Build() changed after a post-Build call: got %v, want %v", got, want)
@@ -93,13 +93,13 @@ func TestMapBuilderMethodsPanicAfterBuild(t *testing.T) {
 	// Build() already returned, so a subtest can assert the panicking
 	// post-Build call left that Map untouched (recover() only swallows the
 	// panic; it proves nothing about the collection captured earlier).
-	newBuilder := func() (*persistent.MapBuilder[string, int], persistent.Map[string, int]) {
-		b := persistent.MapOf(map[string]int{"a": 1}).Builder()
+	newBuilder := func() (*immutable.MapBuilder[string, int], immutable.Map[string, int]) {
+		b := immutable.MapOf(map[string]int{"a": 1}).Builder()
 		built := b.Build()
 		return b, built
 	}
 
-	assertUnchanged := func(t *testing.T, built persistent.Map[string, int]) {
+	assertUnchanged := func(t *testing.T, built immutable.Map[string, int]) {
 		t.Helper()
 		if got, want := built.Items(), map[string]int{"a": 1}; !maps.Equal(got, want) {
 			t.Errorf("Map returned by Build() changed after a post-Build call: got %v, want %v", got, want)
@@ -151,13 +151,13 @@ func TestSetBuilderMethodsPanicAfterBuild(t *testing.T) {
 	// Build() already returned, so a subtest can assert the panicking
 	// post-Build call left that Set untouched (recover() only swallows the
 	// panic; it proves nothing about the collection captured earlier).
-	newBuilder := func() (*persistent.SetBuilder[int], persistent.Set[int]) {
-		b := persistent.SetOf(1, 2, 3).Builder()
+	newBuilder := func() (*immutable.SetBuilder[int], immutable.Set[int]) {
+		b := immutable.SetOf(1, 2, 3).Builder()
 		built := b.Build()
 		return b, built
 	}
 
-	assertUnchanged := func(t *testing.T, built persistent.Set[int]) {
+	assertUnchanged := func(t *testing.T, built immutable.Set[int]) {
 		t.Helper()
 		if got, want := sortedItems(built), []int{1, 2, 3}; !slices.Equal(got, want) {
 			t.Errorf("Set returned by Build() changed after a post-Build call: got %v, want %v", got, want)
@@ -199,7 +199,7 @@ func TestSetBuilderMethodsPanicAfterBuild(t *testing.T) {
 func TestListBuilderDoesNotAffectSeed(t *testing.T) {
 	t.Parallel()
 
-	seed := persistent.ListOf(1, 2, 3)
+	seed := immutable.ListOf(1, 2, 3)
 	wantSeed := []int{1, 2, 3}
 	b := seed.Builder()
 	b.Append(4).Set(0, 99).Delete(1)
@@ -220,7 +220,7 @@ func TestListBuilderDoesNotAffectSeed(t *testing.T) {
 func TestMapBuilderDoesNotAffectSeed(t *testing.T) {
 	t.Parallel()
 
-	seed := persistent.MapOf(map[string]int{"a": 1, "b": 2})
+	seed := immutable.MapOf(map[string]int{"a": 1, "b": 2})
 	wantSeed := map[string]int{"a": 1, "b": 2}
 	b := seed.Builder()
 	b.Set("a", 99).Set("c", 3).Delete("b")
@@ -241,7 +241,7 @@ func TestMapBuilderDoesNotAffectSeed(t *testing.T) {
 func TestSetBuilderDoesNotAffectSeed(t *testing.T) {
 	t.Parallel()
 
-	seed := persistent.SetOf(1, 2, 3)
+	seed := immutable.SetOf(1, 2, 3)
 	wantSeed := []int{1, 2, 3}
 	b := seed.Builder()
 	b.Add(4).Remove(2)
@@ -262,7 +262,7 @@ func TestSetBuilderDoesNotAffectSeed(t *testing.T) {
 func TestListBuilderLen(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.ListOf(1, 2).Builder()
+	b := immutable.ListOf(1, 2).Builder()
 	if got, want := b.Len(), 2; got != want {
 		t.Fatalf("Len() = %d, want %d", got, want)
 	}
@@ -275,7 +275,7 @@ func TestListBuilderLen(t *testing.T) {
 func TestListBuilderAt(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.ListOf("x", "y", "z").Builder()
+	b := immutable.ListOf("x", "y", "z").Builder()
 	if got, want := b.At(0), "x"; got != want {
 		t.Fatalf("At(0) = %q, want %q", got, want)
 	}
@@ -291,19 +291,19 @@ func TestListBuilderAt(t *testing.T) {
 func TestListBuilderAtPanicsOutOfRange(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.ListOf(1, 2, 3).Builder()
+	b := immutable.ListOf(1, 2, 3).Builder()
 	for _, i := range []int{-1, 3, 100} {
-		expectPanic(t, "persistent: index out of range", func() { b.At(i) })
+		expectPanic(t, "immutable: index out of range", func() { b.At(i) })
 	}
-	empty := persistent.ListOf[int]().Builder()
-	expectPanic(t, "persistent: index out of range", func() { empty.At(0) })
+	empty := immutable.ListOf[int]().Builder()
+	expectPanic(t, "immutable: index out of range", func() { empty.At(0) })
 }
 
 func TestListBuilderMultiAppend(t *testing.T) {
 	t.Parallel()
 
 	const n = 200
-	seed := persistent.ListOf(0, 1, 2)
+	seed := immutable.ListOf(0, 1, 2)
 	b := seed.Builder()
 	for i := 3; i < n; i++ {
 		b.Append(i)
@@ -340,7 +340,7 @@ func TestListBuilderMultiAppend(t *testing.T) {
 func TestListBuilderEmptySeedAppend(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.ListOf[int]().Builder()
+	b := immutable.ListOf[int]().Builder()
 	b.Append(10, 20, 30)
 	built := b.Build()
 	if got, want := built.Items(), []int{10, 20, 30}; !slices.Equal(got, want) {
@@ -351,7 +351,7 @@ func TestListBuilderEmptySeedAppend(t *testing.T) {
 func TestMapBuilderLen(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.MapOf(map[string]int{"a": 1}).Builder()
+	b := immutable.MapOf(map[string]int{"a": 1}).Builder()
 	if got, want := b.Len(), 1; got != want {
 		t.Fatalf("Len() = %d, want %d", got, want)
 	}
@@ -364,7 +364,7 @@ func TestMapBuilderLen(t *testing.T) {
 func TestMapBuilderGetHas(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.MapOf(map[string]int{"a": 1, "b": 2}).Builder()
+	b := immutable.MapOf(map[string]int{"a": 1, "b": 2}).Builder()
 	if got, ok := b.Get("a"); got != 1 || !ok {
 		t.Fatalf(`Get("a") = (%d,%v), want (1,true)`, got, ok)
 	}
@@ -390,7 +390,7 @@ func TestMapBuilderGetHas(t *testing.T) {
 func TestSetBuilderHas(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.SetOf(1, 2, 3).Builder()
+	b := immutable.SetOf(1, 2, 3).Builder()
 	if !b.Has(2) {
 		t.Fatal("Has(2) = false, want true")
 	}
@@ -412,7 +412,7 @@ func TestListBuilderMatchesPureModel(t *testing.T) {
 	t.Parallel()
 
 	rng := rand.New(rand.NewPCG(0x1157_b01d, 0xc0ffee))
-	pure := persistent.ListOf[int]()
+	pure := immutable.ListOf[int]()
 	b := pure.Builder()
 
 	const ops = 400
@@ -464,7 +464,7 @@ func TestMapBuilderMatchesPureModel(t *testing.T) {
 	t.Parallel()
 
 	rng := rand.New(rand.NewPCG(0x0a9_b01d, 0xf00d))
-	pure := persistent.MapOf[int, int](nil)
+	pure := immutable.MapOf[int, int](nil)
 	b := pure.Builder()
 
 	const ops = 400
@@ -497,7 +497,7 @@ func TestMapBuilderMatchesPureModel(t *testing.T) {
 func TestSetBuilderLen(t *testing.T) {
 	t.Parallel()
 
-	b := persistent.SetOf(1, 2).Builder()
+	b := immutable.SetOf(1, 2).Builder()
 	if got, want := b.Len(), 2; got != want {
 		t.Fatalf("Len() = %d, want %d", got, want)
 	}

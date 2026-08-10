@@ -1,4 +1,4 @@
-package persistent
+package immutable
 
 import "github.com/alvadorncorp/gopackages/functional/internal/core/transient"
 

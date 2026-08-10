@@ -114,26 +114,26 @@ func TestEqNoUnsafe(t *testing.T) {
 	}
 }
 
-// TestPersistentNoReflect proves no production file under persistent imports
+// TestImmutableNoReflect proves no production file under immutable imports
 // "reflect". Public collection APIs stay free of reflection; tests may still
 // use reflect (e.g. comparability probes). This gate inspects production
 // Imports only (go list without -test).
-func TestPersistentNoReflect(t *testing.T) {
+func TestImmutableNoReflect(t *testing.T) {
 	t.Parallel()
-	for _, imp := range productionImports(t, pkgPersistent) {
+	for _, imp := range productionImports(t, pkgImmutable) {
 		if imp == "reflect" {
-			t.Errorf("%s must not import reflect", pkgPersistent)
+			t.Errorf("%s must not import reflect", pkgImmutable)
 		}
 	}
 }
 
-// TestPersistentNoUnsafe proves no production file under persistent imports
+// TestImmutableNoUnsafe proves no production file under immutable imports
 // "unsafe".
-func TestPersistentNoUnsafe(t *testing.T) {
+func TestImmutableNoUnsafe(t *testing.T) {
 	t.Parallel()
-	for _, imp := range productionImports(t, pkgPersistent) {
+	for _, imp := range productionImports(t, pkgImmutable) {
 		if imp == "unsafe" {
-			t.Errorf("%s must not import unsafe", pkgPersistent)
+			t.Errorf("%s must not import unsafe", pkgImmutable)
 		}
 	}
 }

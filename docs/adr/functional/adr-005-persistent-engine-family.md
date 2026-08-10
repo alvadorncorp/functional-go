@@ -4,16 +4,18 @@ id: adr:functional:005
 context: functional
 title: Persistent engine family — HAMT + 32-way vector, seed policy, O(1) Freeze
 status: Aceita
-tags: [functional, persistent, hamt, vector, ownership, maphash]
+tags: [functional, immutable, hamt, vector, ownership, maphash]
 deciders: [alvadorn]
 related: [adr:functional:003, adr:functional:004]
 date: 2026-08-07
 ---
 # ADR-005: Persistent engine family — HAMT + 32-way vector, seed policy, O(1) Freeze
 
+> **Public package name:** the collections API lives at `functional/immutable` (formerly `functional/persistent`). This ADR still uses *persistent* for the structure-sharing engine family (HAMT + 32-way vector); that is the representation term, not the import path.
+
 ## Context and problem
 
-`persistent` List/Map/Set already expose functional updates, Builders, and
+`immutable` List/Map/Set already expose functional updates, Builders, and
 upper-bound log-n complexity as public-API headroom. Early milestones used
 full-copy COW over a stdlib slice or map. That representation made every
 immutable update `O(n)` and left Builders as the only linear bulk path.
@@ -30,9 +32,9 @@ ownership, cow, sharing, transient — not as a generic clone/engine library.
 - Builder publish must stay **O(1)** (no tree walk on Freeze).
 - Hashing must stay stdlib-only (`hash/maphash`); seeds must not invalidate
   structural sharing across a lineage.
-- Public panic strings remain `"persistent: ..."`; engines must not leak
+- Public panic strings remain `"immutable: ..."`; engines must not leak
   `"vector:"` / `"hamt:"` messages.
-- External `package persistent_test` remains the acceptance suite.
+- External `package immutable_test` remains the acceptance suite.
 
 ## Options considered
 

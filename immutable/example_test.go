@@ -1,14 +1,14 @@
-package persistent_test
+package immutable_test
 
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 )
 
 // ExampleListOf shows constructing a List with ListOf.
 func ExampleListOf() {
-	list := persistent.ListOf(1, 2, 3)
+	list := immutable.ListOf(1, 2, 3)
 	fmt.Println(list.Items())
 	fmt.Println(list.IsEmpty())
 	// Output:
@@ -19,7 +19,7 @@ func ExampleListOf() {
 // ExampleList_Append shows that Append returns a new List and leaves the
 // original untouched.
 func ExampleList_Append() {
-	original := persistent.ListOf(1, 2, 3)
+	original := immutable.ListOf(1, 2, 3)
 	extended := original.Append(4, 5)
 
 	fmt.Println(original.Items())
@@ -32,7 +32,7 @@ func ExampleList_Append() {
 // ExampleList_Builder shows the Builder path for accumulating several
 // writes before producing one new, immutable List.
 func ExampleList_Builder() {
-	base := persistent.ListOf(1, 2, 3)
+	base := immutable.ListOf(1, 2, 3)
 	built := base.Builder().
 		Append(4).
 		Set(0, 99).
@@ -46,7 +46,7 @@ func ExampleList_Builder() {
 
 // ExampleMapOf shows constructing a Map with MapOf.
 func ExampleMapOf() {
-	m := persistent.MapOf(map[string]int{"a": 1, "b": 2})
+	m := immutable.MapOf(map[string]int{"a": 1, "b": 2})
 	fmt.Println(m.Len())
 	fmt.Println(m.Has("a"))
 	// Output:
@@ -57,7 +57,7 @@ func ExampleMapOf() {
 // ExampleMap_Set shows that Set returns a new Map holding both the added
 // key and every key already present.
 func ExampleMap_Set() {
-	base := persistent.MapOf(map[string]int{"a": 1})
+	base := immutable.MapOf(map[string]int{"a": 1})
 	updated := base.Set("b", 2)
 
 	a, _ := updated.Get("a")
@@ -70,7 +70,7 @@ func ExampleMap_Set() {
 // ExampleMap_Builder shows bulk construction under exclusive ownership,
 // then O(1) Build.
 func ExampleMap_Builder() {
-	built := persistent.MapOf[string, int](nil).Builder().
+	built := immutable.MapOf[string, int](nil).Builder().
 		Set("a", 1).
 		Set("b", 2).
 		Build()
@@ -85,7 +85,7 @@ func ExampleMap_Builder() {
 
 // ExampleSetOf shows constructing a Set with SetOf (deduplicated).
 func ExampleSetOf() {
-	s := persistent.SetOf(1, 2, 2, 3)
+	s := immutable.SetOf(1, 2, 2, 3)
 	fmt.Println(s.Len())
 	fmt.Println(s.Has(2))
 	// Output:

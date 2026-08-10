@@ -1,10 +1,10 @@
-package persistent_test
+package immutable_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 )
 
 // Benchmark sizes for Baseline B (path-copy engines).
@@ -30,28 +30,28 @@ var benchSizesSingleOp = []int{benchSize1K, benchSize16K, benchSize64K, benchSiz
 // Loop / iteration / lookup sizes: omit 1M so loop benches stay practical.
 var benchSizes = []int{benchSizeSmall, benchSize1K, benchSize16K, benchSize64K}
 
-func makeBenchList(n int) persistent.List[int] {
+func makeBenchList(n int) immutable.List[int] {
 	items := make([]int, n)
 	for i := range items {
 		items[i] = i
 	}
-	return persistent.ListOf(items...)
+	return immutable.ListOf(items...)
 }
 
-func makeBenchMap(n int) persistent.Map[int, int] {
+func makeBenchMap(n int) immutable.Map[int, int] {
 	m := make(map[int]int, n)
 	for i := range n {
 		m[i] = i
 	}
-	return persistent.MapOf(m)
+	return immutable.MapOf(m)
 }
 
-func makeBenchSet(n int) persistent.Set[int] {
+func makeBenchSet(n int) immutable.Set[int] {
 	items := make([]int, n)
 	for i := range items {
 		items[i] = i
 	}
-	return persistent.SetOf(items...)
+	return immutable.SetOf(items...)
 }
 
 // BenchmarkListAppend measures a single Append against a List already holding
@@ -77,7 +77,7 @@ func BenchmarkListAppendLoop(b *testing.B) {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				l := persistent.ListOf[int]()
+				l := immutable.ListOf[int]()
 				for i := range n {
 					l = l.Append(i)
 				}
@@ -94,7 +94,7 @@ func BenchmarkListBuilderAppendLoop(b *testing.B) {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				builder := persistent.ListOf[int]().Builder()
+				builder := immutable.ListOf[int]().Builder()
 				for i := range n {
 					builder.Append(i)
 				}
@@ -169,7 +169,7 @@ func BenchmarkMapBuilderSet(b *testing.B) {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				builder := persistent.MapOf[int, int](nil).Builder()
+				builder := immutable.MapOf[int, int](nil).Builder()
 				for i := range n {
 					builder.Set(i, i)
 				}

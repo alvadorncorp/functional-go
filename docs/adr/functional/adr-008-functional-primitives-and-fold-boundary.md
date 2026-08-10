@@ -29,7 +29,7 @@ duas novas arestas serão autorizadas de forma dirigida e testável.
 - Manter `function`, `predicate` e `order` como folhas da biblioteca padrão.
 - Reutilizar `values/optional.Optional[T]` e `values/nonempty.NonEmpty[T]` nas
   assinaturas em vez de criar representações concorrentes.
-- Não acoplar as primitivas a `persistent`, `modeling`, internals, `reflect` ou
+- Não acoplar as primitivas a `immutable`, `modeling`, internals, `reflect` ou
   `unsafe`.
 - Preservar mecanicamente a direção e o conjunto exato de arestas públicas.
 
@@ -95,7 +95,7 @@ decisão explícita.
 **Neutras / Ações de acompanhamento:**
 - Rollback remove o pacote fold, suas duas arestas allow-listed e esta ADR sem
   afetar os três pacotes-folha.
-- Traverse, Sequence, adapters de persistent e abstrações algébricas continuam
+- Traverse, Sequence, adapters de immutable e abstrações algébricas continuam
   fora do escopo.
 
 ADR-009 é a decisão posterior para tuple/lazy/iterator/optics. Sua aresta

@@ -1,4 +1,4 @@
-// Package hamt is the Hash Array Mapped Trie engine behind persistent Map
+// Package hamt is the Hash Array Mapped Trie engine behind immutable.Map
 // and Set.
 //
 // Pure immutable Set/Delete path-copy with branching factor 32 (5 hash bits
@@ -17,6 +17,6 @@
 // the new value equals the old one (V is not comparable; no reflect equality).
 //
 // Allowed non-stdlib imports (when needed): ownership, cow, sharing, keyhash.
-// Must not import transient, eq, optional, persistent, valueobject,
+// Must not import transient, eq, optional, immutable, valueobject,
 // or vector.
 package hamt

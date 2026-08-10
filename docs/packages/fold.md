@@ -13,5 +13,5 @@ is represented in the type. `ReduceNonEmpty` consumes
 Reduce, and ReduceNonEmpty allocate no intermediate collection.
 
 The package imports exactly `values/optional` and `values/nonempty`. It does not
-import persistent collections or the other primitive packages. See
+import immutable collections or the other primitive packages. See
 [ADR-008](../adr/functional/adr-008-functional-primitives-and-fold-boundary.md).

@@ -61,8 +61,8 @@ therefore break the NonEmpty cardinality guarantee. Convert to a regular slice
 or choose a different domain representation when filtering may produce no
 values.
 
-## Not a persistent list
+## Not an immutable list
 
-`NonEmpty` is a semantic cardinality container, not a `persistent.List`.
-It does not provide persistent-list operations or structural sharing; its
+`NonEmpty` is a semantic cardinality container, not a `immutable.List`.
+It does not provide immutable-list operations or structural sharing; its
 slice-facing operations make defensive copies to preserve its value semantics.

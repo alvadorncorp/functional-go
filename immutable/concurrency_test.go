@@ -1,10 +1,10 @@
-package persistent_test
+package immutable_test
 
 import (
 	"sync"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 )
 
 // numReaders is the number of concurrent reader goroutines each
@@ -23,7 +23,7 @@ const numDerivations = 200
 func TestListConcurrentReadDuringDerive(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.ListOf(1, 2, 3, 4, 5)
+	base := immutable.ListOf(1, 2, 3, 4, 5)
 	want := base.Items()
 
 	var wg sync.WaitGroup
@@ -82,7 +82,7 @@ func TestListConcurrentReadDuringDerive(t *testing.T) {
 func TestMapConcurrentReadDuringDerive(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.MapOf(map[string]int{"a": 1, "b": 2, "c": 3})
+	base := immutable.MapOf(map[string]int{"a": 1, "b": 2, "c": 3})
 
 	var wg sync.WaitGroup
 	stop := make(chan struct{})
@@ -132,7 +132,7 @@ func TestMapConcurrentReadDuringDerive(t *testing.T) {
 func TestSetConcurrentReadDuringDerive(t *testing.T) {
 	t.Parallel()
 
-	base := persistent.SetOf(1, 2, 3)
+	base := immutable.SetOf(1, 2, 3)
 
 	var wg sync.WaitGroup
 	stop := make(chan struct{})

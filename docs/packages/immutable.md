@@ -1,6 +1,6 @@
-# Package `persistent`
+# Package `immutable`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/persistent`
+**Import path:** `github.com/alvadorncorp/gopackages/functional/immutable`
 
 Immutable collections — `List[T]`, `Map[K,V]`, `Set[T]` — that write
 functionally: every update method returns a new collection and leaves the
@@ -33,7 +33,7 @@ Constructors are **`ListOf` / `MapOf` / `SetOf`** (not `New*`). See the
   shift). A caller MUST NOT depend on a tighter bound for Delete. The vector
   engine also exposes internal `Pop`/`TransientPop` (O(1) when the tail has
   more than one element, else O(log₃₂ n)); there is no public `List.Pop`.
-- **No `reflect` in production:** `persistent` production code does not import
+- **No `reflect` in production:** `immutable` production code does not import
   `reflect`. Equality goes through `functional/internal/eq` (method, then
   `==`; never `reflect.DeepEqual`).
 - **Semantic immutability:** the collection structure never mutates in place.
@@ -85,10 +85,10 @@ slice/map; that is no longer the engine.
    allocates `n` intermediate collections.** `Builder()` exists for bulk
    construction: exclusive ownership + O(1) `Freeze`. Builders open a
    `transient.Window` and `Freeze` on `Build`; public panics remain
-   `"persistent: ..."`.
+   `"immutable: ..."`.
 6. **Zero values are valid empty collections.** Map/Set first write or
    `Builder()` materializes an `hamt.Empty` seed.
-7. **Every test in this package is `package persistent_test`** (external),
+7. **Every test in this package is `package immutable_test`** (external),
    asserting only publicly observable behavior — the acceptance criterion
    for any future engine change is this suite passing unchanged.
 
@@ -129,7 +129,7 @@ and [core.md](core.md).
 | `CollectList[T](seq iter.Seq[T]) List[T]` | Drains `seq` into a new `List`, in iteration order. |
 | `(l List[T]) Len() int` | Element count. |
 | `(l List[T]) IsEmpty() bool` | `Len() == 0`. Zero `List` is empty. |
-| `(l List[T]) At(i int) T` | Element at `i`; panics `"persistent: index out of range"` outside `[0, Len)`. |
+| `(l List[T]) At(i int) T` | Element at `i`; panics `"immutable: index out of range"` outside `[0, Len)`. |
 | `(l List[T]) Append(items ...T) List[T]` | New `List` with `items` appended. `l` unchanged. Path-copy vector. |
 | `(l List[T]) Set(i int, v T) List[T]` | New `List` with index `i` replaced. Panics as above. |
 | `(l List[T]) Delete(i int) List[T]` | New `List` without index `i`; later elements shift down. Panics as above. **Currently O(n).** |
@@ -145,7 +145,7 @@ and [core.md](core.md).
 `Len`, `At`, and `Build() List[T]`. `Build` freezes the builder's transient
 window (O(1) owner invalidation), returns an immutable `List`, and
 permanently disables the builder: every method afterward, including a
-repeated `Build`, panics `"persistent: builder used after Build"`.
+repeated `Build`, panics `"immutable: builder used after Build"`.
 
 ## `Map[K,V]`
 
@@ -200,12 +200,12 @@ for a single `Map.Set` / `Set.Add` / `List.Append` against a pre-built base.
 Looping `Append`/`Set`/`Add` on the immutable type still creates **n
 intermediate roots**. `Builder` is the bulk path: exclusive ownership,
 in-place edits on owned nodes, O(1) `Freeze`. Native mutable baselines
-(`[]T` append, `map[K]V` assign / get) live in `persistent/bench_test.go` for
+(`[]T` append, `map[K]V` assign / get) live in `immutable/bench_test.go` for
 comparison.
 
 ```sh
 cd functional
-go test ./persistent/ -run '^$' -bench 'BenchmarkMapSet|BenchmarkSetAdd|BenchmarkListAppend|BenchmarkListBuilder|BenchmarkMapBuilder|BenchmarkMapGet|BenchmarkNativeMap' -benchmem
+go test ./immutable/ -run '^$' -bench 'BenchmarkMapSet|BenchmarkSetAdd|BenchmarkListAppend|BenchmarkListBuilder|BenchmarkMapBuilder|BenchmarkMapGet|BenchmarkNativeMap' -benchmem
 ```
 
 Always route loop-building through `<Type>.Builder()`; never call

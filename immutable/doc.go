@@ -1,4 +1,4 @@
-// Package persistent provides immutable collections — List, Map, and Set —
+// Package immutable provides immutable collections — List, Map, and Set —
 // that write functionally: every update method returns a new collection and
 // leaves the receiver unchanged. There is no in-place mutation anywhere in
 // this API; "write" always means "derive a new value from an old one."
@@ -40,7 +40,7 @@
 // owner, and Freeze on Build (O(1) Owner.Invalidate — no tree walk).
 // ListBuilder exposes At; MapBuilder exposes Get/Has; SetBuilder exposes
 // Has. Builders are mutable and not safe for concurrent use. After Build,
-// every builder method panics with "persistent: builder used after Build".
+// every builder method panics with "immutable: builder used after Build".
 //
 // # Zero values and seed materialization
 //
@@ -65,7 +65,7 @@
 // without Equal. Set.Equal uses membership alone (T is comparable).
 // List.EqualFunc and Map.EqualFunc accept a caller-supplied comparator.
 //
-// Public panic strings remain "persistent: ..." — engine panics such as
+// Public panic strings remain "immutable: ..." — engine panics such as
 // "vector: index out of range" are never leaked to callers. Documented
 // complexity bounds below are upper-bound API headroom; a caller MUST NOT
 // depend on today's constants.
@@ -103,8 +103,8 @@
 //     freezes the window, hands back an immutable collection, and permanently
 //     disables the builder. Building in a loop MUST go through Builder.
 //
-//  6. Every test in this package is package persistent_test (external) and
+//  6. Every test in this package is package immutable_test (external) and
 //     asserts only publicly observable behavior, never the internal
 //     representation. That suite is the acceptance criterion for any future
 //     engine change: it must keep passing unchanged.
-package persistent
+package immutable

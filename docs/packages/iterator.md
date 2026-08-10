@@ -21,5 +21,5 @@ most one unmatched left value may already have been consumed. Source, callback,
 downstream, and cleanup panics propagate; iterator does not recover them.
 
 Production iterator imports only tuple, for Zip and Enumerate. It does not
-import persistent, state, fold, Optional, reflect, unsafe, or external modules.
+import immutable, state, fold, Optional, reflect, unsafe, or external modules.
 See [module overview](../overview.md) and [examples](../examples.md).

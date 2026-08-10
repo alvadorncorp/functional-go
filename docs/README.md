@@ -14,7 +14,7 @@ The module root [README](../README.md) is a short **index**. Content lives here.
 | [packages/lazy.md](packages/lazy.md) | `structural/lazy` — concurrent deferred memoization; stdlib-only |
 | [packages/iterator.md](packages/iterator.md) | `structural/iterator` — `iter.Seq` adapters; imports only `structural/tuple` |
 | [packages/optics.md](packages/optics.md) | `structural/optics` — typed Lens; stdlib-only |
-| [packages/persistent.md](packages/persistent.md) | Public API of `github.com/alvadorncorp/gopackages/functional/persistent`, including measured Append-loop vs. Builder benchmarks |
+| [packages/immutable.md](packages/immutable.md) | Public API of `github.com/alvadorncorp/gopackages/functional/immutable`, including measured Append-loop vs. Builder benchmarks |
 | [packages/state.md](packages/state.md) | Public API of `github.com/alvadorncorp/gopackages/functional/state` (pure `State[T]`, lineage, Tx, Diff) |
 | [packages/core.md](packages/core.md) | Maintainer guide for `internal/core` (ownership, cow, sharing, transient) |
 | [packages/values.md](packages/values.md) | Family guide: choice by semantics, zero values, dependency boundary, and cost model |

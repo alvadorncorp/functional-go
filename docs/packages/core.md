@@ -14,7 +14,7 @@ Maintainer guide for the thin immutability substrate. Callers outside
 record see [ADR-004](../adr/functional/adr-004-thin-immutability-core.md).
 Engines (HAMT, vector) are separate — see
 [ADR-005](../adr/functional/adr-005-persistent-engine-family.md) and
-[persistent.md](persistent.md).
+[immutable.md](immutable.md).
 
 ---
 
@@ -96,12 +96,12 @@ never provides `Clone[T]` and never uses `reflect`.
   treated as published by the next window.
 - A second `Freeze` panics with the same message.
 
-### How `persistent` Builders use it
+### How `immutable` Builders use it
 
 Builders open a window on `Builder()`, gate every method on a live window,
 and pass `win.Owner()` into engine transient methods (`TransientSet`,
 `TransientAppend`, …). On `Build()` they call `Freeze` then nil their `win`
-field. Public panics remain `"persistent: builder used after Build"` — the
+field. Public panics remain `"immutable: builder used after Build"` — the
 transient panic string is not exposed to builder callers. The data path is
 the structure-sharing engine under exclusive ownership, not a private
 full-copy buffer.
@@ -119,8 +119,8 @@ cow · transient · sharing
 - Star into `ownership` only — no peer edges among cow/transient/sharing.
 - No `reflect` in production files under `internal/core`.
 - Core must not import `internal/eq` or any public subpackage.
-- Public packages other than `persistent` must not import core.
-- `persistent` may import core (Builders use `transient`).
+- Public packages other than `immutable` must not import core.
+- `immutable` may import core (Builders use `transient`).
 - Engines may import `ownership` / `cow` / `sharing` but **not** `transient`
   (callers pass an owner from a window).
 
@@ -139,7 +139,7 @@ substrate stays a pure ownership/COW/sharing layer.
 
 Engines live under `functional/internal/engine/` (`hamt`, `vector`,
 `keyhash`) — representation, not laws. See
-[persistent.md](persistent.md) and
+[immutable.md](immutable.md) and
 [ADR-005](../adr/functional/adr-005-persistent-engine-family.md).
 
 ---
@@ -147,7 +147,7 @@ Engines live under `functional/internal/engine/` (`hamt`, `vector`,
 ## Related documents
 
 - [Overview](../overview.md)
-- [Package API: persistent](persistent.md)
+- [Package API: immutable](immutable.md)
 - [ADR-004 — Thin immutability core](../adr/functional/adr-004-thin-immutability-core.md)
 - [ADR-005 — Persistent engine family](../adr/functional/adr-005-persistent-engine-family.md)
 - [ADR-003 — Zero-dependency boundary](../adr/functional/adr-003-zero-dependency-boundary.md)

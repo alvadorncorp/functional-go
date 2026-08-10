@@ -28,13 +28,13 @@ engines.
 
 | Concept | Is | Is not |
 |---|---|---|
-| `state.Transaction` | Single-use plan accumulator over a captured `State` | `persistent.Builder` (exclusive-owner transient over a collection engine) |
+| `state.Transaction` | Single-use plan accumulator over a captured `State` | `immutable.Builder` (exclusive-owner transient over a collection engine) |
 | `state.Diff` | Structural plan steps between two States of one lineage | A domain event, audit log entry, or CQRS message |
 | `state.Version` | Monotonic lineage counter on a pure plan (`uint64`) | A database revision, row version, or optimistic-lock token |
 | `state.Materialize` | Re-apply the full plan oldest→newest (no cache) | A deep clone of `T`; immutability is only as deep as `T` |
 
 ```
-state.Transaction ≠ persistent.Builder
+state.Transaction ≠ immutable.Builder
 state.Diff ≠ Domain Event
 state.Version ≠ DB revision
 state.Materialize ≠ deep clone
@@ -66,8 +66,8 @@ state.Materialize ≠ deep clone
    `Commit` does not call `Materialize`. An empty Commit returns a State
    equivalent to the Begin snapshot (same base, plan, Version).
 8. **Mesh dependencies.** Production `state` does not import sibling public
-   packages (including `persistent`) and does not import `internal/core` or
-   `internal/engine`. Tests may import `persistent` to exercise composition;
+   packages (including `immutable`) and does not import `internal/core` or
+   `internal/engine`. Tests may import `immutable` to exercise composition;
    that is outside production deps.
 9. **Public panics** use the `"state: …"` prefix only.
 10. **No production `reflect` / `unsafe`.** Diff is structural over the plan,
@@ -125,10 +125,10 @@ finds `from`'s head.
 it stores the Version and the materialized Value at call time. Evolving the
 source State afterward does not change an already-taken Snapshot.
 
-### Composing with `persistent` (application layer)
+### Composing with `immutable` (application layer)
 
-Production `state` never imports `persistent`. Application code may still
-use `State[MyType]` where `MyType` fields are `persistent.Map` / `Set` /
+Production `state` never imports `immutable`. Application code may still
+use `State[MyType]` where `MyType` fields are `immutable.Map` / `Set` /
 `List`, evolving those fields inside pure `Mutation`s. Integration tests in
 this package demonstrate that composition; it is not a mesh exception.
 
@@ -147,8 +147,8 @@ go test ./state/ -run '^$' -bench . -benchmem
   (1 / 10 / 100 / 1K). Cost scales with plan length.
 - **`BenchmarkTransactionApplyCommit`:** batch of Applies via Tx vs sequential
   note-style `State.Apply`.
-- **`BenchmarkPersistentInState`:** optional cheap probe with a `Map` field
-  (test-only import of `persistent`).
+- **`BenchmarkImmutableInState`:** optional cheap probe with a `Map` field
+  (test-only import of `immutable`).
 
 ---
 
@@ -156,6 +156,6 @@ go test ./state/ -run '^$' -bench . -benchmem
 
 - [Overview](../overview.md)
 - [Examples](../examples.md)
-- [Package API: persistent](persistent.md) (collections; not imported by state)
+- [Package API: immutable](immutable.md) (collections; not imported by state)
 - [ADR-006 — State semantic layer](../adr/functional/adr-006-state-semantic-layer.md)
 - [ADR-003 — Zero-dependency boundary](../adr/functional/adr-003-zero-dependency-boundary.md)

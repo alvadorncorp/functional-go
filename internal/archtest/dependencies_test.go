@@ -6,7 +6,7 @@
 // values/nonempty, and iterator to tuple; functional/internal/eq is the one
 // shared internal exception every public package may use), the internal/core
 // DAG stays a star into ownership with no peer edges and no reflect,
-// internal/eq production code imports neither reflect nor unsafe, persistent
+// internal/eq production code imports neither reflect nor unsafe, immutable
 // and state production code import neither reflect nor unsafe, and
 // internal/engine packages obey their own import allow-lists (keyhash: stdlib
 // only; hamt: ownership/cow/sharing/keyhash only among functional packages;
@@ -43,7 +43,7 @@ const (
 	pkgLazy            = "github.com/alvadorncorp/gopackages/functional/structural/lazy"
 	pkgIterator        = "github.com/alvadorncorp/gopackages/functional/structural/iterator"
 	pkgOptics          = "github.com/alvadorncorp/gopackages/functional/structural/optics"
-	pkgPersistent      = "github.com/alvadorncorp/gopackages/functional/persistent"
+	pkgImmutable       = "github.com/alvadorncorp/gopackages/functional/immutable"
 	pkgState           = "github.com/alvadorncorp/gopackages/functional/state"
 	pkgValuesOptional  = "github.com/alvadorncorp/gopackages/functional/values/optional"
 	pkgValuesResult    = "github.com/alvadorncorp/gopackages/functional/values/result"
@@ -65,7 +65,7 @@ var publicPackages = []string{
 	pkgLazy,
 	pkgIterator,
 	pkgOptics,
-	"github.com/alvadorncorp/gopackages/functional/persistent",
+	"github.com/alvadorncorp/gopackages/functional/immutable",
 	"github.com/alvadorncorp/gopackages/functional/state",
 	pkgValuesOptional,
 	pkgValuesResult,
@@ -89,7 +89,7 @@ var publicAllowedEdges = map[string][]string{
 }
 
 // publicPackagesNoCore are the public packages that must never import
-// internal/core. persistent is deliberately omitted: it may depend on core
+// internal/core. immutable is deliberately omitted: it may depend on core
 // later for the engine contract.
 var publicPackagesNoCore = []string{
 	pkgFunction,
@@ -135,7 +135,7 @@ var allPackages = []string{
 	pkgLazy,
 	pkgIterator,
 	pkgOptics,
-	"github.com/alvadorncorp/gopackages/functional/persistent",
+	"github.com/alvadorncorp/gopackages/functional/immutable",
 	"github.com/alvadorncorp/gopackages/functional/state",
 	pkgValuesOptional,
 	pkgValuesResult,
@@ -168,7 +168,7 @@ var coreForbiddenTargets = []string{
 	pkgKeyhash,
 	pkgHamt,
 	pkgVector,
-	"github.com/alvadorncorp/gopackages/functional/persistent",
+	"github.com/alvadorncorp/gopackages/functional/immutable",
 	"github.com/alvadorncorp/gopackages/functional/state",
 }
 
@@ -197,7 +197,7 @@ var vectorAllowedFunctional = []string{
 var engineForbiddenTargets = []string{
 	pkgTransient,
 	pkgEq,
-	"github.com/alvadorncorp/gopackages/functional/persistent",
+	"github.com/alvadorncorp/gopackages/functional/immutable",
 	"github.com/alvadorncorp/gopackages/functional/state",
 }
 
@@ -220,7 +220,7 @@ func TestNoNonStdlibDependencies(t *testing.T) {
 
 // TestPublicDependencyDAG proves the exact public-package dependency DAG as a
 // tested invariant, not just a documented one. It is what
-// guarantees, for example, that persistent.Map.Get returns comma-ok instead
+// guarantees, for example, that immutable.Map.Get returns comma-ok instead
 // of a values/optional.Optional by design, not by oversight: if it ever
 // imported values/optional to do so, this test would fail.
 //
@@ -229,7 +229,7 @@ func TestNoNonStdlibDependencies(t *testing.T) {
 // `_test.go` files. That is deliberate, not a blind spot in this test: a
 // public subpackage's test code MAY legitimately import a sibling public
 // package to exercise or demonstrate cross-package behavior — for example
-// state tests may compose with persistent.Map/Set/List fields. That is a
+// state tests may compose with immutable.Map/Set/List fields. That is a
 // real, intentional dependency between test binaries, and it does not
 // violate the architectural boundary this test protects (production code
 // never importing a public sibling). Adding `-test` here would make that
@@ -325,7 +325,7 @@ func TestCoreDependencyDAG(t *testing.T) {
 }
 
 // TestPublicPackagesDoNotImportCore proves public packages other than
-// persistent never reach into internal/core. persistent is allowed to import
+// immutable never reach into internal/core. immutable is allowed to import
 // core (engine contract) and is not checked here.
 func TestPublicPackagesDoNotImportCore(t *testing.T) {
 	t.Parallel()
@@ -362,7 +362,7 @@ func TestEngineNoReflect(t *testing.T) {
 //   - keyhash: standard library only (no functional packages)
 //   - hamt: among functional packages, only ownership, cow, sharing, keyhash
 //   - vector: among functional packages, only ownership, cow, sharing
-//   - no engine may import transient, eq, persistent, or state
+//   - no engine may import transient, eq, immutable, or state
 //   - hamt ↛ vector and vector ↛ hamt (peer engines stay disconnected)
 //
 // Core packages already cannot import engines via TestCoreDependencyDAG

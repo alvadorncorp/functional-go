@@ -12,7 +12,7 @@
 // domain meaning; this package never interprets fields of T and never
 // imports domain packages. Prefer immutable or value-object T when deep
 // immutability of the payload is required — the same semantic-immutability
-// caveat that applies to persistent collections applies here.
+// caveat that applies to immutable collections applies here.
 //
 // # Evolution surface
 //
@@ -27,7 +27,7 @@
 //
 // # Distinctions
 //
-//	state.Transaction ≠ persistent.Builder
+//	state.Transaction ≠ immutable.Builder
 //	state.Diff ≠ Domain Event
 //	state.Version ≠ DB revision
 //	state.Materialize ≠ deep clone
@@ -35,9 +35,9 @@
 // # Mesh dependencies
 //
 // Production code in this package does not import sibling public packages
-// (including persistent) and does not import internal/core or
+// (including immutable) and does not import internal/core or
 // internal/engine. Mesh sibling law is absolute for production imports:
-// state ↛ persistent (and the reverse). Tests may import persistent
+// state ↛ immutable (and the reverse). Tests may import immutable
 // to exercise cross-package scenarios; that is outside production deps.
 //
 // # Panic prefix

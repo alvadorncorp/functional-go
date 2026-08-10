@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 	"github.com/alvadorncorp/gopackages/functional/state"
 )
 
@@ -23,7 +23,7 @@ var applySink state.State[int]
 var (
 	materializeSink int
 	commitSink      state.State[int]
-	persistentSink  state.State[model]
+	immutableSink   state.State[model]
 )
 
 // BenchmarkStateApply measures ONE additional Apply on a plan already of
@@ -104,17 +104,17 @@ func BenchmarkTransactionApplyCommit(b *testing.B) {
 	})
 }
 
-// model is a cheap T whose field is a persistent.Map. Production state does
-// not import persistent; this bench lives in state_test only.
+// model is a cheap T whose field is a immutable.Map. Production state does
+// not import immutable; this bench lives in state_test only.
 type model struct {
-	Attrs persistent.Map[string, int]
+	Attrs immutable.Map[string, int]
 }
 
-// BenchmarkPersistentInState measures Apply + Materialize when T embeds a
-// persistent.Map field. Each mutation path-copies one Map entry; the State
+// BenchmarkImmutableInState measures Apply + Materialize when T embeds a
+// immutable.Map field. Each mutation path-copies one Map entry; the State
 // plan itself stays reverse-linked and mesh-independent.
-func BenchmarkPersistentInState(b *testing.B) {
-	root := state.Of(model{Attrs: persistent.MapOf[string, int](nil)})
+func BenchmarkImmutableInState(b *testing.B) {
+	root := state.Of(model{Attrs: immutable.MapOf[string, int](nil)})
 	set := func(m model) model {
 		m.Attrs = m.Attrs.Set("k", m.Attrs.Len()+1)
 		return m
@@ -130,6 +130,6 @@ func BenchmarkPersistentInState(b *testing.B) {
 	for b.Loop() {
 		next := s.Apply(set)
 		_ = next.Materialize()
-		persistentSink = next
+		immutableSink = next
 	}
 }

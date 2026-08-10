@@ -8,7 +8,7 @@ import (
 )
 
 // Engine micro-benchmark sizes. Focus is path-copy / depth cost, not product
-// suite coverage (see persistent/bench_test.go for that).
+// suite coverage (see immutable/bench_test.go for that).
 var engineBenchSizes = []int{32, 1_024, 10_000}
 
 func makeBenchVector(n int) Root[int] {
@@ -94,7 +94,7 @@ func BenchmarkDeleteMid(b *testing.B) {
 }
 
 // BenchmarkTransientAppendBatch measures n TransientAppends under one owner,
-// starting from empty. Contrasts with BenchmarkPersistentAppendBatch.
+// starting from empty. Contrasts with BenchmarkImmutableAppendBatch.
 func BenchmarkTransientAppendBatch(b *testing.B) {
 	for _, n := range engineBenchSizes {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
@@ -112,9 +112,9 @@ func BenchmarkTransientAppendBatch(b *testing.B) {
 	}
 }
 
-// BenchmarkPersistentAppendBatch measures n immutable Appends in sequence,
+// BenchmarkImmutableAppendBatch measures n immutable Appends in sequence,
 // starting from empty. Contrasts with BenchmarkTransientAppendBatch.
-func BenchmarkPersistentAppendBatch(b *testing.B) {
+func BenchmarkImmutableAppendBatch(b *testing.B) {
 	for _, n := range engineBenchSizes {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
 			b.ReportAllocs()

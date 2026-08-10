@@ -20,7 +20,7 @@ import path down, grouped by role (no Go package at the group directory):
   [`lazy`](structural/lazy/), [`iterator`](structural/iterator/),
   [`optics`](structural/optics/)
 - **[`values/`](values/)** — optional, result, either, nonempty, validated
-- **[`persistent/`](persistent/)**, **[`state/`](state/)** — collections and
+- **[`immutable/`](immutable/)**, **[`state/`](state/)** — collections and
   pure plan evolution (kept at the module root)
 
 This README is the **documentation index**. Guides live under
@@ -50,7 +50,7 @@ This README is the **documentation index**. Guides live under
 | [docs/packages/lazy.md](docs/packages/lazy.md) | `github.com/alvadorncorp/gopackages/functional/structural/lazy` |
 | [docs/packages/iterator.md](docs/packages/iterator.md) | `github.com/alvadorncorp/gopackages/functional/structural/iterator` |
 | [docs/packages/optics.md](docs/packages/optics.md) | `github.com/alvadorncorp/gopackages/functional/structural/optics` |
-| [docs/packages/persistent.md](docs/packages/persistent.md) | `github.com/alvadorncorp/gopackages/functional/persistent` |
+| [docs/packages/immutable.md](docs/packages/immutable.md) | `github.com/alvadorncorp/gopackages/functional/immutable` |
 | [docs/packages/state.md](docs/packages/state.md) | `github.com/alvadorncorp/gopackages/functional/state` |
 | [docs/packages/core.md](docs/packages/core.md) | `internal/core` (ownership, cow, sharing, transient) — maintainers |
 | [docs/packages/values.md](docs/packages/values.md) | Family guide for the five `functional/values/*` packages |
@@ -108,7 +108,7 @@ This README is the **documentation index**. Guides live under
 | Package | Role | Core types |
 |---|---|---|
 | [`values/optional`](values/optional/), [`values/result`](values/result/), [`values/either`](values/either/), [`values/nonempty`](values/nonempty/), [`values/validated`](values/validated/) | Independent algebraic value types; see the [family guide](docs/packages/values.md) | `Optional[T]`, `Result[T,E]`, `Either[L,R]`, `NonEmpty[T]`, `Validated[T,E]` |
-| [`persistent`](persistent/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List) | `List[T]`, `Map[K,V]`, `Set[T]`, `Builder()` |
+| [`immutable`](immutable/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List) | `List[T]`, `Map[K,V]`, `Set[T]`, `Builder()` |
 | [`state`](state/) | Pure semantic evolution over `T` | `State[T]`, `Transaction[T]`, `Diff[T]`, `Snapshot[T]` |
 
 ---
@@ -123,7 +123,7 @@ import (
 	"github.com/alvadorncorp/gopackages/functional/primitives/fold"
 	"github.com/alvadorncorp/gopackages/functional/primitives/order"
 	"github.com/alvadorncorp/gopackages/functional/primitives/predicate"
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 	"github.com/alvadorncorp/gopackages/functional/state"
 	"github.com/alvadorncorp/gopackages/functional/values/optional"
 )
@@ -131,7 +131,7 @@ import (
 port := optional.Some("8080")
 n := optional.Map(port, len) // optional.Optional[int]
 
-tags := persistent.ListOf("prod", "us-east") // persistent.List[string]
+tags := immutable.ListOf("prod", "us-east") // immutable.List[string]
 
 s := state.Of(0).Apply(func(v int) int { return v + 1 })
 _ = s.Materialize() // 1; Apply is lazy, Materialize re-applies the plan
@@ -176,10 +176,10 @@ cd functional && go test ./... -count=1
   types — values packages stop at algebraic presence/outcomes. The public
   `state` package is a pure plan/Version layer over `T`, not a monadic State
   effect.
-- **`persistent` collections are SHALLOW, not transitively immutable.**
-  `persistent.List[[]byte]` still shares each element's backing array;
+- **`immutable` collections are SHALLOW, not transitively immutable.**
+  `immutable.List[[]byte]` still shares each element's backing array;
   nothing in this module makes an element type immutable on your behalf.
-- **`persistent` engines are path-copy structure sharing, not full-copy
+- **`immutable` engines are path-copy structure sharing, not full-copy
   COW.** Map/Set use a HAMT; List uses a 32-way vector. Documented log-n
   complexity bounds are public-API upper bounds. `List.Delete` is currently
   O(n). Builders publish with O(1) owner invalidation. See
@@ -188,8 +188,8 @@ cd functional && go test ./... -count=1
   [docs/packages/core.md](docs/packages/core.md). Core remains laws only —
   not a generic engine library.
 - **`state` is pure over T and mesh-isolated.** Production `state` does not
-  import `persistent`, core, or engines. `Version` is not a DB revision;
-  `Diff` is not a domain event; `Transaction` is not a `persistent.Builder`.
+  import `immutable`, core, or engines. `Version` is not a DB revision;
+  `Diff` is not a domain event; `Transaction` is not a `immutable.Builder`.
   See [ADR-006](docs/adr/functional/adr-006-state-semantic-layer.md).
 
 ---

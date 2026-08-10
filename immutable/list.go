@@ -1,4 +1,4 @@
-package persistent
+package immutable
 
 import (
 	"iter"
@@ -51,7 +51,7 @@ func (l List[T]) Len() int { return l.root.Len() }
 func (l List[T]) IsEmpty() bool { return l.root.Len() == 0 }
 
 // At returns the element at index i. It panics with
-// "persistent: index out of range" when i is outside [0, Len).
+// "immutable: index out of range" when i is outside [0, Len).
 //
 // Bounds are checked here so a vector engine panic never leaks a "vector:"
 // message to public callers.
@@ -73,7 +73,7 @@ func (l List[T]) Append(items ...T) List[T] {
 }
 
 // Set returns a new List with the element at index i replaced by v. l is
-// unchanged. It panics with "persistent: index out of range" when i is
+// unchanged. It panics with "immutable: index out of range" when i is
 // outside [0, Len).
 //
 // Bounds are checked here so a vector engine panic never leaks a "vector:"
@@ -87,7 +87,7 @@ func (l List[T]) Set(i int, v T) List[T] {
 
 // Delete returns a new List without the element at index i; every later
 // element shifts down by one. l is unchanged. It panics with
-// "persistent: index out of range" when i is outside [0, Len).
+// "immutable: index out of range" when i is outside [0, Len).
 //
 // Delete is currently O(n): the vector engine rebuilds by iteration rather
 // than a path-aware shift. Bounds are checked here so a vector engine panic
@@ -178,7 +178,7 @@ func (l List[T]) Builder() *ListBuilder[T] {
 // List with the current root, and permanently disables the builder.
 //
 // After Build runs, every method on the builder — including Build itself —
-// panics with "persistent: builder used after Build".
+// panics with "immutable: builder used after Build".
 type ListBuilder[T any] struct {
 	root vector.Root[T]
 	win  *transient.Window
@@ -198,7 +198,7 @@ func (b *ListBuilder[T]) Append(items ...T) *ListBuilder[T] {
 
 // Set replaces the element at index i with v under the builder's exclusive
 // owner and returns b for chaining. It panics with
-// "persistent: index out of range" when i is outside [0, Len).
+// "immutable: index out of range" when i is outside [0, Len).
 func (b *ListBuilder[T]) Set(i int, v T) *ListBuilder[T] {
 	b.checkNotBuilt()
 	if i < 0 || i >= b.root.Len() {
@@ -210,7 +210,7 @@ func (b *ListBuilder[T]) Set(i int, v T) *ListBuilder[T] {
 
 // Delete removes the element at index i under the builder's exclusive owner,
 // shifting every later element down by one, and returns b for chaining. It
-// panics with "persistent: index out of range" when i is outside [0, Len).
+// panics with "immutable: index out of range" when i is outside [0, Len).
 func (b *ListBuilder[T]) Delete(i int) *ListBuilder[T] {
 	b.checkNotBuilt()
 	if i < 0 || i >= b.root.Len() {
@@ -227,8 +227,8 @@ func (b *ListBuilder[T]) Len() int {
 }
 
 // At returns the element at index i currently held by the builder. It
-// panics with "persistent: index out of range" when i is outside [0, Len).
-// After Build, At panics with "persistent: builder used after Build".
+// panics with "immutable: index out of range" when i is outside [0, Len).
+// After Build, At panics with "immutable: builder used after Build".
 func (b *ListBuilder[T]) At(i int) T {
 	b.checkNotBuilt()
 	if i < 0 || i >= b.root.Len() {
@@ -239,7 +239,7 @@ func (b *ListBuilder[T]) At(i int) T {
 
 // Build returns an immutable List holding the builder's current root and
 // permanently disables the builder: every method, including a repeated
-// Build, panics with "persistent: builder used after Build" from this point
+// Build, panics with "immutable: builder used after Build" from this point
 // on. Freeze invalidates the owner token in O(1); nodes may retain stale
 // inactive stamps.
 func (b *ListBuilder[T]) Build() List[T] {

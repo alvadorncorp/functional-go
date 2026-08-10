@@ -1,4 +1,4 @@
-package persistent
+package immutable
 
 import (
 	"iter"
@@ -184,7 +184,7 @@ func (m Map[K, V]) Builder() *MapBuilder[K, V] {
 // root, and permanently disables the builder.
 //
 // After Build runs, every method on the builder — including Build itself —
-// panics with "persistent: builder used after Build".
+// panics with "immutable: builder used after Build".
 type MapBuilder[K comparable, V any] struct {
 	root hamt.Root[K, V]
 	win  *transient.Window
@@ -218,14 +218,14 @@ func (b *MapBuilder[K, V]) Len() int {
 
 // Get returns the value stored for k in the builder and true, or the zero
 // value of V and false when k is absent. After Build, Get panics with
-// "persistent: builder used after Build".
+// "immutable: builder used after Build".
 func (b *MapBuilder[K, V]) Get(k K) (V, bool) {
 	b.checkNotBuilt()
 	return b.root.Get(k)
 }
 
 // Has reports whether k is present in the builder. After Build, Has panics
-// with "persistent: builder used after Build".
+// with "immutable: builder used after Build".
 func (b *MapBuilder[K, V]) Has(k K) bool {
 	b.checkNotBuilt()
 	_, ok := b.root.Get(k)
@@ -234,7 +234,7 @@ func (b *MapBuilder[K, V]) Has(k K) bool {
 
 // Build returns an immutable Map holding the builder's current root and
 // permanently disables the builder: every method, including a repeated
-// Build, panics with "persistent: builder used after Build" from this point
+// Build, panics with "immutable: builder used after Build" from this point
 // on. Freeze invalidates the owner token in O(1); nodes may retain stale
 // inactive stamps.
 func (b *MapBuilder[K, V]) Build() Map[K, V] {

@@ -1,4 +1,4 @@
-// Package vector is the 32-way persistent vector engine behind persistent List.
+// Package vector is the 32-way persistent vector engine behind immutable.List.
 //
 // Pure immutable At/Set/Append/Pop path-copy with branching factor 32 (5 index
 // bits per level). New path nodes for pure immutable ops always publish with
@@ -18,6 +18,6 @@
 // This package does not implement RRB, concat, or split.
 //
 // Allowed non-stdlib imports (when needed): ownership, cow, sharing.
-// Must not import transient, eq, optional, persistent, valueobject,
+// Must not import transient, eq, optional, immutable, valueobject,
 // keyhash, or hamt.
 package vector

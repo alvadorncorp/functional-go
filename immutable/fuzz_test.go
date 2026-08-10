@@ -1,11 +1,11 @@
-package persistent_test
+package immutable_test
 
 import (
 	"maps"
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 )
 
 // maxFuzzOps bounds how many instructions a single fuzz input can decode
@@ -20,7 +20,7 @@ const listOpWidth = 3
 
 // FuzzListOps interprets the fuzz input as a small program of List
 // operations (append/set/delete), applies it in lockstep to both a
-// persistent.List[int] and a native []int model, and keeps every
+// immutable.List[int] and a native []int model, and keeps every
 // intermediate List value alongside the model snapshot taken at that same
 // step. The final List must match the final model, and — this is the part
 // that actually proves old versions survive deriving new ones — every
@@ -34,12 +34,12 @@ func FuzzListOps(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		type version struct {
-			list  persistent.List[int]
+			list  immutable.List[int]
 			model []int
 		}
 
 		var model []int
-		current := persistent.ListOf[int]()
+		current := immutable.ListOf[int]()
 		versions := []version{{list: current, model: slices.Clone(model)}}
 
 		ops := 0
@@ -91,7 +91,7 @@ func FuzzListOps(f *testing.F) {
 const mapOpWidth = 3
 
 // FuzzMapOps is FuzzListOps' Map analogue: a small program of set/delete
-// operations run in lockstep against a persistent.Map[int, int] and a
+// operations run in lockstep against a immutable.Map[int, int] and a
 // native map[int]int model, keeping every intermediate Map alongside the
 // model snapshot from the step that produced it.
 func FuzzMapOps(f *testing.F) {
@@ -101,12 +101,12 @@ func FuzzMapOps(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		type version struct {
-			m     persistent.Map[int, int]
+			m     immutable.Map[int, int]
 			model map[int]int
 		}
 
 		model := map[int]int{}
-		current := persistent.MapOf[int, int](nil)
+		current := immutable.MapOf[int, int](nil)
 		versions := []version{{m: current, model: maps.Clone(model)}}
 
 		ops := 0

@@ -34,9 +34,9 @@ included answer, and this module fills exactly those two:
    constructor and unexported fields, `Tags()` returning the raw slice hands
    the backing array to every caller, who can then mutate it and silently
    corrupt every other holder of the "same" value object. Use
-   [`persistent.List[T]`](../packages/persistent.md),
-   [`persistent.Map[K,V]`](../packages/persistent.md), or
-   [`persistent.Set[T]`](../packages/persistent.md) for a collection field
+   [`immutable.List[T]`](../packages/immutable.md),
+   [`immutable.Map[K,V]`](../packages/immutable.md), or
+   [`immutable.Set[T]`](../packages/immutable.md) for a collection field
    instead — construction copies into an engine-backed structure, and
    `Items()` is the only egress that materializes a conventional mutable
    collection, so the field is safe to expose for iteration via `Values()`.
@@ -50,7 +50,7 @@ included answer, and this module fills exactly those two:
 ## A canonical value object
 
 The shape below uses every piece this pattern calls for: unexported fields,
-a validating constructor, `With*`, `Equal`, and a `persistent.List[string]`
+a validating constructor, `With*`, `Equal`, and a `immutable.List[string]`
 field for the one thing plain Go cannot make safe on its own.
 
 ```go
@@ -59,7 +59,7 @@ package catalog
 import (
 	"errors"
 
-	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/immutable"
 )
 
 // Money is a value object: an amount in cents plus a set of tags, both
@@ -67,7 +67,7 @@ import (
 type Money struct {
 	amountCents int64
 	currency    string
-	tags        persistent.List[string]
+	tags        immutable.List[string]
 }
 
 // NewMoney validates and constructs. It is the only way to obtain a
@@ -82,16 +82,16 @@ func NewMoney(amountCents int64, currency string, tags ...string) (Money, error)
 	return Money{
 		amountCents: amountCents,
 		currency:    currency,
-		tags:        persistent.ListOf(tags...),
+		tags:        immutable.ListOf(tags...),
 	}, nil
 }
 
 // AmountCents, Currency, and Tags are read-only accessors. Tags returns the
-// persistent.List value itself, not a copied []string — the type is already
+// immutable.List value itself, not a copied []string — the type is already
 // safe to hand out for iteration.
 func (m Money) AmountCents() int64                 { return m.amountCents }
 func (m Money) Currency() string                   { return m.currency }
-func (m Money) Tags() persistent.List[string]      { return m.tags }
+func (m Money) Tags() immutable.List[string]      { return m.tags }
 
 // WithAmountCents returns a copy of m with a different amount. Value
 // receivers already copy m on entry; there is nothing further to do.
@@ -103,7 +103,7 @@ func (m Money) WithAmountCents(amountCents int64) (Money, error) {
 	return m, nil
 }
 
-// Equal compares two Money values field by field. persistent.List is not
+// Equal compares two Money values field by field. immutable.List is not
 // ==-comparable, so its own Equal is used for the tags field.
 func (m Money) Equal(other Money) bool {
 	return m.amountCents == other.amountCents &&
@@ -121,17 +121,17 @@ Notes on this example:
   — a `With*` method is still a construction path.
 - `Equal` is hand-written here, field by field, which is the normal shape
   for a value object with a small, fixed field set. `functional`'s own
-  `persistent` types resolve their `Equal` through the shared internal
+  `immutable` types resolve their `Equal` through the shared internal
   package `functional/internal/eq`, but that package is `internal` and
   cannot be imported from outside `functional` — a value object outside
   this module writes its own `Equal` by hand, as `Money` does above.
-- `persistent.List[string]` is exposed directly by `Tags()`, not copied into
-  a `[]string` first — that is the entire benefit of using `persistent`
+- `immutable.List[string]` is exposed directly by `Tags()`, not copied into
+  a `[]string` first — that is the entire benefit of using `immutable`
   here instead of a plain slice field.
 
 ---
 
 ## Related documents
 
-- [Package API: persistent](../packages/persistent.md)
+- [Package API: immutable](../packages/immutable.md)
 - [Examples](../examples.md)

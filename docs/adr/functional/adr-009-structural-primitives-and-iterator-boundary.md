@@ -28,7 +28,7 @@ essa disciplina sem criar um Iterator concorrente com a stdlib.
 
 - Reutilizar contratos nativos de Go e range-over-function.
 - Manter tipos pequenos, genéricos, previsíveis e sem reflect/unsafe.
-- Evitar acoplamento a persistent, state, modeling ou internals.
+- Evitar acoplamento a immutable, state, modeling ou internals.
 - Tornar qualquer aresta pública dirigida, mínima e mecanicamente testável.
 - Não criar abstrações de efeitos, optics acadêmicas ou iteradores stateful.
 
@@ -42,7 +42,7 @@ fold e buscas em consumidores que já expõem `iter.Seq`.
 ### Opção 2: Criar um tipo Iterator com Next/Value
 
 Centraliza operações, mas perde interoperabilidade direta com range-over-func,
-`slices`, `maps` e os iteradores já expostos por persistent.
+`slices`, `maps` e os iteradores já expostos por immutable.
 
 ### Opção 3: Pacotes pequenos e iterator como adapters de iter.Seq
 
