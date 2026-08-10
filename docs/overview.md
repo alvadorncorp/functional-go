@@ -26,6 +26,7 @@ dependencies outside the standard library, permanently**:
 - **[`tuple`](tuple/)** — `Tuple2`/`Tuple3` heterogeneous structural carriers and type-changing component maps; stdlib-only.
 - **`lazy`** — concurrent-safe deferred computations that memoize a value or panic; stdlib-only.
 - **[`iterator`](iterator/)** — lazy transforms, limits, tuple Zip/Enumerate, folds and searches over native `iter.Seq`; imports only tuple.
+- **[`optics`](optics/)** — typed Lens access, immutable updates, Modify, and explicit composition; imports no sibling package.
 - **`optional`** — `Optional[T]`, a value type for an operation that may or
   may not produce a `T`. Explicit absence, not a nil check.
 - **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
@@ -62,8 +63,8 @@ subpackages in the first place. So the root package carries only the
 module-level doc comment, and every concept lives one import path down:
 `functional/function`, `functional/predicate`, `functional/order`,
 `functional/fold`, `functional/tuple`, `functional/lazy`, `functional/iterator`,
-`functional/optional`, `functional/persistent`, `functional/state`,
-`functional/valueobject`, or one of the five
+`functional/optics`, `functional/optional`, `functional/persistent`,
+`functional/state`, `functional/valueobject`, or one of the five
 `functional/values/*` packages.
 
 `functional/optional` remains the established legacy API and is supported
@@ -149,15 +150,15 @@ into `ownership`), and `TestPublicPackagesDoNotImportCore` (`optional` /
 
 ## No public subpackage imports another (in production code)
 
-`function`, `predicate`, `order`, `fold`, `tuple`, `lazy`, `iterator`, `optional`,
-`persistent`, `state`, and `valueobject` do not import each other **in production
-code**, except for the explicitly allowed sibling edges. This is also proven, not
-just documented: `TestPublicDependencyDAG` in `functional/internal/archtest`
-walks each public subpackage's dependency list, via `go list -deps -json`
-without `-test`, and fails if it contains another public subpackage's import
-path except the explicitly allowed edges: `values/validated` → `values/nonempty`,
-`fold` → `values/optional`, `fold` → `values/nonempty`, and
-`iterator` → `tuple`.
+`function`, `predicate`, `order`, `fold`, `tuple`, `lazy`, `iterator`, `optics`,
+`optional`, `persistent`, `state`, and `valueobject` do not import each other
+**in production code**, except for the explicitly allowed sibling edges. This is
+also proven, not just documented: `TestPublicDependencyDAG` in
+`functional/internal/archtest` walks each public subpackage's dependency list,
+via `go list -deps -json` without `-test`, and fails if it contains another
+public subpackage's import path except the explicitly allowed edges:
+`values/validated` → `values/nonempty`, `fold` → `values/optional`,
+`fold` → `values/nonempty`, and `iterator` → `tuple`.
 
 The invariant is scoped to production imports by design. Test code MAY
 import a sibling public package to exercise or demonstrate cross-package
@@ -193,12 +194,13 @@ conventions.
 
 ### Primitive production gates
 
-`function`, `predicate`, `order`, `tuple`, and `lazy` are standard-library-only leaves.
-`fold` imports exactly `values/optional` and `values/nonempty`. `iterator`
-imports exactly `tuple`. `TestPrimitiveDependencyDAG` and
-`TestPrimitivesNoReflectOrUnsafe` enforce this production DAG and reject
-`reflect` or `unsafe` in every primitive. `persistent` may produce `iter.Seq`
-values, but `iterator` never imports `persistent`.
+`function`, `predicate`, `order`, `tuple`, `lazy`, and `optics` are
+standard-library-only leaves. `fold` imports exactly `values/optional` and
+`values/nonempty`. `iterator` imports exactly `tuple`.
+`TestPrimitiveDependencyDAG` and `TestPrimitivesNoReflectOrUnsafe` enforce this
+production DAG and reject `reflect` or `unsafe` in every primitive.
+`persistent` may produce `iter.Seq` values, but `iterator` never imports
+`persistent`.
 
 ```mermaid
 flowchart TB
@@ -210,6 +212,7 @@ flowchart TB
   tuple[tuple]
   lazy[lazy]
   iterator[iterator]
+  optics[optics]
   valuesOptional[values/optional]
   valuesResult[values/result]
   valuesEither[values/either]
@@ -296,6 +299,7 @@ descent.
 - [Package API: tuple](packages/tuple.md)
 - [Package API: lazy](packages/lazy.md)
 - [Package API: iterator](packages/iterator.md)
+- [Package API: optics](packages/optics.md)
 - [Package API: optional](packages/optional.md)
 - [Package API: persistent](packages/persistent.md)
 - [Package API: state](packages/state.md)

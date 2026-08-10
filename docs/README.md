@@ -13,6 +13,7 @@ The module root [README](../README.md) is a short **index**. Content lives here.
 | [packages/tuple.md](packages/tuple.md) | `Tuple2`/`Tuple3` heterogeneous structural carriers and type-changing component maps; stdlib-only. |
 | [packages/lazy.md](packages/lazy.md) | concurrent-safe deferred computations that memoize a value or panic; stdlib-only. |
 | [packages/iterator.md](packages/iterator.md) | [`iterator`](iterator/) — lazy transforms, limits, tuple Zip/Enumerate, folds and searches over native `iter.Seq`; imports only tuple. |
+| [packages/optics.md](packages/optics.md) | [`optics`](optics/) — typed Lens access, immutable updates, Modify, and explicit composition; imports no sibling package. |
 | [packages/optional.md](packages/optional.md) | Public API of `github.com/alvadorncorp/gopackages/functional/optional`<br>The established `functional/optional` API remains supported and unchanged.<br>The smaller baseline API at `functional/values/optional` is an independent type; this plan adds no alias, conversion, or migration between them. |
 | [packages/persistent.md](packages/persistent.md) | Public API of `github.com/alvadorncorp/gopackages/functional/persistent`, including measured Append-loop vs. Builder benchmarks |
 | [packages/state.md](packages/state.md) | Public API of `github.com/alvadorncorp/gopackages/functional/state` (pure `State[T]`, lineage, Tx, Diff) |

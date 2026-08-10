@@ -17,7 +17,9 @@ const (
 // primitivePackages is the growing inventory of root-level functional
 // primitives. Each entry has a phase-specific dependency and import-safety
 // contract below.
-var primitivePackages = []string{pkgFunction, pkgPredicate, pkgOrder, pkgFold, pkgTuple, pkgLazy, pkgIterator}
+var primitivePackages = []string{
+	pkgFunction, pkgPredicate, pkgOrder, pkgFold, pkgTuple, pkgLazy, pkgIterator, pkgOptics,
+}
 
 func TestPrimitiveDependencyDAG(t *testing.T) {
 	t.Parallel()

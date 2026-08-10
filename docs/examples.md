@@ -21,6 +21,7 @@ Illustrative sketches for common uses. For API contracts see
 12. [Tuple carriers](#12-tuple-carriers)
 13. [Deferred memoized computation](#13-deferred-memoized-computation)
 14. [Native iterator pipeline](#14-native-iterator-pipeline)
+15. [Immutable nested update](#15-immutable-nested-update)
 
 ---
 
@@ -441,6 +442,44 @@ func zipPeople(ids []int, names []string) []tuple.Tuple2[int, string] {
 
 ---
 
+## 15. Immutable nested update
+
+```go
+package people
+
+import "github.com/alvadorncorp/gopackages/functional/optics"
+
+type Address struct{ City string }
+
+type Person struct {
+	Name    string
+	Address Address
+}
+
+func move(person Person, city string) Person {
+	personAddress := optics.NewLens(
+		func(source Person) Address { return source.Address },
+		func(source Person, value Address) Person {
+			source.Address = value
+			return source
+		},
+	)
+	addressCity := optics.NewLens(
+		func(source Address) string { return source.City },
+		func(source Address, value string) Address {
+			source.City = value
+			return source
+		},
+	)
+	return optics.Compose(personAddress, addressCity).Set(person, city)
+}
+```
+
+Get-Set, Set-Get, and Set-Set are obligations of the getter/setter supplied by
+the caller and are not checked at runtime.
+
+---
+
 ## See also
 
 - [overview](overview.md)
@@ -449,6 +488,7 @@ func zipPeople(ids []int, names []string) []tuple.Tuple2[int, string] {
 - [package API: order](packages/order.md)
 - [package API: fold](packages/fold.md)
 - [package API: iterator](packages/iterator.md)
+- [package API: optics](packages/optics.md)
 - [functional values family](packages/values.md)
 - [values Optional](packages/values-optional.md)
 - [values Result](packages/values-result.md)

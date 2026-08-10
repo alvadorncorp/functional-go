@@ -24,6 +24,7 @@ var expectedPrimitiveAPI = map[string][]string{
 		"Flatten", "Fold", "FromSlice", "FromValues", "Iterate", "Last",
 		"Map", "Once", "Repeat", "Take", "TakeWhile", "Unfold", "Zip",
 	},
+	pkgOptics: {"Compose", "Get", "Lens", "Modify", "NewLens", "Set"},
 }
 
 func TestPrimitivesPublicAPI(t *testing.T) {
