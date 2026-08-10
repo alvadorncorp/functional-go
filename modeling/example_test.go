@@ -59,7 +59,32 @@ func (exampleOrderItemAdded) exampleOrderEvent() {}
 
 var (
 	errExampleClosedOrder = errors.New("order is closed")
+	errExampleProduct     = errors.New("product is required")
 	errExampleQuantity    = errors.New("quantity must be positive")
+)
+
+var exampleSellableProduct = modeling.AllRules(
+	func(product exampleProductID) error {
+		if product == "" {
+			return errExampleProduct
+		}
+		return nil
+	},
+)
+
+var exampleCanAddItem = modeling.AllRequirements(
+	func(order *exampleOrderState, _ exampleAddItem) error {
+		if !order.open {
+			return errExampleClosedOrder
+		}
+		return nil
+	},
+	func(_ *exampleOrderState, input exampleAddItem) error {
+		if input.quantity <= 0 {
+			return errExampleQuantity
+		}
+		return exampleSellableProduct(input.product)
+	},
 )
 
 var exampleOrderInvariant = modeling.FailFast(
@@ -73,17 +98,26 @@ var exampleOrderInvariant = modeling.FailFast(
 	}),
 )
 
+var exampleAddItemState modeling.Transition[
+	*exampleOrderState,
+	exampleAddItem,
+	exampleOrderState,
+] = func(current *exampleOrderState, input exampleAddItem) exampleOrderState {
+	next := *current
+	next.items = next.items.Append(exampleOrderItem(input))
+	return next
+}
+
 func exampleAddItemTransition(
 	current *exampleOrderState,
 	command exampleAddItem,
 ) (modeling.Decision[exampleOrderState, exampleOrderEvent], error) {
 	unchanged := modeling.Decide[exampleOrderEvent](*current)
-	if !current.open {
-		return unchanged, errExampleClosedOrder
+	if err := exampleCanAddItem(current, command); err != nil {
+		return unchanged, err
 	}
 
-	next := *current
-	next.items = next.items.Append(exampleOrderItem(command))
+	next := exampleAddItemState(current, command)
 	if err := exampleOrderInvariant(next); err != nil {
 		return unchanged, err
 	}
