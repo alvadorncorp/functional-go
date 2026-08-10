@@ -65,10 +65,8 @@ var publicPackages = []string{
 	pkgLazy,
 	pkgIterator,
 	pkgOptics,
-	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
-	"github.com/alvadorncorp/gopackages/functional/valueobject",
 	pkgValuesOptional,
 	pkgValuesResult,
 	pkgValuesEither,
@@ -102,9 +100,7 @@ var publicPackagesNoCore = []string{
 	pkgLazy,
 	pkgIterator,
 	pkgOptics,
-	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/state",
-	"github.com/alvadorncorp/gopackages/functional/valueobject",
 	pkgValuesOptional,
 	pkgValuesResult,
 	pkgValuesEither,
@@ -139,10 +135,8 @@ var allPackages = []string{
 	pkgLazy,
 	pkgIterator,
 	pkgOptics,
-	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
-	"github.com/alvadorncorp/gopackages/functional/valueobject",
 	pkgValuesOptional,
 	pkgValuesResult,
 	pkgValuesEither,
@@ -174,10 +168,8 @@ var coreForbiddenTargets = []string{
 	pkgKeyhash,
 	pkgHamt,
 	pkgVector,
-	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
-	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
 
 // hamtAllowedFunctional is the only permitted set of functional-module
@@ -205,10 +197,8 @@ var vectorAllowedFunctional = []string{
 var engineForbiddenTargets = []string{
 	pkgTransient,
 	pkgEq,
-	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
-	"github.com/alvadorncorp/gopackages/functional/valueobject",
 }
 
 // TestNoNonStdlibDependencies proves the module has zero dependencies
@@ -231,23 +221,21 @@ func TestNoNonStdlibDependencies(t *testing.T) {
 // TestPublicDependencyDAG proves the exact public-package dependency DAG as a
 // tested invariant, not just a documented one. It is what
 // guarantees, for example, that persistent.Map.Get returns comma-ok instead
-// of optional.Optional by design, not by oversight: if it ever imported
-// optional to do so, this test would fail.
+// of a values/optional.Optional by design, not by oversight: if it ever
+// imported values/optional to do so, this test would fail.
 //
 // Scope, by design: this only ever sees PRODUCTION imports, because deps
 // below runs `go list -deps -json` WITHOUT `-test`, which never inspects
 // `_test.go` files. That is deliberate, not a blind spot in this test: a
 // public subpackage's test code MAY legitimately import a sibling public
-// package to exercise or demonstrate cross-package behavior — e.g.
-// valueobject/check_test.go imports functional/persistent to prove
-// AllowPackage's default leaf list actually frees persistent fields, not
-// merely that the code compiles. That is a real, intentional dependency
-// between test binaries, and it does not violate the architectural boundary
-// this test protects (production code never importing a public sibling).
-// Adding `-test` here would make that legitimate test import fail this
-// test; do not do that. Production sibling edges are explicitly allow-listed;
-// every other public sibling edge is forbidden. See docs/overview.md for the
-// full rationale.
+// package to exercise or demonstrate cross-package behavior — for example
+// state tests may compose with persistent.Map/Set/List fields. That is a
+// real, intentional dependency between test binaries, and it does not
+// violate the architectural boundary this test protects (production code
+// never importing a public sibling). Adding `-test` here would make that
+// legitimate test import fail this test; do not do that. Production sibling
+// edges are explicitly allow-listed; every other public sibling edge is
+// forbidden. See docs/overview.md for the full rationale.
 func TestPublicDependencyDAG(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range publicPackages {
@@ -336,9 +324,9 @@ func TestCoreDependencyDAG(t *testing.T) {
 	}
 }
 
-// TestPublicPackagesDoNotImportCore proves optional, state, and valueobject
-// production code never reach into internal/core. persistent is allowed to
-// import core (engine contract) and is not checked here.
+// TestPublicPackagesDoNotImportCore proves public packages other than
+// persistent never reach into internal/core. persistent is allowed to import
+// core (engine contract) and is not checked here.
 func TestPublicPackagesDoNotImportCore(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range publicPackagesNoCore {
@@ -374,7 +362,7 @@ func TestEngineNoReflect(t *testing.T) {
 //   - keyhash: standard library only (no functional packages)
 //   - hamt: among functional packages, only ownership, cow, sharing, keyhash
 //   - vector: among functional packages, only ownership, cow, sharing
-//   - no engine may import transient, eq, optional, persistent, state, or valueobject
+//   - no engine may import transient, eq, persistent, or state
 //   - hamt ↛ vector and vector ↛ hamt (peer engines stay disconnected)
 //
 // Core packages already cannot import engines via TestCoreDependencyDAG

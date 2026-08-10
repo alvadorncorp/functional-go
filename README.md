@@ -1,9 +1,8 @@
 # functional
 
 An umbrella module for small, dependency-free functional-programming building
-blocks: function composition, predicate algebra, total ordering, explicit
-absence, immutable collections, pure state evolution, and value-object
-verification.
+blocks: function composition, predicate algebra, total ordering, algebraic
+values, immutable collections, and pure state evolution.
 
 ```text
 module  github.com/alvadorncorp/gopackages/functional
@@ -14,14 +13,8 @@ go      1.26+
 this README and the file it mirrors, [`doc.go`](doc.go). Each concept lives
 in its own subpackage: [`function`](function/), [`predicate`](predicate/),
 [`order`](order/), [`fold`](fold/), [`tuple`](tuple/), [`lazy`](lazy/),
-[`iterator`](iterator/), [`optics`](optics/), [`optional`](optional/),
-[`persistent`](persistent/), [`state`](state/), [`valueobject`](valueobject/),
-or one of the [`values`](values/) packages.
-
-The established [`functional/optional`](optional/) API remains supported and
-unchanged. [`functional/values/optional`](values/optional/) is an independent
-baseline type; this module provides no alias, conversion, or migration layer
-between them.
+[`iterator`](iterator/), [`optics`](optics/), [`persistent`](persistent/),
+[`state`](state/), or one of the [`values`](values/) packages.
 
 This README is the **documentation index**. Guides live under
 [`docs/`](docs/).
@@ -50,10 +43,8 @@ This README is the **documentation index**. Guides live under
 | [docs/packages/lazy.md](docs/packages/lazy.md) | `github.com/alvadorncorp/gopackages/functional/lazy` |
 | [docs/packages/iterator.md](docs/packages/iterator.md) | `github.com/alvadorncorp/gopackages/functional/iterator` |
 | [docs/packages/optics.md](docs/packages/optics.md) | `github.com/alvadorncorp/gopackages/functional/optics` |
-| [docs/packages/optional.md](docs/packages/optional.md) | `github.com/alvadorncorp/gopackages/functional/optional` |
 | [docs/packages/persistent.md](docs/packages/persistent.md) | `github.com/alvadorncorp/gopackages/functional/persistent` |
 | [docs/packages/state.md](docs/packages/state.md) | `github.com/alvadorncorp/gopackages/functional/state` |
-| [docs/packages/valueobject.md](docs/packages/valueobject.md) | `github.com/alvadorncorp/gopackages/functional/valueobject` |
 | [docs/packages/core.md](docs/packages/core.md) | `internal/core` (ownership, cow, sharing, transient) — maintainers |
 | [docs/packages/values.md](docs/packages/values.md) | Family guide for the five `functional/values/*` packages |
 | [docs/packages/values-optional.md](docs/packages/values-optional.md) | `github.com/alvadorncorp/gopackages/functional/values/optional` |
@@ -80,6 +71,7 @@ This README is the **documentation index**. Guides live under
 | [docs/adr/functional/adr-007-values-family-dependency-boundary.md](docs/adr/functional/adr-007-values-family-dependency-boundary.md) | `adr:functional:007` |
 | [docs/adr/functional/adr-008-functional-primitives-and-fold-boundary.md](docs/adr/functional/adr-008-functional-primitives-and-fold-boundary.md) | `adr:functional:008` |
 | [docs/adr/functional/adr-009-structural-primitives-and-iterator-boundary.md](docs/adr/functional/adr-009-structural-primitives-and-iterator-boundary.md) | `adr:functional:009` |
+| [docs/adr/functional/adr-010-retire-optional-and-valueobject.md](docs/adr/functional/adr-010-retire-optional-and-valueobject.md) | `adr:functional:010` |
 
 ---
 
@@ -95,11 +87,9 @@ This README is the **documentation index**. Guides live under
 | [`lazy`](lazy/) | concurrent-safe deferred computations that memoize a value or panic; stdlib-only. | `Lazy[T]`, `New`, `Of`, `Get`, `Map`, `FlatMap` |
 | [`iterator`](iterator/) | lazy transforms, limits, tuple Zip/Enumerate, folds and searches over native `iter.Seq`; imports only tuple. | `Map`, `Filter`, `Take`, `Zip`, `Enumerate`, `Collect`, `Fold`, `Any`, `All`, `Find` |
 | [`optics`](optics/) | typed Lens access, immutable updates, Modify, and explicit composition; imports no sibling package. | `Lens[S,A]`, `NewLens`, `Get`, `Set`, `Modify`, `Compose` |
-| [`optional`](optional/) | Explicit absence: an operation that may or may not produce a value | `optional.Optional[T]` |
 | [`values/optional`](values/optional/), [`values/result`](values/result/), [`values/either`](values/either/), [`values/nonempty`](values/nonempty/), [`values/validated`](values/validated/) | Independent algebraic value types; see the [family guide](docs/packages/values.md) | `Optional[T]`, `Result[T,E]`, `Either[L,R]`, `NonEmpty[T]`, `Validated[T,E]` |
 | [`persistent`](persistent/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List; Builders use exclusive-owner transient + O(1) Freeze) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |
 | [`state`](state/) | Pure semantic evolution over `T`: reverse-linked plans, Version, single-use Tx, structural Diff | `state.State[T]`, `state.Transaction[T]`, `state.Diff[T]`, `state.Snapshot[T]` |
-| [`valueobject`](valueobject/) | Reflective verification that a type is structurally immutable (test helper) | `valueobject.Check[T]` |
 
 ---
 
@@ -107,19 +97,19 @@ This README is the **documentation index**. Guides live under
 
 ```go
 import (
-    "fmt"
+	"fmt"
 
 	"github.com/alvadorncorp/gopackages/functional/function"
 	"github.com/alvadorncorp/gopackages/functional/fold"
 	"github.com/alvadorncorp/gopackages/functional/order"
-    "github.com/alvadorncorp/gopackages/functional/optional"
 	"github.com/alvadorncorp/gopackages/functional/predicate"
-    "github.com/alvadorncorp/gopackages/functional/persistent"
-    "github.com/alvadorncorp/gopackages/functional/state"
+	"github.com/alvadorncorp/gopackages/functional/persistent"
+	"github.com/alvadorncorp/gopackages/functional/state"
+	"github.com/alvadorncorp/gopackages/functional/values/optional"
 )
 
 port := optional.Some("8080")
-n, err := optional.Map(port, len) // optional.Optional[int]{...}, no error path
+n := optional.Map(port, len) // optional.Optional[int]
 
 tags := persistent.ListOf("prod", "us-east") // persistent.List[string]
 
@@ -157,14 +147,15 @@ cd functional && go test ./... -count=1
 
 ## Non-goals
 
-- **No `encoding/json`, `database/sql`, or `slog` integration in `optional`'s
-  core.** A struct field of type `Optional[T]` serializes through
+- **No `encoding/json`, `database/sql`, or `slog` integration in
+  `values/optional`.** A struct field of type `Optional[T]` serializes through
   `encoding/json` as **`{}`** — the marshaled value, not just the marker of
   absence, is lost. Do not put `Optional[T]` on a struct you intend to
   marshal without writing your own `MarshalJSON`/`Scan` bridge.
 - **No monad zoo.** No `IO`, `Task`, `Reader`, or monadic effect/context
-  types — `optional` stops at explicit absence. The public `state` package
-  is a pure plan/Version layer over `T`, not a monadic State effect.
+  types — values packages stop at algebraic presence/outcomes. The public
+  `state` package is a pure plan/Version layer over `T`, not a monadic State
+  effect.
 - **`persistent` collections are SHALLOW, not transitively immutable.**
   `persistent.List[[]byte]` still shares each element's backing array;
   nothing in this module makes an element type immutable on your behalf.
@@ -190,4 +181,4 @@ The API is promised stable starting at `v1.0.0`, planned after two
 independent adopters inside this workspace have used it in real code. See
 [ADR-003](docs/adr/functional/adr-003-zero-dependency-boundary.md) for what
 that means for other library modules in this workspace that might otherwise
-want `optional.Optional[T]` in their own exported signatures before v1.
+want `values/optional.Optional[T]` in their own exported signatures before v1.

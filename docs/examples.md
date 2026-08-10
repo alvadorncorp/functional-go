@@ -25,35 +25,35 @@ Illustrative sketches for common uses. For API contracts see
 
 ---
 
-## 1. Config precedence with `Or`
+## 1. Config precedence with `Optional`
 
-`Optional.Or` reads left to right: the receiver wins if present, otherwise
-`other` is returned. Chaining it expresses a precedence order —
-flag beats environment beats hard-coded default — without an `if`/`else`
-ladder.
+`values/optional` expresses presence without a nil check. Prefer explicit
+`Get` / `OrElse` when choosing among flag, environment, and a hard-coded
+default.
 
 ```go
 package config
 
-import "github.com/alvadorncorp/gopackages/functional/optional"
+import "github.com/alvadorncorp/gopackages/functional/values/optional"
 
 func resolvePort(flagValue, envValue optional.Optional[string]) string {
-	defaultValue := optional.Some("8080")
-	return flagValue.Or(envValue).Or(defaultValue).MustGet()
+	if value, ok := flagValue.Get(); ok {
+		return value
+	}
+	if value, ok := envValue.Get(); ok {
+		return value
+	}
+	return "8080"
 }
 ```
 
-`MustGet` is safe here only because the chain always ends in a `Some`
-(`defaultValue` is always present); it panics on absence, so keep the final
-link in an `Or` chain a guaranteed `Some` before calling it.
-
 ---
 
-## 2. Fallible parse with `MapErr`
+## 2. Fallible parse from an Optional string
 
-`MapErr` applies a fallible conversion without an intermediate presence
-check: an absent `Optional` short-circuits to `(None, nil)` — the parser is
-never called — and a failing parse returns `(None, err)`.
+When a present string must be parsed, keep absence and parse failure
+distinguishable: absence yields `(None, nil)`; a bad parse yields
+`(None, err)`.
 
 ```go
 package config
@@ -61,16 +61,21 @@ package config
 import (
 	"strconv"
 
-	"github.com/alvadorncorp/gopackages/functional/optional"
+	"github.com/alvadorncorp/gopackages/functional/values/optional"
 )
 
 func parsePort(raw optional.Optional[string]) (optional.Optional[int], error) {
-	return optional.MapErr(raw, strconv.Atoi)
+	text, ok := raw.Get()
+	if !ok {
+		return optional.None[int](), nil
+	}
+	port, err := strconv.Atoi(text)
+	if err != nil {
+		return optional.None[int](), err
+	}
+	return optional.Some(port), nil
 }
 ```
-
-Both branches — "not set" and "set but malformed" — stay distinguishable to
-the caller: the first is `(None, nil)`, the second is `(None, someError)`.
 
 ---
 
@@ -495,8 +500,6 @@ the caller and are not checked at runtime.
 - [values Either](packages/values-either.md)
 - [values NonEmpty](packages/values-nonempty.md)
 - [values Validated](packages/values-validated.md)
-- [package API: optional](packages/optional.md)
 - [package API: persistent](packages/persistent.md)
 - [package API: state](packages/state.md)
-- [package API: valueobject](packages/valueobject.md)
 - [pattern: value objects](patterns/value-objects.md)

@@ -14,10 +14,8 @@ The module root [README](../README.md) is a short **index**. Content lives here.
 | [packages/lazy.md](packages/lazy.md) | concurrent-safe deferred computations that memoize a value or panic; stdlib-only. |
 | [packages/iterator.md](packages/iterator.md) | [`iterator`](iterator/) — lazy transforms, limits, tuple Zip/Enumerate, folds and searches over native `iter.Seq`; imports only tuple. |
 | [packages/optics.md](packages/optics.md) | [`optics`](optics/) — typed Lens access, immutable updates, Modify, and explicit composition; imports no sibling package. |
-| [packages/optional.md](packages/optional.md) | Public API of `github.com/alvadorncorp/gopackages/functional/optional`<br>The established `functional/optional` API remains supported and unchanged.<br>The smaller baseline API at `functional/values/optional` is an independent type; this plan adds no alias, conversion, or migration between them. |
 | [packages/persistent.md](packages/persistent.md) | Public API of `github.com/alvadorncorp/gopackages/functional/persistent`, including measured Append-loop vs. Builder benchmarks |
 | [packages/state.md](packages/state.md) | Public API of `github.com/alvadorncorp/gopackages/functional/state` (pure `State[T]`, lineage, Tx, Diff) |
-| [packages/valueobject.md](packages/valueobject.md) | Public API of `github.com/alvadorncorp/gopackages/functional/valueobject` |
 | [packages/core.md](packages/core.md) | Maintainer guide for `internal/core` (ownership, cow, sharing, transient) |
 | [packages/values.md](packages/values.md) | Family guide: choice by semantics, zero values, dependency boundary, and cost model |
 | [packages/values-optional.md](packages/values-optional.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/optional` |
@@ -44,3 +42,4 @@ Current decisions:
 - [ADR-007 — Values family dependency boundary](adr/functional/adr-007-values-family-dependency-boundary.md)
 - [ADR-008 — Functional primitives and fold dependency boundary](adr/functional/adr-008-functional-primitives-and-fold-boundary.md)
 - [ADR-009 — Tuplas, lazy, iteradores e optics sobre contratos nativos de Go](adr/functional/adr-009-structural-primitives-and-iterator-boundary.md)
+- [ADR-010 — Retire top-level optional and valueobject](adr/functional/adr-010-retire-optional-and-valueobject.md)

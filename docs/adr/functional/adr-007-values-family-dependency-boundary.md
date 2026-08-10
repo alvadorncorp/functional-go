@@ -60,9 +60,8 @@ validated  -> nonempty
 ```
 
 All values packages are forbidden from importing legacy public siblings,
-`internal/core`, `internal/engine`, `persistent`, `state`, `valueobject`,
-`reflect`, or `unsafe`. The existing `functional/optional` remains unchanged;
-conversion and migration APIs are outside this decision.
+`internal/core`, `internal/engine`, `persistent`, `state`, `reflect`, or
+`unsafe`.
 
 Architecture tests enumerate all five packages, allow only the directed edge
 above, reject `reflect` and `unsafe` in production imports, and keep `go.mod`
@@ -71,7 +70,10 @@ free of `require` and `replace` directives.
 ## Consequences
 
 The feature is additive and rollback is deletion of its new package/docs files
-plus reversion of the narrow archtest and documentation inventory changes. The
-two Optional import paths coexist deliberately until a separately authorized
-migration decision exists. Validated can accumulate `NonEmpty[E]` without a
-public Semigroup abstraction or any dependency on runtime layers.
+plus reversion of the narrow archtest and documentation inventory changes.
+Validated can accumulate `NonEmpty[E]` without a public Semigroup abstraction or
+any dependency on runtime layers.
+
+> **Later note (ADR-010):** the parallel top-level `functional/optional` package
+> and `functional/valueobject` were removed. `values/optional` is the sole
+> public Optional path.

@@ -66,9 +66,9 @@ state.Materialize ≠ deep clone
    `Commit` does not call `Materialize`. An empty Commit returns a State
    equivalent to the Begin snapshot (same base, plan, Version).
 8. **Mesh dependencies.** Production `state` does not import sibling public
-   packages (`optional`, `persistent`, `valueobject`) and does not import
-   `internal/core` or `internal/engine`. Tests may import `persistent` to
-   exercise composition; that is outside production deps.
+   packages (including `persistent`) and does not import `internal/core` or
+   `internal/engine`. Tests may import `persistent` to exercise composition;
+   that is outside production deps.
 9. **Public panics** use the `"state: …"` prefix only.
 10. **No production `reflect` / `unsafe`.** Diff is structural over the plan,
     not a reflective field walk of `T`.

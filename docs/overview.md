@@ -27,8 +27,6 @@ dependencies outside the standard library, permanently**:
 - **`lazy`** — concurrent-safe deferred computations that memoize a value or panic; stdlib-only.
 - **[`iterator`](iterator/)** — lazy transforms, limits, tuple Zip/Enumerate, folds and searches over native `iter.Seq`; imports only tuple.
 - **[`optics`](optics/)** — typed Lens access, immutable updates, Modify, and explicit composition; imports no sibling package.
-- **`optional`** — `Optional[T]`, a value type for an operation that may or
-  may not produce a `T`. Explicit absence, not a nil check.
 - **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
   that write functionally (every update returns a new value). Engines use
   path-copy structural sharing: Map/Set are a HAMT; List is a 32-way
@@ -42,8 +40,6 @@ dependencies outside the standard library, permanently**:
   `Materialize` re-applies the full plan (no cache); `Begin`/`Transaction`
   batches plan growth; `DiffBetween` captures structural plan diffs within
   one lineage. Mesh-isolated from `persistent` in production code.
-- **`valueobject`** — `Check[T]`, a reflective test helper that verifies a
-  type is structurally immutable.
 - **`values/optional`**, **`values/result`**, **`values/either`**,
   **`values/nonempty`**, and **`values/validated`** — independent generic
   values for presence, fail-fast outcomes, neutral alternatives, minimum
@@ -63,14 +59,8 @@ subpackages in the first place. So the root package carries only the
 module-level doc comment, and every concept lives one import path down:
 `functional/function`, `functional/predicate`, `functional/order`,
 `functional/fold`, `functional/tuple`, `functional/lazy`, `functional/iterator`,
-`functional/optics`, `functional/optional`, `functional/persistent`,
-`functional/state`, `functional/valueobject`, or one of the five
-`functional/values/*` packages.
-
-`functional/optional` remains the established legacy API and is supported
-unchanged. `functional/values/optional` is an independent, smaller baseline
-type: this module deliberately provides no alias, conversion, or migration
-between the two.
+`functional/optics`, `functional/persistent`, `functional/state`, or one of the
+five `functional/values/*` packages.
 
 ## The constraint that shapes the whole API: no type parameters on methods
 
@@ -88,15 +78,12 @@ cannot introduce a new one of its own. `Optional[T].Map` cannot exist as a
 method returning `Optional[U]` for a `U` chosen at the call site; only a
 free, package-level function can bind a second type parameter that way.
 
-This single grammar fact is why `optional`'s type-changing operations —
-`Map`, `FlatMap`, `MapErr`, `Zip`, `EqualFunc` — are package-level functions,
-never methods, while every operation that keeps the result type `T` —
-`IsSome`, `Get`, `OrElse`, `Filter`, `Equal`, and the rest — stays a method.
-It is not a style preference; it is the only shape the language permits for
-"take an `Optional[T]`, return an `Optional[U]`." See
-[ADR-001](adr/functional/adr-001-optional-representation-and-zero-value.md)
-for how this interacts with `Optional`'s representation and its `Equal`
-method.
+This single grammar fact is why type-changing operations on
+`values/optional.Optional[T]` — `Map`, `FlatMap` — are package-level
+functions, never methods, while operations that keep the result type `T` —
+`IsSome`, `Get`, `OrElse`, `Filter`, and the rest — stay methods. It is not a
+style preference; it is the only shape the language permits for "take an
+`Optional[T]`, return an `Optional[U]`."
 
 ## Internal immutability core vs engines
 
@@ -145,20 +132,20 @@ proves it mechanically on every test run:
   at the source, before it needs a stray import to surface.
 
 Additional core gates: `TestCoreNoReflect`, `TestCoreDependencyDAG` (star
-into `ownership`), and `TestPublicPackagesDoNotImportCore` (`optional` /
-`valueobject` / `state` must not import core; `persistent` may).
+into `ownership`), and `TestPublicPackagesDoNotImportCore` (public packages
+other than `persistent` must not import core; `persistent` may).
 
 ## No public subpackage imports another (in production code)
 
 `function`, `predicate`, `order`, `fold`, `tuple`, `lazy`, `iterator`, `optics`,
-`optional`, `persistent`, `state`, and `valueobject` do not import each other
-**in production code**, except for the explicitly allowed sibling edges. This is
-also proven, not just documented: `TestPublicDependencyDAG` in
-`functional/internal/archtest` walks each public subpackage's dependency list,
-via `go list -deps -json` without `-test`, and fails if it contains another
-public subpackage's import path except the explicitly allowed edges:
-`values/validated` → `values/nonempty`, `fold` → `values/optional`,
-`fold` → `values/nonempty`, and `iterator` → `tuple`.
+`persistent`, and `state` do not import each other **in production code**,
+except for the explicitly allowed sibling edges. This is also proven, not just
+documented: `TestPublicDependencyDAG` in `functional/internal/archtest` walks
+each public subpackage's dependency list, via `go list -deps -json` without
+`-test`, and fails if it contains another public subpackage's import path except
+the explicitly allowed edges: `values/validated` → `values/nonempty`,
+`fold` → `values/optional`, `fold` → `values/nonempty`, and
+`iterator` → `tuple`.
 
 The invariant is scoped to production imports by design. Test code MAY
 import a sibling public package to exercise or demonstrate cross-package
@@ -166,10 +153,6 @@ behavior — that is a legitimate use of a real dependency between test
 binaries, not a violation of the architectural boundary the mechanism above
 protects. Concrete examples in this module:
 
-- `valueobject/check_test.go` imports `functional/persistent` to build a
-  `Good` fixture whose one collection field is a `persistent.List[string]`
-  — proving that `AllowPackage`'s default leaf list actually frees
-  `persistent` fields, not just that the code compiles.
 - `state` integration and bench tests may import `functional/persistent`
   when `T` embeds Map/Set/List fields; production `state` still has no
   sibling edge.
@@ -204,7 +187,6 @@ production DAG and reject `reflect` or `unsafe` in every primitive.
 
 ```mermaid
 flowchart TB
-  optional[optional]
   function[function]
   predicate[predicate]
   order[order]
@@ -220,7 +202,6 @@ flowchart TB
   valuesValidated[values/validated]
   persistent[persistent]
   state[state]
-  valueobject[valueobject]
   eq["internal/eq (internal)"]
   ownership["internal/core/ownership"]
   cow["internal/core/cow"]
@@ -230,7 +211,6 @@ flowchart TB
   vector["internal/engine/vector"]
   keyhash["internal/engine/keyhash"]
 
-  optional --> eq
   fold --> valuesOptional
   fold --> valuesNonEmpty
   iterator --> tuple
@@ -248,13 +228,12 @@ flowchart TB
   cow --> ownership
   sharing --> ownership
   transient --> ownership
-  valueobject -.->|no import; string-compares PkgPath instead| persistent
   state -.->|test-only composition| persistent
 ```
 
 `state` has **no production edges** to siblings or to core/engine. The
-dashed `state` → `persistent` edge is test-only composition (optional in
-diagrams; never a production import).
+dashed `state` → `persistent` edge is test-only composition (never a
+production import).
 
 ### Distinctions: state vs persistent vs domain
 
@@ -271,24 +250,14 @@ There is exactly **one** shared exception for equality: `functional/internal/eq`
 a small package that resolves value equality without `reflect` (an `Equal(T) bool`
 method on the dynamic value, then `==` when the dynamic values are
 comparable; non-comparable types without `Equal` return false — never
-deep-compare). `optional.Optional[T].Equal` and `persistent.List[T].Equal` (and its
-`Map`/`Set` counterparts) all delegate to it, so every generic `Equal` in
-this module agrees on the answer for the same pair of values. Callers that
-need structural equality for slices or maps should use an `Equal` method on
-the element type or an `EqualFunc` at their package. It is safe as the one
-shared package specifically *because* it is `internal`: nothing outside
-`functional` can import it, so it can never become a second public surface
-competing with the rule it is the exception to. **`eq` is outside core**
-and, like core, must not use `reflect`.
-
-`valueobject` treats `persistent` as an immutable leaf by default (see
-[patterns/value-objects.md](patterns/value-objects.md)), but it does this
-**without importing it**: the default leaf list compares a candidate field's
-`reflect.Type.PkgPath()` against the string
-`"github.com/alvadorncorp/gopackages/functional/persistent"`. A string
-comparison creates no import edge, so `valueobject` stays sibling-independent
-while still knowing that a `persistent.List[string]` field needs no further
-descent.
+deep-compare). `persistent.List[T].Equal` (and its `Map`/`Set` counterparts)
+delegates to it, so every generic `Equal` that uses `eq` in this module agrees
+on the answer for the same pair of values. Callers that need structural equality
+for slices or maps should use an `Equal` method on the element type or an
+`EqualFunc` at their package. It is safe as the one shared package specifically
+*because* it is `internal`: nothing outside `functional` can import it, so it
+can never become a second public surface competing with the rule it is the
+exception to. **`eq` is outside core** and, like core, must not use `reflect`.
 
 ## Related documents
 
@@ -300,10 +269,8 @@ descent.
 - [Package API: lazy](packages/lazy.md)
 - [Package API: iterator](packages/iterator.md)
 - [Package API: optics](packages/optics.md)
-- [Package API: optional](packages/optional.md)
 - [Package API: persistent](packages/persistent.md)
 - [Package API: state](packages/state.md)
-- [Package API: valueobject](packages/valueobject.md)
 - [Internal: core](packages/core.md)
 - [Functional values family](packages/values.md)
 - [Package API: values Optional](packages/values-optional.md)
@@ -315,6 +282,7 @@ descent.
 - [Value object pattern](patterns/value-objects.md)
 - [ADR-001 — Optional representation and zero value](adr/functional/adr-001-optional-representation-and-zero-value.md)
 - [ADR-003 — Zero-dependency boundary](adr/functional/adr-003-zero-dependency-boundary.md)
+- [ADR-010 — Retire top-level optional and valueobject](adr/functional/adr-010-retire-optional-and-valueobject.md)
 - [ADR-004 — Thin immutability core](adr/functional/adr-004-thin-immutability-core.md)
 - [ADR-005 — Persistent engine family (HAMT + vector)](adr/functional/adr-005-persistent-engine-family.md)
 - [ADR-006 — State semantic layer](adr/functional/adr-006-state-semantic-layer.md)

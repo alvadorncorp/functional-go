@@ -40,15 +40,10 @@ included answer, and this module fills exactly those two:
    instead — construction copies into an engine-backed structure, and
    `Items()` is the only egress that materializes a conventional mutable
    collection, so the field is safe to expose for iteration via `Values()`.
-2. **Mechanical verification that you actually did it right.**
-   [`valueobject.Check[T]`](../packages/valueobject.md) is a reflective test
-   helper that walks a type's fields and reports every one an external
-   caller could use to mutate it — an exported field, a raw
-   pointer/slice/map/chan/func alias, or an unprovable interface. It does
-   not know whether your constructor validates, and it cannot; that part
-   stays entirely your code's responsibility. What it catches is the
-   structural mistake: a field you meant to protect that a reviewer's eye
-   slipped past.
+2. **Your own tests for the structural half.** Prefer unexported fields and
+   constructors that copy into immutable types. There is no runtime helper
+   in this module that walks a type reflectively; keep that check in the
+   consuming package's tests if you need one.
 
 ---
 
@@ -126,38 +121,17 @@ Notes on this example:
   — a `With*` method is still a construction path.
 - `Equal` is hand-written here, field by field, which is the normal shape
   for a value object with a small, fixed field set. `functional`'s own
-  types (`optional`, `persistent`) resolve their `Equal` through the shared
-  internal package `functional/internal/eq`, but that package is `internal`
-  and cannot be imported from outside `functional` — a value object outside
+  `persistent` types resolve their `Equal` through the shared internal
+  package `functional/internal/eq`, but that package is `internal` and
+  cannot be imported from outside `functional` — a value object outside
   this module writes its own `Equal` by hand, as `Money` does above.
 - `persistent.List[string]` is exposed directly by `Tags()`, not copied into
   a `[]string` first — that is the entire benefit of using `persistent`
   here instead of a plain slice field.
-
-Verify the structural half of this contract mechanically:
-
-```go
-func TestMoney_ValueObject(t *testing.T) {
-	if err := valueobject.Check[Money](); err != nil {
-		t.Error(err)
-	}
-}
-```
-
-`Check[Money]()` passes because `tags` is a `persistent.List[string]`, one of
-`valueobject`'s default immutable leaves — see
-[the valueobject package reference](../packages/valueobject.md#leaves-what-inspect-stops-descending-into).
-Had `tags` instead been a plain `[]string`, `Check` would report exactly the
-mistake this pattern exists to catch:
-
-```text
-Money.tags: field can be mutated through a pointer/slice/map/chan/func alias regardless of export status ([]string)
-```
 
 ---
 
 ## Related documents
 
 - [Package API: persistent](../packages/persistent.md)
-- [Package API: valueobject](../packages/valueobject.md)
 - [Examples](../examples.md)

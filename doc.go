@@ -12,19 +12,16 @@
 // memoize a value or panic; stdlib-only), iterator (lazy transforms, limits,
 // tuple Zip/Enumerate, folds and searches over native iter.Seq; imports only
 // tuple), optics (typed Lens access, immutable updates, Modify, and explicit
-// composition; imports no sibling package), optional (Optional[T] and its
-// combinators), persistent (immutable collections with functional writes: HAMT
-// Map/Set and a 32-way vector List; Builders use an exclusive-owner transient
-// window with O(1) Freeze), state (pure semantic evolution over T:
-// reverse-linked plans, Version, single-use Transaction, structural Diff), and
-// valueobject (reflective verification of structural immutability, a test
-// helper).
+// composition; imports no sibling package), persistent (immutable collections
+// with functional writes: HAMT Map/Set and a 32-way vector List; Builders use an
+// exclusive-owner transient window with O(1) Freeze), and state (pure semantic
+// evolution over T: reverse-linked plans, Version, single-use Transaction,
+// structural Diff).
 //
 // The nested values family contains independent algebraic value packages:
 // values/optional, values/result, values/either, values/nonempty, and
-// values/validated. The legacy top-level optional package remains a separate
-// public API. Values packages do not use persistent/state/core/engine runtime
-// machinery; only values/validated imports values/nonempty.
+// values/validated. Values packages do not use persistent/state/core/engine
+// runtime machinery; only values/validated imports values/nonempty.
 //
 // The module has zero dependencies outside the standard library, permanently.
 // Public sibling imports are restricted to the ADR-007 values/validated ->
@@ -37,8 +34,4 @@
 // transient substrate — laws, not engines), and functional/internal/engine
 // (hamt, vector, keyhash representations used by persistent). Production state
 // does not import core or engines.
-//
-// The exported type is always Optional, never Option: Option already names
-// the functional-options pattern elsewhere in this repository (eventbus,
-// workopher).
 package functional

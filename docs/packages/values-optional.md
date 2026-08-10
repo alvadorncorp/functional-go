@@ -68,6 +68,3 @@ covered by a zero-allocation contract for the wrapper itself. A callback or
 payload may allocate independently; that allocation is not attributable to
 the Optional wrapper.
 
-> **Legacy-package note:** `functional/optional` is an independent legacy API.
-> This release provides no alias, conversion, or migration layer between it
-> and `functional/values/optional`.

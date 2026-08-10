@@ -13,7 +13,8 @@ date: 2026-08-07
 
 ## Context and problem
 
-`functional` already ships `optional`, `persistent`, and `valueobject` as
+`functional` already ships `persistent` (and historically shipped other
+public leaves) as
 public packages under a zero-dependency module boundary (ADR-003), a thin
 immutability core (ADR-004), and structure-sharing engines behind
 `persistent` (ADR-005). Callers still lack a **semantic evolution layer**:
@@ -33,7 +34,7 @@ should stay mesh-independent.
 - `State[T]` must be **pure over T**: hold and evolve T without interpreting
   domain fields or embedding domain packages.
 - Production **mesh sibling law**: no public subpackage imports another
-  (`state` ↛ `persistent` / `optional` / `valueobject`, and the reverse).
+  (`state` ↛ `persistent` and other public siblings, and the reverse).
 - Production `state` must **not** import `internal/core` or
   `internal/engine`; engines remain behind `persistent`.
 - Lineage and **Version** identity must support linked plans (compare /
@@ -115,7 +116,7 @@ as the semantic evolution layer for `T any`.
 ### Explicit non-goals (this ADR)
 
 - No domain model inside `functional/state`.
-- No production dependency on `persistent`, `optional`, or `valueobject`.
+- No production dependency on `persistent` or other public siblings.
 - No production dependency on core/engine packages.
 - No reflect-based Diff.
 - No materialize result cache on `State`.

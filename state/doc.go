@@ -35,7 +35,7 @@
 // # Mesh dependencies
 //
 // Production code in this package does not import sibling public packages
-// (optional, persistent, valueobject) and does not import internal/core or
+// (including persistent) and does not import internal/core or
 // internal/engine. Mesh sibling law is absolute for production imports:
 // state ↛ persistent (and the reverse). Tests may import persistent
 // to exercise cross-package scenarios; that is outside production deps.

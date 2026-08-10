@@ -6,10 +6,15 @@ title: Optional[T] representation, zero value, and Equal as a method
 status: Aceita
 tags: [functional, optional, generics, equality]
 deciders: [alvadorn]
-related: [adr:eventbus:001]
+related: [adr:eventbus:001, adr:functional:010]
 date: 2026-08-07
 ---
 # ADR-001: Optional[T] representation, zero value, and Equal as a method
+
+> **Later note (ADR-010):** the top-level package
+> `github.com/alvadorncorp/gopackages/functional/optional` was removed. Presence
+> lives at `functional/values/optional`. This ADR remains the historical record
+> of the original representation decision.
 
 ## Context and problem
 
