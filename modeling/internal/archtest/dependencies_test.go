@@ -20,8 +20,10 @@ const (
 	functionalImmutable = functionalModule + "/immutable"
 	functionalOptional  = functionalModule + "/values/optional"
 	functionalPredicate = functionalModule + "/primitives/predicate"
+	functionalFunction  = functionalModule + "/primitives/function"
 	archtestPackage     = modelingModule + "/internal/archtest"
 	policyPackage       = modelingModule + "/policy"
+	changePackage       = modelingModule + "/change"
 )
 
 type listedPackage struct {
@@ -113,6 +115,8 @@ func directImportForbidden(importingPackage, importPath string) bool {
 		return importPath != functionalImmutable
 	case policyPackage:
 		return importPath != functionalOptional && importPath != functionalPredicate
+	case changePackage:
+		return importPath != functionalFunction
 	default:
 		return true
 	}
@@ -230,7 +234,12 @@ func TestPackageEnumerationIsComplete(t *testing.T) {
 	for _, pkg := range goList(t, "-json", modelingModule+"/...") {
 		seen[pkg.ImportPath] = true
 	}
-	for _, required := range []string{modelingModule, policyPackage, archtestPackage} {
+	for _, required := range []string{
+		modelingModule,
+		policyPackage,
+		changePackage,
+		archtestPackage,
+	} {
 		if !seen[required] {
 			t.Errorf("package enumeration is too narrow: missing %s", required)
 		}
@@ -263,6 +272,14 @@ func TestDependencyGateCanFail(t *testing.T) {
 	for _, imported := range []string{functionalImmutable, functionalModule + "/values/result"} {
 		if !directImportForbidden(policyPackage, imported) {
 			t.Errorf("policy direct-import gate accepted %s", imported)
+		}
+	}
+	if directImportForbidden(changePackage, functionalFunction) {
+		t.Fatalf("change direct-import gate rejected %s", functionalFunction)
+	}
+	for _, imported := range []string{functionalImmutable, functionalOptional, functionalPredicate, functionalModule + "/values/result"} {
+		if !directImportForbidden(changePackage, imported) {
+			t.Errorf("change direct-import gate accepted %s", imported)
 		}
 	}
 	functionalExpression, err := parser.ParseExpr("immutable.List[int]")

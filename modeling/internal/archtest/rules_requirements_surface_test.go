@@ -37,8 +37,17 @@ func exportedNamesInSource(t *testing.T, filename string) []string {
 		switch declaration := declaration.(type) {
 		case *ast.GenDecl:
 			for _, specification := range declaration.Specs {
-				if typeSpec, ok := specification.(*ast.TypeSpec); ok && ast.IsExported(typeSpec.Name.Name) {
-					names = append(names, typeSpec.Name.Name)
+				switch specification := specification.(type) {
+				case *ast.TypeSpec:
+					if ast.IsExported(specification.Name.Name) {
+						names = append(names, specification.Name.Name)
+					}
+				case *ast.ValueSpec:
+					for _, name := range specification.Names {
+						if ast.IsExported(name.Name) {
+							names = append(names, name.Name)
+						}
+					}
 				}
 			}
 		case *ast.FuncDecl:
