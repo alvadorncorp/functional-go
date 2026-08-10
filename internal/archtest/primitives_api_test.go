@@ -18,6 +18,12 @@ var expectedPrimitiveAPI = map[string][]string{
 		"MapThird3", "Of2", "Of3", "Swap", "Tuple2", "Tuple3",
 	},
 	pkgLazy: {"FlatMap", "Get", "Lazy", "Map", "New", "Of"},
+	pkgIterator: {
+		"All", "Any", "Collect", "Count", "Drop", "DropWhile", "Empty",
+		"Enumerate", "Filter", "FilterMap", "Find", "First", "FlatMap",
+		"Flatten", "Fold", "FromSlice", "FromValues", "Iterate", "Last",
+		"Map", "Once", "Repeat", "Take", "TakeWhile", "Unfold", "Zip",
+	},
 }
 
 func TestPrimitivesPublicAPI(t *testing.T) {

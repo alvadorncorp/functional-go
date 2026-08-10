@@ -20,6 +20,7 @@ Illustrative sketches for common uses. For API contracts see
 11. [Accumulating states with `ScanLeft`](#11-accumulating-states-with-scanleft)
 12. [Tuple carriers](#12-tuple-carriers)
 13. [Deferred memoized computation](#13-deferred-memoized-computation)
+14. [Native iterator pipeline](#14-native-iterator-pipeline)
 
 ---
 
@@ -416,6 +417,30 @@ func deferredConfigName() string {
 
 ---
 
+## 14. Native iterator pipeline
+
+```go
+package pipeline
+
+import (
+	"slices"
+	"strings"
+
+	"github.com/alvadorncorp/gopackages/functional/iterator"
+	"github.com/alvadorncorp/gopackages/functional/tuple"
+)
+
+func zipPeople(ids []int, names []string) []tuple.Tuple2[int, string] {
+	active := iterator.Filter(iterator.FromSlice(names), func(name string) bool {
+		return name != ""
+	})
+	normalized := iterator.Map(active, strings.ToUpper)
+	return slices.Collect(iterator.Zip(iterator.FromSlice(ids), normalized))
+}
+```
+
+---
+
 ## See also
 
 - [overview](overview.md)
@@ -423,6 +448,7 @@ func deferredConfigName() string {
 - [package API: predicate](packages/predicate.md)
 - [package API: order](packages/order.md)
 - [package API: fold](packages/fold.md)
+- [package API: iterator](packages/iterator.md)
 - [functional values family](packages/values.md)
 - [values Optional](packages/values-optional.md)
 - [values Result](packages/values-result.md)
