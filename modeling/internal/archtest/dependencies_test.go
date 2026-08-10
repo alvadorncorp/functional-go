@@ -230,7 +230,7 @@ func TestPackageEnumerationIsComplete(t *testing.T) {
 	for _, pkg := range goList(t, "-json", modelingModule+"/...") {
 		seen[pkg.ImportPath] = true
 	}
-	for _, required := range []string{modelingModule, archtestPackage} {
+	for _, required := range []string{modelingModule, policyPackage, archtestPackage} {
 		if !seen[required] {
 			t.Errorf("package enumeration is too narrow: missing %s", required)
 		}
