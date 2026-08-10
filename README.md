@@ -24,7 +24,7 @@ import path down, grouped by role (no Go package at the group directory):
   pure plan evolution (kept at the module root)
 
 This README is the **documentation index**. Guides live under
-[`docs/`](docs/).
+[`docs/`](docs/) — start at [`docs/README.md`](docs/README.md).
 
 ---
 
@@ -36,7 +36,6 @@ This README is the **documentation index**. Guides live under
 |---|---|
 | [**docs/overview.md**](docs/overview.md) | Purpose, the Go language constraint that shapes the API, the immutability core, the zero-dependency boundary, the sibling-import rule |
 | [**docs/examples.md**](docs/examples.md) | Usage sketches, including Result parsing and Validated accumulation |
-| [**docs/packages/values.md**](docs/packages/values.md) | Choosing and composing the functional values family |
 
 ### Package (micro view)
 
@@ -90,7 +89,7 @@ This README is the **documentation index**. Guides live under
 | Package | Role | Core types |
 |---|---|---|
 | [`primitives/function`](primitives/function/) | Stateless, standard-library-only combinators and transforms | `Identity`, `Constant`, `Compose`, `Pipe`, `Flip`, `Tap`, `Transform[T]`, `PipeTransforms`, `ComposeTransforms` |
-| [`primitives/predicate`](primitives/predicate/) | Stateless, standard-library-only Boolean predicates and quantifiers | `Predicate[T]`, `Not`, `And`, `Or`, `All`, `Any`, `None` |
+| [`primitives/predicate`](primitives/predicate/) | Stateless, standard-library-only Boolean predicates, quantifiers, and comparables | `Predicate[T]`, `Not`, `And`, `Or`, `All`, `Any`, `None`, `EqualTo`, `NotEqualTo`, `OneOf` |
 | [`primitives/order`](primitives/order/) | Sign-based total orders, projections, and lexicographic composition | `Order[T]`, `Natural`, `By`, `Then`, `Min`, `Max` |
 | [`primitives/fold`](primitives/fold/) | Iterative slice folds, reductions, and left scans | `FoldLeft`, `FoldRight`, `Reduce`, `ReduceNonEmpty`, `ScanLeft` |
 
@@ -196,9 +195,6 @@ cd functional && go test ./... -count=1
 
 ## Versioning
 
-`functional/v0.1.0`. Still **v0**: a minor version may break the public API.
-The API is promised stable starting at `v1.0.0`, planned after two
-independent adopters inside this workspace have used it in real code. See
-[ADR-003](docs/adr/functional/adr-003-zero-dependency-boundary.md) for what
-that means for other library modules in this workspace that might otherwise
-want `values/optional.Optional[T]` in their own exported signatures before v1.
+This module follows semantic versioning; the current version is published as
+a git tag (`functional/vX.Y.Z`) — the README deliberately does not pin a
+version number, since it goes stale quickly.
