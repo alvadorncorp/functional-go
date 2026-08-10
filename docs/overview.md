@@ -24,6 +24,7 @@ dependencies outside the standard library, permanently**:
   left scan over slices. It imports exactly `values/optional` and
   `values/nonempty`.
 - **[`tuple`](tuple/)** — `Tuple2`/`Tuple3` heterogeneous structural carriers and type-changing component maps; stdlib-only.
+- **`lazy`** — concurrent-safe deferred computations that memoize a value or panic; stdlib-only.
 - **`optional`** — `Optional[T]`, a value type for an operation that may or
   may not produce a `T`. Explicit absence, not a nil check.
 - **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
@@ -57,7 +58,7 @@ dependency on the others, defeating the point of splitting them into
 subpackages in the first place. So the root package carries only the
 module-level doc comment, and every concept lives one import path down:
 `functional/function`, `functional/predicate`, `functional/order`,
-`functional/fold`, `functional/tuple`, `functional/optional`, `functional/persistent`, `functional/state`,
+`functional/fold`, `functional/tuple`, `functional/lazy`, `functional/optional`, `functional/persistent`, `functional/state`,
 `functional/valueobject`, or one of the five
 `functional/values/*` packages.
 
@@ -144,7 +145,7 @@ into `ownership`), and `TestPublicPackagesDoNotImportCore` (`optional` /
 
 ## No public subpackage imports another (in production code)
 
-`function`, `predicate`, `order`, `fold`, `tuple`, `optional`, `persistent`,
+`function`, `predicate`, `order`, `fold`, `tuple`, `lazy`, `optional`, `persistent`,
 `state`, and `valueobject` do not import each other **in production code**, except for
 the two directed fold-to-values edges. This is also proven, not just documented:
 `TestPublicDependencyDAG` in `functional/internal/archtest` walks each public
@@ -187,7 +188,7 @@ conventions.
 
 ### Primitive production gates
 
-`function`, `predicate`, `order`, and `tuple` are standard-library-only leaves.
+`function`, `predicate`, `order`, `tuple`, and `lazy` are standard-library-only leaves.
 `fold` imports exactly `values/optional` and `values/nonempty`. `TestPrimitiveDependencyDAG`
 and `TestPrimitivesNoReflectOrUnsafe` enforce this production DAG and reject
 `reflect` or `unsafe` in every primitive.
@@ -282,6 +283,7 @@ descent.
 - [Package API: order](packages/order.md)
 - [Package API: fold](packages/fold.md)
 - [Package API: tuple](packages/tuple.md)
+- [Package API: lazy](packages/lazy.md)
 - [Package API: optional](packages/optional.md)
 - [Package API: persistent](packages/persistent.md)
 - [Package API: state](packages/state.md)

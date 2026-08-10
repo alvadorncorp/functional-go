@@ -17,6 +17,7 @@ var expectedPrimitiveAPI = map[string][]string{
 		"FromValues2", "MapFirst", "MapFirst3", "MapSecond", "MapSecond3",
 		"MapThird3", "Of2", "Of3", "Swap", "Tuple2", "Tuple3",
 	},
+	pkgLazy: {"FlatMap", "Get", "Lazy", "Map", "New", "Of"},
 }
 
 func TestPrimitivesPublicAPI(t *testing.T) {

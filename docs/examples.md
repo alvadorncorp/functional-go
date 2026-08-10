@@ -19,6 +19,7 @@ Illustrative sketches for common uses. For API contracts see
 10. [Ordering with `By`](#10-ordering-with-by)
 11. [Accumulating states with `ScanLeft`](#11-accumulating-states-with-scanleft)
 12. [Tuple carriers](#12-tuple-carriers)
+13. [Deferred memoized computation](#13-deferred-memoized-computation)
 
 ---
 
@@ -392,6 +393,26 @@ func tupleCarrier() tuple.Tuple2[int, string] {
 
 The returned value is `tuple.Tuple2[int,string]{First: 36, Second: "Ada"}`;
 the generic parameters are inferred from the constructor arguments.
+
+---
+
+## 13. Deferred memoized computation
+
+```go
+package config
+
+import "github.com/alvadorncorp/gopackages/functional/lazy"
+
+type Config struct{ Name string }
+
+func loadConfig() Config { return Config{Name: "production"} }
+
+func deferredConfigName() string {
+	config := lazy.New(loadConfig) // loadConfig has not run.
+	name := lazy.Map(config, func(value Config) string { return value.Name })
+	return name.Get() // Evaluates and memoizes the chain.
+}
+```
 
 ---
 

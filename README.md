@@ -13,7 +13,7 @@ go      1.26+
 **The root package exports nothing.** `functional` is documentation only —
 this README and the file it mirrors, [`doc.go`](doc.go). Each concept lives
 in its own subpackage: [`function`](function/), [`predicate`](predicate/),
-[`order`](order/), [`fold`](fold/), [`tuple`](tuple/), [`optional`](optional/), [`persistent`](persistent/),
+[`order`](order/), [`fold`](fold/), [`tuple`](tuple/), [`lazy`](lazy/), [`optional`](optional/), [`persistent`](persistent/),
 [`state`](state/), [`valueobject`](valueobject/), or one of the [`values`](values/)
 packages.
 
@@ -46,6 +46,7 @@ This README is the **documentation index**. Guides live under
 | [docs/packages/order.md](docs/packages/order.md) | `github.com/alvadorncorp/gopackages/functional/order` |
 | [docs/packages/fold.md](docs/packages/fold.md) | `github.com/alvadorncorp/gopackages/functional/fold` |
 | [docs/packages/tuple.md](docs/packages/tuple.md) | `github.com/alvadorncorp/gopackages/functional/tuple` |
+| [docs/packages/lazy.md](docs/packages/lazy.md) | `github.com/alvadorncorp/gopackages/functional/lazy` |
 | [docs/packages/optional.md](docs/packages/optional.md) | `github.com/alvadorncorp/gopackages/functional/optional` |
 | [docs/packages/persistent.md](docs/packages/persistent.md) | `github.com/alvadorncorp/gopackages/functional/persistent` |
 | [docs/packages/state.md](docs/packages/state.md) | `github.com/alvadorncorp/gopackages/functional/state` |
@@ -88,6 +89,7 @@ This README is the **documentation index**. Guides live under
 | [`order`](order/) | Sign-based total orders, projections, and lexicographic composition | `Order[T]`, `Natural`, `By`, `Then`, `Min`, `Max` |
 | [`fold`](fold/) | Iterative slice folds, reductions, and left scans | `FoldLeft`, `FoldRight`, `Reduce`, `ReduceNonEmpty`, `ScanLeft` |
 | [`tuple`](tuple/) | `Tuple2`/`Tuple3` heterogeneous structural carriers and type-changing component maps; stdlib-only. | `Tuple2[A,B]`, `Tuple3[A,B,C]`, `Of2`, `Of3`, `Swap` |
+| [`lazy`](lazy/) | concurrent-safe deferred computations that memoize a value or panic; stdlib-only. | `Lazy[T]`, `New`, `Of`, `Get`, `Map`, `FlatMap` |
 | [`optional`](optional/) | Explicit absence: an operation that may or may not produce a value | `optional.Optional[T]` |
 | [`values/optional`](values/optional/), [`values/result`](values/result/), [`values/either`](values/either/), [`values/nonempty`](values/nonempty/), [`values/validated`](values/validated/) | Independent algebraic value types; see the [family guide](docs/packages/values.md) | `Optional[T]`, `Result[T,E]`, `Either[L,R]`, `NonEmpty[T]`, `Validated[T,E]` |
 | [`persistent`](persistent/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List; Builders use exclusive-owner transient + O(1) Freeze) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |

@@ -8,7 +8,8 @@
 // order (sign-based total orders, projections, and lexicographic composition),
 // fold (iterative slice folds, typed reductions, and a preallocated left scan),
 // tuple (Tuple2/Tuple3 heterogeneous structural carriers and type-changing
-// component maps; stdlib-only),
+// component maps; stdlib-only), lazy (concurrent-safe deferred computations that
+// memoize a value or panic; stdlib-only),
 // optional (Optional[T] and its combinators), persistent (immutable collections with functional writes:
 // HAMT Map/Set and a 32-way vector List; Builders use an exclusive-owner
 // transient window with O(1) Freeze), state (pure semantic evolution over T:
@@ -25,7 +26,7 @@
 // The module has zero dependencies outside the standard library, permanently.
 // Public sibling imports are restricted to the ADR-007 values/validated ->
 // values/nonempty edge and the ADR-008 fold -> values/optional and fold ->
-// values/nonempty edges. Function, predicate, order, and tuple are standard-
+// values/nonempty edges. Function, predicate, order, tuple, and lazy are standard-
 // library-only public leaves. Shared internals
 // include functional/internal/eq (Equal resolution: method, then ==;
 // non-comparable types without Equal return false — no reflect),

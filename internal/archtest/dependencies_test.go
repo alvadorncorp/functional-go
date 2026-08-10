@@ -40,6 +40,7 @@ const (
 	pkgHamt            = "github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
 	pkgVector          = "github.com/alvadorncorp/gopackages/functional/internal/engine/vector"
 	pkgTuple           = "github.com/alvadorncorp/gopackages/functional/tuple"
+	pkgLazy            = "github.com/alvadorncorp/gopackages/functional/lazy"
 	pkgPersistent      = "github.com/alvadorncorp/gopackages/functional/persistent"
 	pkgState           = "github.com/alvadorncorp/gopackages/functional/state"
 	pkgValuesOptional  = "github.com/alvadorncorp/gopackages/functional/values/optional"
@@ -59,6 +60,7 @@ var publicPackages = []string{
 	pkgOrder,
 	pkgFold,
 	pkgTuple,
+	pkgLazy,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
@@ -92,6 +94,7 @@ var publicPackagesNoCore = []string{
 	pkgOrder,
 	pkgFold,
 	pkgTuple,
+	pkgLazy,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
@@ -126,6 +129,7 @@ var allPackages = []string{
 	pkgOrder,
 	pkgFold,
 	pkgTuple,
+	pkgLazy,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
