@@ -3,6 +3,7 @@ package modeling_test
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/alvadorncorp/gopackages/functional/immutable"
 	"github.com/alvadorncorp/gopackages/functional/state"
@@ -126,4 +127,29 @@ func ExampleDecision_withFunctionalState() {
 
 	// Output:
 	// 1 0
+}
+
+func ExampleDecision_composition() {
+	left := modeling.Decide[string](1)
+	left = modeling.Emit(left, "opened")
+	left = modeling.AppendEvents(left, "item-added", "priced")
+	right := modeling.Decide[string](2).Emit("closed")
+
+	combined := modeling.Combine(left, right)
+	labeled := modeling.MapState(combined, func(state int) string {
+		return fmt.Sprintf("state-%d", state)
+	})
+	upper := modeling.MapEvents(labeled, strings.ToUpper)
+
+	fmt.Println(upper.State())
+	for event := range upper.Events() {
+		fmt.Println(event)
+	}
+
+	// Output:
+	// state-2
+	// OPENED
+	// ITEM-ADDED
+	// PRICED
+	// CLOSED
 }

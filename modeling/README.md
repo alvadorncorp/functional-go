@@ -7,12 +7,19 @@ domain types and behavior. It sits above the public capabilities in
 The module intentionally contains no reflection, runtime registry, dispatcher,
 infrastructure, persistence, or concrete business model.
 
+Decision composition is available from the root package through `MapState`,
+`MapEvents`, `Emit`, `AppendEvents`, and `Combine`. The canonical public type
+remains `modeling.Decision`; persistent mechanics are isolated behind a Go
+internal package and are not a second consumer API.
+
 ## Documentation
 
 - [Documentation index](docs/README.md)
 - [Architecture overview](docs/overview.md)
 - [ADR-001: minimal type-safe domain modeling](docs/adr/modeling/adr-001-minimal-type-safe-domain-modeling.md)
+- [ADR-002: root facade over an internal Decision package](docs/adr/modeling/adr-002-root-facade-internal-decision.md)
 - [TDD: v0.1 core](docs/tdd/modeling/v0-1-core.md)
+- [TDD: v0.2 Decision composition](docs/tdd/modeling/v0-2-decision-composition.md)
 
 ## Development
 
