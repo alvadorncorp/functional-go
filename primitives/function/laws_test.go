@@ -50,3 +50,48 @@ func TestFlipInvolutionAndTapIdentity(t *testing.T) {
 		t.Fatalf("Tap law = (%d,%d), want (99,1)", got, calls)
 	}
 }
+
+func TestTransformPipeComposeLaws(t *testing.T) {
+	t.Parallel()
+	f := function.Transform[int](func(value int) int { return value + 1 })
+	g := function.Transform[int](func(value int) int { return value * 2 })
+	h := function.Transform[int](func(value int) int { return value - 3 })
+
+	for _, value := range []int{-10, 0, 7, 42} {
+		id := function.PipeTransforms[int]()
+		if got, want := function.PipeTransforms(id, f)(value), f(value); got != want {
+			t.Fatalf("pipe left identity at %d = %d, want %d", value, got, want)
+		}
+		if got, want := function.PipeTransforms(f, id)(value), f(value); got != want {
+			t.Fatalf("pipe right identity at %d = %d, want %d", value, got, want)
+		}
+		if got, want := function.ComposeTransforms(id, f)(value), f(value); got != want {
+			t.Fatalf("compose left identity at %d = %d, want %d", value, got, want)
+		}
+		if got, want := function.ComposeTransforms(f, id)(value), f(value); got != want {
+			t.Fatalf("compose right identity at %d = %d, want %d", value, got, want)
+		}
+
+		// Associativity of PipeTransforms: (f |> g) |> h == f |> (g |> h)
+		pipeLeft := function.PipeTransforms(function.PipeTransforms(f, g), h)(value)
+		pipeRight := function.PipeTransforms(f, function.PipeTransforms(g, h))(value)
+		if pipeLeft != pipeRight {
+			t.Fatalf("PipeTransforms associativity at %d: %d != %d", value, pipeLeft, pipeRight)
+		}
+
+		// Associativity of ComposeTransforms: (f ∘ g) ∘ h == f ∘ (g ∘ h)
+		composeLeft := function.ComposeTransforms(function.ComposeTransforms(f, g), h)(value)
+		composeRight := function.ComposeTransforms(f, function.ComposeTransforms(g, h))(value)
+		if composeLeft != composeRight {
+			t.Fatalf("ComposeTransforms associativity at %d: %d != %d", value, composeLeft, composeRight)
+		}
+
+		// Pipe vs nested binary Pipe when types are homogeneous
+		if got, want := function.PipeTransforms(f, g)(value), function.Pipe(f, g)(value); got != want {
+			t.Fatalf("PipeTransforms vs Pipe at %d = %d, want %d", value, got, want)
+		}
+		if got, want := function.ComposeTransforms(f, g)(value), function.Compose(f, g)(value); got != want {
+			t.Fatalf("ComposeTransforms vs Compose at %d = %d, want %d", value, got, want)
+		}
+	}
+}

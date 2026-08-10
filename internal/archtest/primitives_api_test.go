@@ -9,7 +9,10 @@ import (
 )
 
 var expectedPrimitiveAPI = map[string][]string{
-	pkgFunction:  {"Compose", "Constant", "Flip", "Identity", "Pipe", "Tap"},
+	pkgFunction: {
+		"Compose", "ComposeTransforms", "Constant", "Flip", "Identity",
+		"Pipe", "PipeTransforms", "Tap", "Transform",
+	},
 	pkgPredicate: {"All", "And", "Any", "EqualTo", "None", "Not", "NotEqualTo", "OneOf", "Or", "Predicate"},
 	pkgOrder:     {"By", "Compare", "Equal", "Greater", "Less", "Max", "Min", "Natural", "Order", "Reverse", "Then"},
 	pkgFold:      {"FoldLeft", "FoldRight", "Reduce", "ReduceNonEmpty", "ScanLeft"},

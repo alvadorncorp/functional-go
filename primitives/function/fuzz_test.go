@@ -27,3 +27,27 @@ func FuzzComposePipeIdentities(f *testing.F) {
 		}
 	})
 }
+
+func FuzzPipeComposeTransforms(f *testing.F) {
+	for _, seed := range []int{-100, -1, 0, 1, 100} {
+		f.Add(seed)
+	}
+	f.Fuzz(func(t *testing.T, value int) {
+		inc := function.Transform[int](func(v int) int { return v + 1 })
+		double := function.Transform[int](func(v int) int { return v * 2 })
+		minusThree := function.Transform[int](func(v int) int { return v - 3 })
+		if got, want := function.PipeTransforms(function.PipeTransforms[int](), inc)(value), inc(value); got != want {
+			t.Fatalf("PipeTransforms empty identity = %d, want %d", got, want)
+		}
+		left := function.PipeTransforms(function.PipeTransforms(inc, double), minusThree)(value)
+		right := function.PipeTransforms(inc, function.PipeTransforms(double, minusThree))(value)
+		if left != right {
+			t.Fatalf("PipeTransforms associativity = %d, want %d", left, right)
+		}
+		composeLeft := function.ComposeTransforms(function.ComposeTransforms(minusThree, double), inc)(value)
+		composeRight := function.ComposeTransforms(minusThree, function.ComposeTransforms(double, inc))(value)
+		if composeLeft != composeRight {
+			t.Fatalf("ComposeTransforms associativity = %d, want %d", composeLeft, composeRight)
+		}
+	})
+}

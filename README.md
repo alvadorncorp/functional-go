@@ -89,7 +89,7 @@ This README is the **documentation index**. Guides live under
 
 | Package | Role | Core types |
 |---|---|---|
-| [`primitives/function`](primitives/function/) | Stateless, standard-library-only function combinators | `Identity`, `Constant`, `Compose`, `Pipe`, `Flip`, `Tap` |
+| [`primitives/function`](primitives/function/) | Stateless, standard-library-only combinators and transforms | `Identity`, `Constant`, `Compose`, `Pipe`, `Flip`, `Tap`, `Transform[T]`, `PipeTransforms`, `ComposeTransforms` |
 | [`primitives/predicate`](primitives/predicate/) | Stateless, standard-library-only Boolean predicates and quantifiers | `Predicate[T]`, `Not`, `And`, `Or`, `All`, `Any`, `None` |
 | [`primitives/order`](primitives/order/) | Sign-based total orders, projections, and lexicographic composition | `Order[T]`, `Natural`, `By`, `Then`, `Min`, `Max` |
 | [`primitives/fold`](primitives/fold/) | Iterative slice folds, reductions, and left scans | `FoldLeft`, `FoldRight`, `Reduce`, `ReduceNonEmpty`, `ScanLeft` |
