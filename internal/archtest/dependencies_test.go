@@ -1,9 +1,10 @@
 // Package archtest proves dependency invariants of the functional module
 // mechanically, so they stay true rather than merely documented: the module
 // has zero non-stdlib dependencies outside itself, public subpackages have
-// exactly one permitted sibling edge (values/validated to values/nonempty;
-// functional/internal/eq is the one shared exception every public package may
-// use), the internal/core DAG stays a star into ownership
+// exactly three permitted sibling edges (values/validated to values/nonempty,
+// fold to values/optional, and fold to values/nonempty; functional/internal/eq
+// is the one shared internal exception every public package may use), the
+// internal/core DAG stays a star into ownership
 // with no peer edges and no reflect, internal/eq production code imports
 // neither reflect nor unsafe, persistent and state production code import
 // neither reflect nor unsafe, and internal/engine packages obey their own
@@ -50,11 +51,12 @@ const (
 )
 
 // publicPackages are every public subpackage of functional, by import path.
-// The only permitted public sibling edge is values/validated to values/nonempty.
+// Public sibling edges must be explicitly allow-listed below.
 var publicPackages = []string{
 	pkgFunction,
 	pkgPredicate,
 	pkgOrder,
+	pkgFold,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
@@ -76,6 +78,7 @@ var valuesPackages = []string{
 
 var publicAllowedEdges = map[string][]string{
 	pkgValuesValidated: {pkgValuesNonEmpty},
+	pkgFold:            {pkgValuesOptional, pkgValuesNonEmpty},
 }
 
 // publicPackagesNoCore are the public packages that must never import
@@ -85,6 +88,7 @@ var publicPackagesNoCore = []string{
 	pkgFunction,
 	pkgPredicate,
 	pkgOrder,
+	pkgFold,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
@@ -117,6 +121,7 @@ var allPackages = []string{
 	pkgFunction,
 	pkgPredicate,
 	pkgOrder,
+	pkgFold,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
@@ -223,9 +228,9 @@ func TestNoNonStdlibDependencies(t *testing.T) {
 // between test binaries, and it does not violate the architectural boundary
 // this test protects (production code never importing a public sibling).
 // Adding `-test` here would make that legitimate test import fail this
-// test; do not do that. The sole production sibling exception is
-// values/validated to values/nonempty; every other public sibling edge is
-// forbidden. See docs/overview.md for the full rationale.
+// test; do not do that. Production sibling edges are explicitly allow-listed;
+// every other public sibling edge is forbidden. See docs/overview.md for the
+// full rationale.
 func TestPublicDependencyDAG(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range publicPackages {

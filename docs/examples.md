@@ -17,6 +17,7 @@ Illustrative sketches for common uses. For API contracts see
 8. [Function composition with `Pipe`](#8-function-composition-with-pipe)
 9. [Predicate composition with `And`](#9-predicate-composition-with-and)
 10. [Ordering with `By`](#10-ordering-with-by)
+11. [Accumulating states with `ScanLeft`](#11-accumulating-states-with-scanleft)
 
 ---
 
@@ -351,12 +352,37 @@ func younger() {
 
 ---
 
+## 11. Accumulating states with `ScanLeft`
+
+`fold.ScanLeft` retains the initial state and every intermediate left-fold
+state. Its result has one more item than the input slice.
+
+```go
+package counters
+
+import (
+	"fmt"
+
+	"github.com/alvadorncorp/gopackages/functional/fold"
+)
+
+func printRunningTotals() {
+	totals := fold.ScanLeft([]int{1, 2, 3}, 0, func(total, value int) int {
+		return total + value
+	})
+	fmt.Println(totals) // [0 1 3 6]
+}
+```
+
+---
+
 ## See also
 
 - [overview](overview.md)
 - [package API: function](packages/function.md)
 - [package API: predicate](packages/predicate.md)
 - [package API: order](packages/order.md)
+- [package API: fold](packages/fold.md)
 - [functional values family](packages/values.md)
 - [values Optional](packages/values-optional.md)
 - [values Result](packages/values-result.md)

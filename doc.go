@@ -6,6 +6,7 @@
 // standard-library-only combinators for ordinary Go function values), predicate
 // (a standard-library-only Boolean algebra and quantifiers for generic values),
 // order (sign-based total orders, projections, and lexicographic composition),
+// fold (iterative slice folds, typed reductions, and a preallocated left scan),
 // optional (Optional[T] and its combinators), persistent (immutable collections with functional writes:
 // HAMT Map/Set and a 32-way vector List; Builders use an exclusive-owner
 // transient window with O(1) Freeze), state (pure semantic evolution over T:
@@ -20,9 +21,10 @@
 // machinery; only values/validated imports values/nonempty.
 //
 // The module has zero dependencies outside the standard library, permanently.
-// No public subpackage imports another public subpackage, except for the
-// ADR-007 values/validated -> values/nonempty edge. Function, predicate, and
-// order are standard-library-only public leaves. Shared internals
+// Public sibling imports are restricted to the ADR-007 values/validated ->
+// values/nonempty edge and the ADR-008 fold -> values/optional and fold ->
+// values/nonempty edges. Function, predicate, and order are standard-library-
+// only public leaves. Shared internals
 // include functional/internal/eq (Equal resolution: method, then ==;
 // non-comparable types without Equal return false — no reflect),
 // functional/internal/core (thin ownership / cow /

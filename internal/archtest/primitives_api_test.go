@@ -9,6 +9,7 @@ var expectedPrimitiveAPI = map[string][]string{
 	pkgFunction:  {"Compose", "Constant", "Flip", "Identity", "Pipe", "Tap"},
 	pkgPredicate: {"All", "And", "Any", "EqualTo", "None", "Not", "NotEqualTo", "OneOf", "Or", "Predicate"},
 	pkgOrder:     {"By", "Compare", "Equal", "Greater", "Less", "Max", "Min", "Natural", "Order", "Reverse", "Then"},
+	pkgFold:      {"FoldLeft", "FoldRight", "Reduce", "ReduceNonEmpty", "ScanLeft"},
 }
 
 func TestPrimitivesPublicAPI(t *testing.T) {

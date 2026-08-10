@@ -20,6 +20,9 @@ dependencies outside the standard library, permanently**:
   short-circuiting.
 - **`order`** — sign-based total orders, projections, reversal, and
   lexicographic composition. It is a standard-library-only public leaf.
+- **`fold`** — iterative left/right folds, typed reductions, and a preallocated
+  left scan over slices. It imports exactly `values/optional` and
+  `values/nonempty`.
 - **`optional`** — `Optional[T]`, a value type for an operation that may or
   may not produce a `T`. Explicit absence, not a nil check.
 - **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
@@ -53,7 +56,7 @@ dependency on the others, defeating the point of splitting them into
 subpackages in the first place. So the root package carries only the
 module-level doc comment, and every concept lives one import path down:
 `functional/function`, `functional/predicate`, `functional/order`,
-`functional/optional`, `functional/persistent`, `functional/state`,
+`functional/fold`, `functional/optional`, `functional/persistent`, `functional/state`,
 `functional/valueobject`, or one of the five
 `functional/values/*` packages.
 
@@ -140,13 +143,14 @@ into `ownership`), and `TestPublicPackagesDoNotImportCore` (`optional` /
 
 ## No public subpackage imports another (in production code)
 
-`function`, `predicate`, `order`, `optional`, `persistent`, `state`, and
-`valueobject` do not import each other **in production code**. This is also
-proven, not just documented:
+`function`, `predicate`, `order`, `fold`, `optional`, `persistent`, `state`,
+and `valueobject` do not import each other **in production code**, except for
+the two directed fold-to-values edges. This is also proven, not just documented:
 `TestPublicDependencyDAG` in `functional/internal/archtest` walks each public
 subpackage's dependency list, via `go list -deps -json` without `-test`, and
-fails if it contains another public subpackage's import path except the one
-explicitly allowed values edge, `values/validated` → `values/nonempty`.
+fails if it contains another public subpackage's import path except the
+explicitly allowed edges: `values/validated` → `values/nonempty`,
+`fold` → `values/optional`, and `fold` → `values/nonempty`.
 
 The invariant is scoped to production imports by design. Test code MAY
 import a sibling public package to exercise or demonstrate cross-package
@@ -180,15 +184,25 @@ only production imports (never `_test.go` imports) and rejects direct
 `TestPublicDependencyDAG`, these are executable constraints rather than
 conventions.
 
-### Function, predicate, and order production gates
+### Primitive production gates
 
-`function`, `predicate`, and `order` are standard-library-only leaves.
-`TestPrimitiveDependencyDAG` and `TestPrimitivesNoReflectOrUnsafe` ensure their
-production code imports no other functional package, `reflect`, or `unsafe`.
+`function`, `predicate`, and `order` are standard-library-only leaves. `fold`
+imports exactly `values/optional` and `values/nonempty`. `TestPrimitiveDependencyDAG`
+and `TestPrimitivesNoReflectOrUnsafe` enforce this production DAG and reject
+`reflect` or `unsafe` in every primitive.
 
 ```mermaid
 flowchart TB
   optional[optional]
+  function[function]
+  predicate[predicate]
+  order[order]
+  fold[fold]
+  valuesOptional[values/optional]
+  valuesResult[values/result]
+  valuesEither[values/either]
+  valuesNonEmpty[values/nonempty]
+  valuesValidated[values/validated]
   persistent[persistent]
   state[state]
   valueobject[valueobject]
@@ -202,6 +216,9 @@ flowchart TB
   keyhash["internal/engine/keyhash"]
 
   optional --> eq
+  fold --> valuesOptional
+  fold --> valuesNonEmpty
+  valuesValidated --> valuesNonEmpty
   persistent --> eq
   persistent --> transient
   persistent --> hamt
@@ -262,6 +279,7 @@ descent.
 - [Package API: function](packages/function.md)
 - [Package API: predicate](packages/predicate.md)
 - [Package API: order](packages/order.md)
+- [Package API: fold](packages/fold.md)
 - [Package API: optional](packages/optional.md)
 - [Package API: persistent](packages/persistent.md)
 - [Package API: state](packages/state.md)
@@ -280,3 +298,5 @@ descent.
 - [ADR-004 — Thin immutability core](adr/functional/adr-004-thin-immutability-core.md)
 - [ADR-005 — Persistent engine family (HAMT + vector)](adr/functional/adr-005-persistent-engine-family.md)
 - [ADR-006 — State semantic layer](adr/functional/adr-006-state-semantic-layer.md)
+- [ADR-007 — Values family dependency boundary](adr/functional/adr-007-values-family-dependency-boundary.md)
+- [ADR-008 — Functional primitives and fold dependency boundary](adr/functional/adr-008-functional-primitives-and-fold-boundary.md)

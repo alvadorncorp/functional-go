@@ -13,7 +13,7 @@ go      1.26+
 **The root package exports nothing.** `functional` is documentation only —
 this README and the file it mirrors, [`doc.go`](doc.go). Each concept lives
 in its own subpackage: [`function`](function/), [`predicate`](predicate/),
-[`order`](order/), [`optional`](optional/), [`persistent`](persistent/),
+[`order`](order/), [`fold`](fold/), [`optional`](optional/), [`persistent`](persistent/),
 [`state`](state/), [`valueobject`](valueobject/), or one of the [`values`](values/)
 packages.
 
@@ -44,6 +44,7 @@ This README is the **documentation index**. Guides live under
 | [docs/packages/function.md](docs/packages/function.md) | `github.com/alvadorncorp/gopackages/functional/function` |
 | [docs/packages/predicate.md](docs/packages/predicate.md) | `github.com/alvadorncorp/gopackages/functional/predicate` |
 | [docs/packages/order.md](docs/packages/order.md) | `github.com/alvadorncorp/gopackages/functional/order` |
+| [docs/packages/fold.md](docs/packages/fold.md) | `github.com/alvadorncorp/gopackages/functional/fold` |
 | [docs/packages/optional.md](docs/packages/optional.md) | `github.com/alvadorncorp/gopackages/functional/optional` |
 | [docs/packages/persistent.md](docs/packages/persistent.md) | `github.com/alvadorncorp/gopackages/functional/persistent` |
 | [docs/packages/state.md](docs/packages/state.md) | `github.com/alvadorncorp/gopackages/functional/state` |
@@ -71,6 +72,8 @@ This README is the **documentation index**. Guides live under
 | [docs/adr/functional/adr-004-thin-immutability-core.md](docs/adr/functional/adr-004-thin-immutability-core.md) | `adr:functional:004` |
 | [docs/adr/functional/adr-005-persistent-engine-family.md](docs/adr/functional/adr-005-persistent-engine-family.md) | `adr:functional:005` |
 | [docs/adr/functional/adr-006-state-semantic-layer.md](docs/adr/functional/adr-006-state-semantic-layer.md) | `adr:functional:006` |
+| [docs/adr/functional/adr-007-values-family-dependency-boundary.md](docs/adr/functional/adr-007-values-family-dependency-boundary.md) | `adr:functional:007` |
+| [docs/adr/functional/adr-008-functional-primitives-and-fold-boundary.md](docs/adr/functional/adr-008-functional-primitives-and-fold-boundary.md) | `adr:functional:008` |
 
 ---
 
@@ -81,6 +84,7 @@ This README is the **documentation index**. Guides live under
 | [`function`](function/) | Stateless, standard-library-only function combinators | `Identity`, `Constant`, `Compose`, `Pipe`, `Flip`, `Tap` |
 | [`predicate`](predicate/) | Stateless, standard-library-only Boolean predicates and quantifiers | `Predicate[T]`, `Not`, `And`, `Or`, `All`, `Any`, `None` |
 | [`order`](order/) | Sign-based total orders, projections, and lexicographic composition | `Order[T]`, `Natural`, `By`, `Then`, `Min`, `Max` |
+| [`fold`](fold/) | Iterative slice folds, reductions, and left scans | `FoldLeft`, `FoldRight`, `Reduce`, `ReduceNonEmpty`, `ScanLeft` |
 | [`optional`](optional/) | Explicit absence: an operation that may or may not produce a value | `optional.Optional[T]` |
 | [`values/optional`](values/optional/), [`values/result`](values/result/), [`values/either`](values/either/), [`values/nonempty`](values/nonempty/), [`values/validated`](values/validated/) | Independent algebraic value types; see the [family guide](docs/packages/values.md) | `Optional[T]`, `Result[T,E]`, `Either[L,R]`, `NonEmpty[T]`, `Validated[T,E]` |
 | [`persistent`](persistent/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List; Builders use exclusive-owner transient + O(1) Freeze) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |
@@ -95,7 +99,8 @@ This README is the **documentation index**. Guides live under
 import (
     "fmt"
 
-    "github.com/alvadorncorp/gopackages/functional/function"
+	"github.com/alvadorncorp/gopackages/functional/function"
+	"github.com/alvadorncorp/gopackages/functional/fold"
 	"github.com/alvadorncorp/gopackages/functional/order"
     "github.com/alvadorncorp/gopackages/functional/optional"
 	"github.com/alvadorncorp/gopackages/functional/predicate"
@@ -120,6 +125,10 @@ fmt.Println(positiveEven(4), positiveEven(3)) // true false
 
 byLength := order.By(func(value string) int { return len(value) }, order.Natural[int]())
 fmt.Println(order.Less(byLength)("go", "gopher")) // true
+
+fmt.Println(fold.ScanLeft([]int{1, 2, 3}, 0, func(total, value int) int {
+	return total + value
+})) // [0 1 3 6]
 ```
 
 See **[docs/examples.md](docs/examples.md)** for more sketches.

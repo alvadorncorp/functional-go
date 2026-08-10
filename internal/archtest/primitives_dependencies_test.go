@@ -11,12 +11,13 @@ const (
 	pkgFunction  = "github.com/alvadorncorp/gopackages/functional/function"
 	pkgPredicate = "github.com/alvadorncorp/gopackages/functional/predicate"
 	pkgOrder     = "github.com/alvadorncorp/gopackages/functional/order"
+	pkgFold      = "github.com/alvadorncorp/gopackages/functional/fold"
 )
 
 // primitivePackages is the growing inventory of root-level functional
 // primitives. Each entry has a phase-specific dependency and import-safety
 // contract below.
-var primitivePackages = []string{pkgFunction, pkgPredicate, pkgOrder}
+var primitivePackages = []string{pkgFunction, pkgPredicate, pkgOrder, pkgFold}
 
 func TestPrimitiveDependencyDAG(t *testing.T) {
 	t.Parallel()
