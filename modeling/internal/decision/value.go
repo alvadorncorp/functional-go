@@ -41,3 +41,38 @@ func (v Value[S, E]) EventCount() int {
 func (v Value[S, E]) Events() iter.Seq[E] {
 	return v.events.Values()
 }
+
+// MapState transforms the state and reuses the persistent event list.
+func MapState[S, T, E any](value Value[S, E], mapper func(S) T) Value[T, E] {
+	return Value[T, E]{state: mapper(value.state), events: value.events}
+}
+
+// MapEvents transforms events in source order into new persistent storage.
+func MapEvents[S, E, F any](value Value[S, E], mapper func(E) F) Value[S, F] {
+	if value.events.IsEmpty() {
+		return Value[S, F]{state: value.state}
+	}
+
+	var mapped immutable.List[F]
+	builder := mapped.Builder()
+	for event := range value.events.Values() {
+		builder.Append(mapper(event))
+	}
+	return Value[S, F]{state: value.state, events: builder.Build()}
+}
+
+// Combine returns the right state with left events followed by right events.
+func Combine[S, E any](left, right Value[S, E]) Value[S, E] {
+	if left.events.IsEmpty() {
+		return right
+	}
+	if right.events.IsEmpty() {
+		return Value[S, E]{state: right.state, events: left.events}
+	}
+
+	builder := left.events.Builder()
+	for event := range right.events.Values() {
+		builder.Append(event)
+	}
+	return Value[S, E]{state: right.state, events: builder.Build()}
+}
