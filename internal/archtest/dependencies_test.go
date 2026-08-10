@@ -54,6 +54,7 @@ const (
 var publicPackages = []string{
 	pkgFunction,
 	pkgPredicate,
+	pkgOrder,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",
@@ -83,6 +84,7 @@ var publicAllowedEdges = map[string][]string{
 var publicPackagesNoCore = []string{
 	pkgFunction,
 	pkgPredicate,
+	pkgOrder,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/state",
 	"github.com/alvadorncorp/gopackages/functional/valueobject",
@@ -114,6 +116,7 @@ var enginePackages = []string{
 var allPackages = []string{
 	pkgFunction,
 	pkgPredicate,
+	pkgOrder,
 	"github.com/alvadorncorp/gopackages/functional/optional",
 	"github.com/alvadorncorp/gopackages/functional/persistent",
 	"github.com/alvadorncorp/gopackages/functional/state",

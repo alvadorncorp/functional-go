@@ -16,6 +16,7 @@ Illustrative sketches for common uses. For API contracts see
 7. [Parsing with Result and independent Validated checks](#7-parsing-with-result-and-independent-validated-checks)
 8. [Function composition with `Pipe`](#8-function-composition-with-pipe)
 9. [Predicate composition with `And`](#9-predicate-composition-with-and)
+10. [Ordering with `By`](#10-ordering-with-by)
 
 ---
 
@@ -318,7 +319,33 @@ func printPositiveEven() {
 		func(v int) bool { return v > 0 },
 		func(v int) bool { return v%2 == 0 },
 	)
-	fmt.Println(positiveEven(4), positiveEven(3)) // true false
+fmt.Println(positiveEven(4), positiveEven(3)) // true false
+}
+```
+
+---
+
+## 10. Ordering with `By`
+
+`order.By` compares a value through a projection. The result carries sign
+semantics: callers use `Less`, `Greater`, or `Equal` instead of assuming a
+specific negative or positive magnitude. `order` is a standard-library-only
+leaf and does not depend on the other primitive packages.
+
+```go
+package people
+
+import (
+	"fmt"
+
+	"github.com/alvadorncorp/gopackages/functional/order"
+)
+
+type person struct{ age int }
+
+func younger() {
+	byAge := order.By(func(value person) int { return value.age }, order.Natural[int]())
+	fmt.Println(order.Less(byAge)(person{age: 20}, person{age: 30})) // true
 }
 ```
 
@@ -329,6 +356,7 @@ func printPositiveEven() {
 - [overview](overview.md)
 - [package API: function](packages/function.md)
 - [package API: predicate](packages/predicate.md)
+- [package API: order](packages/order.md)
 - [functional values family](packages/values.md)
 - [values Optional](packages/values-optional.md)
 - [values Result](packages/values-result.md)
