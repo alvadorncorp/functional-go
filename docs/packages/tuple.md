@@ -1,6 +1,6 @@
-# Package `tuple`
+# Package `structural/tuple`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/tuple`
+**Import path:** `github.com/alvadorncorp/gopackages/functional/structural/tuple`
 
 `tuple` carries two or three heterogeneous values through intermediate
 operations without reflection or ad-hoc local structs. Tuple2 exposes First and

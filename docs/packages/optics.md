@@ -1,6 +1,6 @@
-# Package `optics`
+# Package `structural/optics`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/optics`
+**Import path:** `github.com/alvadorncorp/gopackages/functional/structural/optics`
 
 `optics` provides one abstraction: a typed `Lens[S,A]` built from explicit
 getter and immutable setter functions. `Get`, `Set`, and `Modify` operate on

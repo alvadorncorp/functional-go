@@ -1,6 +1,6 @@
-# Package `function`
+# Package `primitives/function`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/function`
+**Import path:** `github.com/alvadorncorp/gopackages/functional/primitives/function`
 
 `function` provides six stateless generic combinators for ordinary Go function
 values. It is a standard-library-only leaf and intentionally contains no

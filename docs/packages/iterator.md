@@ -1,6 +1,6 @@
-# Package `iterator`
+# Package `structural/iterator`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/iterator`
+**Import path:** `github.com/alvadorncorp/gopackages/functional/structural/iterator`
 
 `iterator` is a thin adapter and terminal layer over Go's `iter.Seq`; it does
 not define an Iterator type. FromSlice delegates to slices.Values and Collect

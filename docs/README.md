@@ -6,14 +6,14 @@ The module root [README](../README.md) is a short **index**. Content lives here.
 |---|---|
 | [overview.md](overview.md) | Purpose, the language constraint that shapes the API, the immutability core, the zero-dependency boundary, the sibling-import rule |
 | [examples.md](examples.md) | Usage sketches, including Result parsing and Validated accumulation |
-| [packages/function.md](packages/function.md) | Public API of the standard-library-only `github.com/alvadorncorp/gopackages/functional/function` leaf |
-| [packages/predicate.md](packages/predicate.md) | Public API of the standard-library-only `github.com/alvadorncorp/gopackages/functional/predicate` leaf |
-| [packages/order.md](packages/order.md) | Public API of the standard-library-only `github.com/alvadorncorp/gopackages/functional/order` leaf |
-| [packages/fold.md](packages/fold.md) | Public API of `github.com/alvadorncorp/gopackages/functional/fold`, with the two directed values edges authorized by ADR-008 |
-| [packages/tuple.md](packages/tuple.md) | `Tuple2`/`Tuple3` heterogeneous structural carriers and type-changing component maps; stdlib-only. |
-| [packages/lazy.md](packages/lazy.md) | concurrent-safe deferred computations that memoize a value or panic; stdlib-only. |
-| [packages/iterator.md](packages/iterator.md) | [`iterator`](iterator/) — lazy transforms, limits, tuple Zip/Enumerate, folds and searches over native `iter.Seq`; imports only tuple. |
-| [packages/optics.md](packages/optics.md) | [`optics`](optics/) — typed Lens access, immutable updates, Modify, and explicit composition; imports no sibling package. |
+| [packages/function.md](packages/function.md) | `primitives/function` — stdlib-only function combinators |
+| [packages/predicate.md](packages/predicate.md) | `primitives/predicate` — stdlib-only Boolean predicates |
+| [packages/order.md](packages/order.md) | `primitives/order` — stdlib-only total orders |
+| [packages/fold.md](packages/fold.md) | `primitives/fold` — slice folds; edges to `values/optional` and `values/nonempty` |
+| [packages/tuple.md](packages/tuple.md) | `structural/tuple` — Tuple2/Tuple3 carriers; stdlib-only |
+| [packages/lazy.md](packages/lazy.md) | `structural/lazy` — concurrent deferred memoization; stdlib-only |
+| [packages/iterator.md](packages/iterator.md) | `structural/iterator` — `iter.Seq` adapters; imports only `structural/tuple` |
+| [packages/optics.md](packages/optics.md) | `structural/optics` — typed Lens; stdlib-only |
 | [packages/persistent.md](packages/persistent.md) | Public API of `github.com/alvadorncorp/gopackages/functional/persistent`, including measured Append-loop vs. Builder benchmarks |
 | [packages/state.md](packages/state.md) | Public API of `github.com/alvadorncorp/gopackages/functional/state` (pure `State[T]`, lineage, Tx, Diff) |
 | [packages/core.md](packages/core.md) | Maintainer guide for `internal/core` (ownership, cow, sharing, transient) |
@@ -43,3 +43,4 @@ Current decisions:
 - [ADR-008 — Functional primitives and fold dependency boundary](adr/functional/adr-008-functional-primitives-and-fold-boundary.md)
 - [ADR-009 — Tuplas, lazy, iteradores e optics sobre contratos nativos de Go](adr/functional/adr-009-structural-primitives-and-iterator-boundary.md)
 - [ADR-010 — Retire top-level optional and valueobject](adr/functional/adr-010-retire-optional-and-valueobject.md)
+- [ADR-011 — primitives and structural path groups](adr/functional/adr-011-primitives-and-structural-path-groups.md)

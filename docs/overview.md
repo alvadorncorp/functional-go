@@ -13,38 +13,46 @@ for runnable sketches see [examples.md](examples.md).
 small, general-purpose functional-programming building blocks with **zero
 dependencies outside the standard library, permanently**:
 
-- **`function`** — six stateless generic combinators for ordinary Go function
-  values. It is a standard-library-only public leaf.
-- **`predicate`** — Boolean composition, quantifiers, and comparable-derived
-  predicates. It is a standard-library-only public leaf with left-to-right
-  short-circuiting.
-- **`order`** — sign-based total orders, projections, reversal, and
-  lexicographic composition. It is a standard-library-only public leaf.
-- **`fold`** — iterative left/right folds, typed reductions, and a preallocated
-  left scan over slices. It imports exactly `values/optional` and
+Public packages are grouped by role under path prefixes (no Go package at the
+group directory itself; ADR-011):
+
+### `primitives/`
+
+- **`primitives/function`** — six stateless generic combinators for ordinary Go
+  function values (stdlib-only leaf).
+- **`primitives/predicate`** — Boolean composition and quantifiers (stdlib-only
+  leaf, left-to-right short-circuit).
+- **`primitives/order`** — sign-based total orders, projections, reversal, and
+  lexicographic composition (stdlib-only leaf).
+- **`primitives/fold`** — iterative left/right folds, typed reductions, and a
+  preallocated left scan over slices. Imports exactly `values/optional` and
   `values/nonempty`.
-- **[`tuple`](tuple/)** — `Tuple2`/`Tuple3` heterogeneous structural carriers and type-changing component maps; stdlib-only.
-- **`lazy`** — concurrent-safe deferred computations that memoize a value or panic; stdlib-only.
-- **[`iterator`](iterator/)** — lazy transforms, limits, tuple Zip/Enumerate, folds and searches over native `iter.Seq`; imports only tuple.
-- **[`optics`](optics/)** — typed Lens access, immutable updates, Modify, and explicit composition; imports no sibling package.
-- **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
-  that write functionally (every update returns a new value). Engines use
-  path-copy structural sharing: Map/Set are a HAMT; List is a 32-way
-  persistent vector. Builders open an exclusive transient window and
-  `Freeze` in O(1) via owner invalidation. Use the same types for
-  read-only snapshots (never call write methods) and for versioned state.
-  `persistent` may produce `iter.Seq` values for consumers, but
-  `iterator` never imports `persistent`.
-- **`state`** — `State[T]`: pure semantic evolution over an opaque `T`.
-  `Apply` records reverse-linked plan steps without running them;
-  `Materialize` re-applies the full plan (no cache); `Begin`/`Transaction`
-  batches plan growth; `DiffBetween` captures structural plan diffs within
-  one lineage. Mesh-isolated from `persistent` in production code.
+
+### `structural/`
+
+- **`structural/tuple`** — `Tuple2`/`Tuple3` heterogeneous carriers and
+  type-changing component maps (stdlib-only leaf).
+- **`structural/lazy`** — concurrent-safe deferred memoization (stdlib-only
+  leaf).
+- **`structural/iterator`** — lazy transforms, limits, Zip/Enumerate, folds and
+  searches over native `iter.Seq`; imports only `structural/tuple`.
+- **`structural/optics`** — typed Lens access, immutable updates, Modify, and
+  explicit composition (stdlib-only leaf).
+
+### `values/`, collections, state
+
 - **`values/optional`**, **`values/result`**, **`values/either`**,
   **`values/nonempty`**, and **`values/validated`** — independent generic
   values for presence, fail-fast outcomes, neutral alternatives, minimum
   cardinality, and accumulating validation. See the
   [functional values family guide](packages/values.md).
+- **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
+  that write functionally (every update returns a new value). Engines use
+  path-copy structural sharing: Map/Set are a HAMT; List is a 32-way
+  persistent vector. `persistent` may produce `iter.Seq` values for consumers,
+  but `structural/iterator` never imports `persistent`.
+- **`state`** — `State[T]`: pure semantic evolution over an opaque `T`.
+  Mesh-isolated from `persistent` in production code.
 
 ## Why the root package is doc-only
 
@@ -52,15 +60,11 @@ dependencies outside the standard library, permanently**:
 nothing. That is deliberate, not an oversight: the concepts above do not
 share a common supertype, a common constructor, or any runtime behavior — the
 only thing they share is "small, dependency-free, functional in spirit." A
-root package that re-exported all of them (type aliases, or worse, a grab-bag of
-helpers) would give every consumer of any one concept a compile-time
-dependency on the others, defeating the point of splitting them into
-subpackages in the first place. So the root package carries only the
-module-level doc comment, and every concept lives one import path down:
-`functional/function`, `functional/predicate`, `functional/order`,
-`functional/fold`, `functional/tuple`, `functional/lazy`, `functional/iterator`,
-`functional/optics`, `functional/persistent`, `functional/state`, or one of the
-five `functional/values/*` packages.
+root package that re-exported all of them would give every consumer of any one
+concept a compile-time dependency on the others. So the root package carries
+only the module-level doc comment, and every concept lives under a role prefix
+or at the module root: `functional/primitives/*`, `functional/structural/*`,
+`functional/values/*`, `functional/persistent`, or `functional/state`.
 
 ## The constraint that shapes the whole API: no type parameters on methods
 
@@ -137,15 +141,14 @@ other than `persistent` must not import core; `persistent` may).
 
 ## No public subpackage imports another (in production code)
 
-`function`, `predicate`, `order`, `fold`, `tuple`, `lazy`, `iterator`, `optics`,
-`persistent`, and `state` do not import each other **in production code**,
-except for the explicitly allowed sibling edges. This is also proven, not just
-documented: `TestPublicDependencyDAG` in `functional/internal/archtest` walks
-each public subpackage's dependency list, via `go list -deps -json` without
-`-test`, and fails if it contains another public subpackage's import path except
-the explicitly allowed edges: `values/validated` → `values/nonempty`,
-`fold` → `values/optional`, `fold` → `values/nonempty`, and
-`iterator` → `tuple`.
+Public packages do not import each other **in production code**, except for the
+explicitly allowed sibling edges. This is also proven, not just documented:
+`TestPublicDependencyDAG` in `functional/internal/archtest` walks each public
+subpackage's dependency list, via `go list -deps -json` without `-test`, and
+fails if it contains another public subpackage's import path except the
+explicitly allowed edges: `values/validated` → `values/nonempty`,
+`primitives/fold` → `values/optional`, `primitives/fold` → `values/nonempty`,
+and `structural/iterator` → `structural/tuple`.
 
 The invariant is scoped to production imports by design. Test code MAY
 import a sibling public package to exercise or demonstrate cross-package
@@ -177,24 +180,25 @@ conventions.
 
 ### Primitive production gates
 
-`function`, `predicate`, `order`, `tuple`, `lazy`, and `optics` are
-standard-library-only leaves. `fold` imports exactly `values/optional` and
-`values/nonempty`. `iterator` imports exactly `tuple`.
-`TestPrimitiveDependencyDAG` and `TestPrimitivesNoReflectOrUnsafe` enforce this
-production DAG and reject `reflect` or `unsafe` in every primitive.
-`persistent` may produce `iter.Seq` values, but `iterator` never imports
+`primitives/{function,predicate,order}`, `structural/{tuple,lazy,optics}` are
+standard-library-only leaves. `primitives/fold` imports exactly
+`values/optional` and `values/nonempty`. `structural/iterator` imports exactly
+`structural/tuple`. `TestPrimitiveDependencyDAG` and
+`TestPrimitivesNoReflectOrUnsafe` enforce this production DAG and reject
+`reflect` or `unsafe` in every package in that inventory. `persistent` may
+produce `iter.Seq` values, but `structural/iterator` never imports
 `persistent`.
 
 ```mermaid
 flowchart TB
-  function[function]
-  predicate[predicate]
-  order[order]
-  fold[fold]
-  tuple[tuple]
-  lazy[lazy]
-  iterator[iterator]
-  optics[optics]
+  function[primitives/function]
+  predicate[primitives/predicate]
+  order[primitives/order]
+  fold[primitives/fold]
+  tuple[structural/tuple]
+  lazy[structural/lazy]
+  iterator[structural/iterator]
+  optics[structural/optics]
   valuesOptional[values/optional]
   valuesResult[values/result]
   valuesEither[values/either]
@@ -261,14 +265,14 @@ exception to. **`eq` is outside core** and, like core, must not use `reflect`.
 
 ## Related documents
 
-- [Package API: function](packages/function.md)
-- [Package API: predicate](packages/predicate.md)
-- [Package API: order](packages/order.md)
-- [Package API: fold](packages/fold.md)
-- [Package API: tuple](packages/tuple.md)
-- [Package API: lazy](packages/lazy.md)
-- [Package API: iterator](packages/iterator.md)
-- [Package API: optics](packages/optics.md)
+- [Package API: primitives/function](packages/function.md)
+- [Package API: primitives/predicate](packages/predicate.md)
+- [Package API: primitives/order](packages/order.md)
+- [Package API: primitives/fold](packages/fold.md)
+- [Package API: structural/tuple](packages/tuple.md)
+- [Package API: structural/lazy](packages/lazy.md)
+- [Package API: structural/iterator](packages/iterator.md)
+- [Package API: structural/optics](packages/optics.md)
 - [Package API: persistent](packages/persistent.md)
 - [Package API: state](packages/state.md)
 - [Internal: core](packages/core.md)
@@ -283,6 +287,7 @@ exception to. **`eq` is outside core** and, like core, must not use `reflect`.
 - [ADR-001 — Optional representation and zero value](adr/functional/adr-001-optional-representation-and-zero-value.md)
 - [ADR-003 — Zero-dependency boundary](adr/functional/adr-003-zero-dependency-boundary.md)
 - [ADR-010 — Retire top-level optional and valueobject](adr/functional/adr-010-retire-optional-and-valueobject.md)
+- [ADR-011 — primitives and structural path groups](adr/functional/adr-011-primitives-and-structural-path-groups.md)
 - [ADR-004 — Thin immutability core](adr/functional/adr-004-thin-immutability-core.md)
 - [ADR-005 — Persistent engine family (HAMT + vector)](adr/functional/adr-005-persistent-engine-family.md)
 - [ADR-006 — State semantic layer](adr/functional/adr-006-state-semantic-layer.md)

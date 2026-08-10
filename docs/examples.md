@@ -297,7 +297,7 @@ package presentation
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/function"
+	"github.com/alvadorncorp/gopackages/functional/primitives/function"
 )
 
 func printDoubledLength() {
@@ -321,7 +321,7 @@ package eligibility
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/predicate"
+	"github.com/alvadorncorp/gopackages/functional/primitives/predicate"
 )
 
 func printPositiveEven() {
@@ -348,7 +348,7 @@ package people
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/order"
+	"github.com/alvadorncorp/gopackages/functional/primitives/order"
 )
 
 type person struct{ age int }
@@ -372,7 +372,7 @@ package counters
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/fold"
+	"github.com/alvadorncorp/gopackages/functional/primitives/fold"
 )
 
 func printRunningTotals() {
@@ -390,7 +390,7 @@ func printRunningTotals() {
 ```go
 package pipeline
 
-import "github.com/alvadorncorp/gopackages/functional/tuple"
+import "github.com/alvadorncorp/gopackages/functional/structural/tuple"
 
 func tupleCarrier() tuple.Tuple2[int, string] {
 	pair := tuple.Of2("Ada", 36)
@@ -408,7 +408,7 @@ the generic parameters are inferred from the constructor arguments.
 ```go
 package config
 
-import "github.com/alvadorncorp/gopackages/functional/lazy"
+import "github.com/alvadorncorp/gopackages/functional/structural/lazy"
 
 type Config struct{ Name string }
 
@@ -432,8 +432,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/alvadorncorp/gopackages/functional/iterator"
-	"github.com/alvadorncorp/gopackages/functional/tuple"
+	"github.com/alvadorncorp/gopackages/functional/structural/iterator"
+	"github.com/alvadorncorp/gopackages/functional/structural/tuple"
 )
 
 func zipPeople(ids []int, names []string) []tuple.Tuple2[int, string] {
@@ -452,7 +452,7 @@ func zipPeople(ids []int, names []string) []tuple.Tuple2[int, string] {
 ```go
 package people
 
-import "github.com/alvadorncorp/gopackages/functional/optics"
+import "github.com/alvadorncorp/gopackages/functional/structural/optics"
 
 type Address struct{ City string }
 

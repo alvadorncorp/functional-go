@@ -10,11 +10,18 @@ go      1.26+
 ```
 
 **The root package exports nothing.** `functional` is documentation only —
-this README and the file it mirrors, [`doc.go`](doc.go). Each concept lives
-in its own subpackage: [`function`](function/), [`predicate`](predicate/),
-[`order`](order/), [`fold`](fold/), [`tuple`](tuple/), [`lazy`](lazy/),
-[`iterator`](iterator/), [`optics`](optics/), [`persistent`](persistent/),
-[`state`](state/), or one of the [`values`](values/) packages.
+this README and the file it mirrors, [`doc.go`](doc.go). Concepts live one
+import path down, grouped by role (no Go package at the group directory):
+
+- **[`primitives/`](primitives/)** — [`function`](primitives/function/),
+  [`predicate`](primitives/predicate/), [`order`](primitives/order/),
+  [`fold`](primitives/fold/)
+- **[`structural/`](structural/)** — [`tuple`](structural/tuple/),
+  [`lazy`](structural/lazy/), [`iterator`](structural/iterator/),
+  [`optics`](structural/optics/)
+- **[`values/`](values/)** — optional, result, either, nonempty, validated
+- **[`persistent/`](persistent/)**, **[`state/`](state/)** — collections and
+  pure plan evolution (kept at the module root)
 
 This README is the **documentation index**. Guides live under
 [`docs/`](docs/).
@@ -35,14 +42,14 @@ This README is the **documentation index**. Guides live under
 
 | Document | Package |
 |---|---|
-| [docs/packages/function.md](docs/packages/function.md) | `github.com/alvadorncorp/gopackages/functional/function` |
-| [docs/packages/predicate.md](docs/packages/predicate.md) | `github.com/alvadorncorp/gopackages/functional/predicate` |
-| [docs/packages/order.md](docs/packages/order.md) | `github.com/alvadorncorp/gopackages/functional/order` |
-| [docs/packages/fold.md](docs/packages/fold.md) | `github.com/alvadorncorp/gopackages/functional/fold` |
-| [docs/packages/tuple.md](docs/packages/tuple.md) | `github.com/alvadorncorp/gopackages/functional/tuple` |
-| [docs/packages/lazy.md](docs/packages/lazy.md) | `github.com/alvadorncorp/gopackages/functional/lazy` |
-| [docs/packages/iterator.md](docs/packages/iterator.md) | `github.com/alvadorncorp/gopackages/functional/iterator` |
-| [docs/packages/optics.md](docs/packages/optics.md) | `github.com/alvadorncorp/gopackages/functional/optics` |
+| [docs/packages/function.md](docs/packages/function.md) | `github.com/alvadorncorp/gopackages/functional/primitives/function` |
+| [docs/packages/predicate.md](docs/packages/predicate.md) | `github.com/alvadorncorp/gopackages/functional/primitives/predicate` |
+| [docs/packages/order.md](docs/packages/order.md) | `github.com/alvadorncorp/gopackages/functional/primitives/order` |
+| [docs/packages/fold.md](docs/packages/fold.md) | `github.com/alvadorncorp/gopackages/functional/primitives/fold` |
+| [docs/packages/tuple.md](docs/packages/tuple.md) | `github.com/alvadorncorp/gopackages/functional/structural/tuple` |
+| [docs/packages/lazy.md](docs/packages/lazy.md) | `github.com/alvadorncorp/gopackages/functional/structural/lazy` |
+| [docs/packages/iterator.md](docs/packages/iterator.md) | `github.com/alvadorncorp/gopackages/functional/structural/iterator` |
+| [docs/packages/optics.md](docs/packages/optics.md) | `github.com/alvadorncorp/gopackages/functional/structural/optics` |
 | [docs/packages/persistent.md](docs/packages/persistent.md) | `github.com/alvadorncorp/gopackages/functional/persistent` |
 | [docs/packages/state.md](docs/packages/state.md) | `github.com/alvadorncorp/gopackages/functional/state` |
 | [docs/packages/core.md](docs/packages/core.md) | `internal/core` (ownership, cow, sharing, transient) — maintainers |
@@ -72,24 +79,37 @@ This README is the **documentation index**. Guides live under
 | [docs/adr/functional/adr-008-functional-primitives-and-fold-boundary.md](docs/adr/functional/adr-008-functional-primitives-and-fold-boundary.md) | `adr:functional:008` |
 | [docs/adr/functional/adr-009-structural-primitives-and-iterator-boundary.md](docs/adr/functional/adr-009-structural-primitives-and-iterator-boundary.md) | `adr:functional:009` |
 | [docs/adr/functional/adr-010-retire-optional-and-valueobject.md](docs/adr/functional/adr-010-retire-optional-and-valueobject.md) | `adr:functional:010` |
+| [docs/adr/functional/adr-011-primitives-and-structural-path-groups.md](docs/adr/functional/adr-011-primitives-and-structural-path-groups.md) | `adr:functional:011` |
 
 ---
 
 ## Package at a glance
 
+### `primitives/`
+
 | Package | Role | Core types |
 |---|---|---|
-| [`function`](function/) | Stateless, standard-library-only function combinators | `Identity`, `Constant`, `Compose`, `Pipe`, `Flip`, `Tap` |
-| [`predicate`](predicate/) | Stateless, standard-library-only Boolean predicates and quantifiers | `Predicate[T]`, `Not`, `And`, `Or`, `All`, `Any`, `None` |
-| [`order`](order/) | Sign-based total orders, projections, and lexicographic composition | `Order[T]`, `Natural`, `By`, `Then`, `Min`, `Max` |
-| [`fold`](fold/) | Iterative slice folds, reductions, and left scans | `FoldLeft`, `FoldRight`, `Reduce`, `ReduceNonEmpty`, `ScanLeft` |
-| [`tuple`](tuple/) | `Tuple2`/`Tuple3` heterogeneous structural carriers and type-changing component maps; stdlib-only. | `Tuple2[A,B]`, `Tuple3[A,B,C]`, `Of2`, `Of3`, `Swap` |
-| [`lazy`](lazy/) | concurrent-safe deferred computations that memoize a value or panic; stdlib-only. | `Lazy[T]`, `New`, `Of`, `Get`, `Map`, `FlatMap` |
-| [`iterator`](iterator/) | lazy transforms, limits, tuple Zip/Enumerate, folds and searches over native `iter.Seq`; imports only tuple. | `Map`, `Filter`, `Take`, `Zip`, `Enumerate`, `Collect`, `Fold`, `Any`, `All`, `Find` |
-| [`optics`](optics/) | typed Lens access, immutable updates, Modify, and explicit composition; imports no sibling package. | `Lens[S,A]`, `NewLens`, `Get`, `Set`, `Modify`, `Compose` |
+| [`primitives/function`](primitives/function/) | Stateless, standard-library-only function combinators | `Identity`, `Constant`, `Compose`, `Pipe`, `Flip`, `Tap` |
+| [`primitives/predicate`](primitives/predicate/) | Stateless, standard-library-only Boolean predicates and quantifiers | `Predicate[T]`, `Not`, `And`, `Or`, `All`, `Any`, `None` |
+| [`primitives/order`](primitives/order/) | Sign-based total orders, projections, and lexicographic composition | `Order[T]`, `Natural`, `By`, `Then`, `Min`, `Max` |
+| [`primitives/fold`](primitives/fold/) | Iterative slice folds, reductions, and left scans | `FoldLeft`, `FoldRight`, `Reduce`, `ReduceNonEmpty`, `ScanLeft` |
+
+### `structural/`
+
+| Package | Role | Core types |
+|---|---|---|
+| [`structural/tuple`](structural/tuple/) | `Tuple2`/`Tuple3` heterogeneous carriers and component maps; stdlib-only | `Tuple2[A,B]`, `Tuple3[A,B,C]`, `Of2`, `Of3`, `Swap` |
+| [`structural/lazy`](structural/lazy/) | Concurrent-safe deferred memoization; stdlib-only | `Lazy[T]`, `New`, `Of`, `Get`, `Map`, `FlatMap` |
+| [`structural/iterator`](structural/iterator/) | Lazy transforms/limits/Zip over `iter.Seq`; imports only `structural/tuple` | `Map`, `Filter`, `Take`, `Zip`, `Enumerate`, `Collect`, `Fold` |
+| [`structural/optics`](structural/optics/) | Typed Lens; stdlib-only leaf | `Lens[S,A]`, `NewLens`, `Get`, `Set`, `Modify`, `Compose` |
+
+### `values/`, collections, state
+
+| Package | Role | Core types |
+|---|---|---|
 | [`values/optional`](values/optional/), [`values/result`](values/result/), [`values/either`](values/either/), [`values/nonempty`](values/nonempty/), [`values/validated`](values/validated/) | Independent algebraic value types; see the [family guide](docs/packages/values.md) | `Optional[T]`, `Result[T,E]`, `Either[L,R]`, `NonEmpty[T]`, `Validated[T,E]` |
-| [`persistent`](persistent/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List; Builders use exclusive-owner transient + O(1) Freeze) | `persistent.List[T]`, `persistent.Map[K,V]`, `persistent.Set[T]`, and a `Builder()` per type |
-| [`state`](state/) | Pure semantic evolution over `T`: reverse-linked plans, Version, single-use Tx, structural Diff | `state.State[T]`, `state.Transaction[T]`, `state.Diff[T]`, `state.Snapshot[T]` |
+| [`persistent`](persistent/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List) | `List[T]`, `Map[K,V]`, `Set[T]`, `Builder()` |
+| [`state`](state/) | Pure semantic evolution over `T` | `State[T]`, `Transaction[T]`, `Diff[T]`, `Snapshot[T]` |
 
 ---
 
@@ -99,10 +119,10 @@ This README is the **documentation index**. Guides live under
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/function"
-	"github.com/alvadorncorp/gopackages/functional/fold"
-	"github.com/alvadorncorp/gopackages/functional/order"
-	"github.com/alvadorncorp/gopackages/functional/predicate"
+	"github.com/alvadorncorp/gopackages/functional/primitives/function"
+	"github.com/alvadorncorp/gopackages/functional/primitives/fold"
+	"github.com/alvadorncorp/gopackages/functional/primitives/order"
+	"github.com/alvadorncorp/gopackages/functional/primitives/predicate"
 	"github.com/alvadorncorp/gopackages/functional/persistent"
 	"github.com/alvadorncorp/gopackages/functional/state"
 	"github.com/alvadorncorp/gopackages/functional/values/optional"

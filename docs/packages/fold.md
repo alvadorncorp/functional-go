@@ -1,6 +1,6 @@
-# Package `fold`
+# Package `primitives/fold`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/fold`
+**Import path:** `github.com/alvadorncorp/gopackages/functional/primitives/fold`
 
 `FoldLeft` and `FoldRight` reduce slices with an explicit initial state.
 FoldRight uses a reverse loop rather than recursion. `Reduce` uses the first

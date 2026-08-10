@@ -84,8 +84,8 @@ These gates inspect production imports: `go list` runs without `-test`, so
 ADR-007 introduced the first directed public-sibling edge,
 `functional/values/validated` → `functional/values/nonempty`. ADR-008 later
 adds exactly two consumer edges,
-`functional/fold` → `functional/values/optional` and
-`functional/fold` → `functional/values/nonempty`, while preserving the values
+`functional/primitives/fold` → `functional/values/optional` and
+`functional/primitives/fold` → `functional/values/nonempty`, while preserving the values
 family's outbound isolation. Every other public-sibling edge remains forbidden,
 and the permanent no-external-dependency rule is unchanged.
 `TestValuesDependencyDAG` and `TestPrimitiveDependencyDAG` enforce the two
@@ -137,7 +137,7 @@ on the same review discipline this workspace already relies on elsewhere.
 README documents "two independent adopters" as the informal signal that
 the API is ready to be promised stable.
 
-ADR-009 adiciona `functional/iterator -> functional/tuple` como a única aresta
+ADR-009 adiciona `functional/structural/iterator -> functional/structural/tuple` como a única aresta
 pública do novo conjunto tuple/lazy/iterator/optics. Tuple, lazy e optics
 permanecem folhas da stdlib; a regra permanente de zero dependências externas
 e todas as demais proibições deste ADR permanecem inalteradas.
