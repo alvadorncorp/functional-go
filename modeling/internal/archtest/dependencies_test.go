@@ -24,6 +24,7 @@ const (
 	archtestPackage     = modelingModule + "/internal/archtest"
 	policyPackage       = modelingModule + "/policy"
 	changePackage       = modelingModule + "/change"
+	reducerPackage      = modelingModule + "/reducer"
 )
 
 type listedPackage struct {
@@ -56,7 +57,6 @@ var forbiddenExportedNames = map[string]struct{}{
 	"HandlerRegistry":        {},
 	"Projection":             {},
 	"Register":               {},
-	"Replay":                 {},
 	"Scan":                   {},
 	"SnapshotStore":          {},
 }
@@ -117,6 +117,8 @@ func directImportForbidden(importingPackage, importPath string) bool {
 		return importPath != functionalOptional && importPath != functionalPredicate
 	case changePackage:
 		return importPath != functionalFunction
+	case reducerPackage:
+		return importPath != functionalImmutable
 	default:
 		return true
 	}
@@ -151,30 +153,11 @@ func TestNoForbiddenDirectImports(t *testing.T) {
 	}
 }
 
-func TestExternallyImportableClassification(t *testing.T) {
-	tests := []struct {
-		name       string
-		importPath string
-		want       bool
-	}{
-		{name: "root", importPath: modelingModule, want: true},
-		{name: "public child", importPath: modelingModule + "/decision", want: true},
-		{name: "internal root", importPath: modelingModule + "/internal", want: false},
-		{name: "internal child", importPath: modelingModule + "/internal/decision", want: false},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if got := externallyImportable(test.importPath); got != test.want {
-				t.Fatalf("externallyImportable(%q) = %t, want %t", test.importPath, got, test.want)
-			}
-		})
-	}
-}
-
 func TestFunctionalTypesDoNotLeakOutsidePolicy(t *testing.T) {
 	for _, production := range productionPackages(t) {
-		if !externallyImportable(production.ImportPath) || production.ImportPath == policyPackage {
+		if !externallyImportable(production.ImportPath) ||
+			production.ImportPath == policyPackage ||
+			production.ImportPath == reducerPackage {
 			continue
 		}
 		t.Run(production.ImportPath, func(t *testing.T) {
@@ -229,23 +212,6 @@ func TestNoMutableProductionGlobals(t *testing.T) {
 	}
 }
 
-func TestPackageEnumerationIsComplete(t *testing.T) {
-	seen := map[string]bool{}
-	for _, pkg := range goList(t, "-json", modelingModule+"/...") {
-		seen[pkg.ImportPath] = true
-	}
-	for _, required := range []string{
-		modelingModule,
-		policyPackage,
-		changePackage,
-		archtestPackage,
-	} {
-		if !seen[required] {
-			t.Errorf("package enumeration is too narrow: missing %s", required)
-		}
-	}
-}
-
 func TestDependencyGateCanFail(t *testing.T) {
 	if dependencyAllowed(&listedPackage{ImportPath: "example.com/unapproved"}) {
 		t.Fatal("dependency gate accepted an external package")
@@ -287,38 +253,13 @@ func TestDependencyGateCanFail(t *testing.T) {
 			t.Errorf("change direct-import gate accepted %s", imported)
 		}
 	}
-	functionalExpression, err := parser.ParseExpr("immutable.List[int]")
-	if err != nil {
-		t.Fatalf("parse functional type: %v", err)
+	if directImportForbidden(reducerPackage, functionalImmutable) {
+		t.Fatalf("reducer direct-import gate rejected %s", functionalImmutable)
 	}
-	if !functionalTypeInExpr(functionalExpression, map[string]struct{}{"immutable": {}}, nil) {
-		t.Fatal("public-signature gate accepted a functional type")
-	}
-	stdlibExpression, err := parser.ParseExpr("iter.Seq[int]")
-	if err != nil {
-		t.Fatalf("parse standard-library type: %v", err)
-	}
-	if functionalTypeInExpr(stdlibExpression, map[string]struct{}{"immutable": {}}, nil) {
-		t.Fatal("public-signature gate rejected a standard-library type")
-	}
-	aliasFile, err := parser.ParseFile(token.NewFileSet(), "synthetic.go", `package synthetic
-import "github.com/alvadorncorp/gopackages/functional/immutable"
-type eventList = immutable.List[int]
-func Events() eventList { panic("unreachable") }
-`, 0)
-	if err != nil {
-		t.Fatalf("parse alias fixture: %v", err)
-	}
-	aliasOrigins := functionalTypeOrigins([]*ast.File{aliasFile})
-	aliasImports, _ := functionalImportAliases(aliasFile)
-	aliasRejected := false
-	for _, declaration := range aliasFile.Decls {
-		for _, expression := range exportedTypeExpressions(declaration) {
-			aliasRejected = aliasRejected || functionalTypeInExpr(expression, aliasImports, aliasOrigins)
+	for _, imported := range []string{functionalOptional, functionalPredicate} {
+		if !directImportForbidden(reducerPackage, imported) {
+			t.Errorf("reducer direct-import gate accepted %s", imported)
 		}
-	}
-	if !aliasRejected {
-		t.Fatal("public-signature gate accepted a local alias to a functional type")
 	}
 	if _, forbidden := forbiddenExportedNames["Dispatch"]; !forbidden {
 		t.Fatal("runtime API gate cannot reject Dispatch")

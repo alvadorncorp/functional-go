@@ -15,6 +15,7 @@ catalog and must not acquire a `docs/` tree.
 - [ADR-003: nominal rules and operation requirements](adr/modeling/adr-003-rules-and-requirements.md)
 - [ADR-004: public Change capability boundary](adr/modeling/adr-004-change-capability-boundary.md)
 - [ADR-005: additive Policy capability boundary](adr/modeling/adr-005-policy-capability-boundary.md)
+- [ADR-006: additive reducer capability boundary](adr/modeling/adr-006-reducer-capability-boundary.md)
 
 ## Technical designs
 
@@ -23,5 +24,6 @@ catalog and must not acquire a `docs/` tree.
 - [TDD: Rules and Requirements](tdd/modeling/rules-requirements.md)
 - [TDD: Change and state evolution](tdd/modeling/change.md)
 - [TDD: Policy](tdd/modeling/policy.md)
+- [TDD: Reducer and Replay](tdd/modeling/reducer-replay.md)
 
 Formal records use the module-owned AKB spine; no copy belongs at repository root.

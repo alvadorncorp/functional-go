@@ -30,6 +30,12 @@ Context-derived domain strategies live in the public
 `FirstApplicable`, and `Fallback` provide ordered Optional-based selection.
 No Policy symbol is reexported from the root package.
 
+The additive [`modeling/reducer`](reducer/) capability defines
+`Reducer[S,E] func(S,E) S` and ordered `Replay` over `immutable.List[E]`.
+Reducer materializes facts into state; Replay is a synchronous left fold, not an
+Event Sourcing runtime. Every existing root-package, change, and policy contract
+remains unchanged.
+
 ## Documentation
 
 - [Documentation index](docs/README.md)
@@ -45,6 +51,8 @@ No Policy symbol is reexported from the root package.
 - [TDD: Rules and Requirements](docs/tdd/modeling/rules-requirements.md)
 - [TDD: Change and state evolution](docs/tdd/modeling/change.md)
 - [TDD: Policy](docs/tdd/modeling/policy.md)
+- [ADR-006: additive reducer capability boundary](docs/adr/modeling/adr-006-reducer-capability-boundary.md)
+- [TDD: Reducer and Replay](docs/tdd/modeling/reducer-replay.md)
 
 ## Development
 
