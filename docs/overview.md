@@ -23,6 +23,7 @@ dependencies outside the standard library, permanently**:
 - **`fold`** — iterative left/right folds, typed reductions, and a preallocated
   left scan over slices. It imports exactly `values/optional` and
   `values/nonempty`.
+- **[`tuple`](tuple/)** — `Tuple2`/`Tuple3` heterogeneous structural carriers and type-changing component maps; stdlib-only.
 - **`optional`** — `Optional[T]`, a value type for an operation that may or
   may not produce a `T`. Explicit absence, not a nil check.
 - **`persistent`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
@@ -56,7 +57,7 @@ dependency on the others, defeating the point of splitting them into
 subpackages in the first place. So the root package carries only the
 module-level doc comment, and every concept lives one import path down:
 `functional/function`, `functional/predicate`, `functional/order`,
-`functional/fold`, `functional/optional`, `functional/persistent`, `functional/state`,
+`functional/fold`, `functional/tuple`, `functional/optional`, `functional/persistent`, `functional/state`,
 `functional/valueobject`, or one of the five
 `functional/values/*` packages.
 
@@ -143,8 +144,8 @@ into `ownership`), and `TestPublicPackagesDoNotImportCore` (`optional` /
 
 ## No public subpackage imports another (in production code)
 
-`function`, `predicate`, `order`, `fold`, `optional`, `persistent`, `state`,
-and `valueobject` do not import each other **in production code**, except for
+`function`, `predicate`, `order`, `fold`, `tuple`, `optional`, `persistent`,
+`state`, and `valueobject` do not import each other **in production code**, except for
 the two directed fold-to-values edges. This is also proven, not just documented:
 `TestPublicDependencyDAG` in `functional/internal/archtest` walks each public
 subpackage's dependency list, via `go list -deps -json` without `-test`, and
@@ -186,8 +187,8 @@ conventions.
 
 ### Primitive production gates
 
-`function`, `predicate`, and `order` are standard-library-only leaves. `fold`
-imports exactly `values/optional` and `values/nonempty`. `TestPrimitiveDependencyDAG`
+`function`, `predicate`, `order`, and `tuple` are standard-library-only leaves.
+`fold` imports exactly `values/optional` and `values/nonempty`. `TestPrimitiveDependencyDAG`
 and `TestPrimitivesNoReflectOrUnsafe` enforce this production DAG and reject
 `reflect` or `unsafe` in every primitive.
 
@@ -280,6 +281,7 @@ descent.
 - [Package API: predicate](packages/predicate.md)
 - [Package API: order](packages/order.md)
 - [Package API: fold](packages/fold.md)
+- [Package API: tuple](packages/tuple.md)
 - [Package API: optional](packages/optional.md)
 - [Package API: persistent](packages/persistent.md)
 - [Package API: state](packages/state.md)
@@ -300,3 +302,4 @@ descent.
 - [ADR-006 — State semantic layer](adr/functional/adr-006-state-semantic-layer.md)
 - [ADR-007 — Values family dependency boundary](adr/functional/adr-007-values-family-dependency-boundary.md)
 - [ADR-008 — Functional primitives and fold dependency boundary](adr/functional/adr-008-functional-primitives-and-fold-boundary.md)
+- [ADR-009 — Tuplas, lazy, iteradores e optics sobre contratos nativos de Go](adr/functional/adr-009-structural-primitives-and-iterator-boundary.md)

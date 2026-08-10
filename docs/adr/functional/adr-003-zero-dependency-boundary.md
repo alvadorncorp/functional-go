@@ -136,3 +136,8 @@ on the same review discipline this workspace already relies on elsewhere.
 **Neutral:** This ADR does not commit to a v1.0.0 timeline; the module
 README documents "two independent adopters" as the informal signal that
 the API is ready to be promised stable.
+
+ADR-009 adiciona `functional/iterator -> functional/tuple` como a única aresta
+pública do novo conjunto tuple/lazy/iterator/optics. Tuple, lazy e optics
+permanecem folhas da stdlib; a regra permanente de zero dependências externas
+e todas as demais proibições deste ADR permanecem inalteradas.

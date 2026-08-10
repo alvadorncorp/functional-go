@@ -18,6 +18,7 @@ Illustrative sketches for common uses. For API contracts see
 9. [Predicate composition with `And`](#9-predicate-composition-with-and)
 10. [Ordering with `By`](#10-ordering-with-by)
 11. [Accumulating states with `ScanLeft`](#11-accumulating-states-with-scanleft)
+12. [Tuple carriers](#12-tuple-carriers)
 
 ---
 
@@ -373,6 +374,24 @@ func printRunningTotals() {
 	fmt.Println(totals) // [0 1 3 6]
 }
 ```
+
+---
+
+## 12. Tuple carriers
+
+```go
+package pipeline
+
+import "github.com/alvadorncorp/gopackages/functional/tuple"
+
+func tupleCarrier() tuple.Tuple2[int, string] {
+	pair := tuple.Of2("Ada", 36)
+	return tuple.Swap(pair)
+}
+```
+
+The returned value is `tuple.Tuple2[int,string]{First: 36, Second: "Ada"}`;
+the generic parameters are inferred from the constructor arguments.
 
 ---
 

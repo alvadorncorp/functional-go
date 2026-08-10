@@ -97,3 +97,7 @@ decisão explícita.
   afetar os três pacotes-folha.
 - Traverse, Sequence, adapters de persistent e abstrações algébricas continuam
   fora do escopo.
+
+ADR-009 é a decisão posterior para tuple/lazy/iterator/optics. Sua aresta
+`iterator -> tuple` não relaxa as regras deste ADR para function, predicate,
+order ou fold e deve permanecer explicitamente allow-listed.
