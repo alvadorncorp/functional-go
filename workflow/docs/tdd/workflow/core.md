@@ -5,23 +5,25 @@ context: workflow
 title: Workflow module core
 status: Aceito
 tags: [workflow, core, module, architecture, archtest]
-related: [adr:workflow:001, adr:workflow:007, tdd:workflow:action, tdd:workflow:composition]
-date: 2026-08-10
+related: [adr:workflow:001, adr:workflow:007, adr:workflow:009, tdd:workflow:action, tdd:workflow:composition]
+date: 2026-08-11
 ---
 # TDD: Núcleo do módulo workflow
 
 ## Escopo técnico
 
-O módulo embarca três pacotes importáveis e um pacote interno de gates:
-`workflow` (raiz), `workflow/action`, `workflow/transaction` e
-`workflow/internal/archtest`. O DAG de dependências tem `action` como sumidouro:
+O módulo mantém três pacotes de produção e um pacote interno de gates:
+`workflow`, `workflow/action`, `workflow/transaction` e
+`workflow/internal/archtest`.
 
 ```text
 workflow ──► action ◄── transaction
 ```
 
-`action` importa exatamente `context`. Nenhuma outra aresta intramódulo existe, e
-as arestas inversas são rejeitadas por nome.
+`action` importa exatamente `context` e `errors`. A segunda dependência existe
+somente para preservar duas falhas independentes em `Ensure` e `Bracket`; ambas
+continuam dentro da biblioteca padrão. `go.mod` não contém `require` nem
+`replace`.
 
 ## Contratos públicos
 
@@ -31,23 +33,23 @@ type Action[T any] func(context.Context) (T, error)
 type Boundary[S any] func(context.Context, func(context.Context, S) error) error
 ```
 
+As superfícies completas são fixadas por `TestExactPublicSurface`; mudanças de
+nome, assinatura, field shape ou arquivo precisam alterar o gate na mesma fase.
+
 ## Invariantes impostas por testes
 
-- o fecho transitivo de dependências é a biblioteca padrão mais este módulo;
-- `go.mod` não contém linha `require` nem `replace`;
-- nenhum arquivo de produção importa `database/sql`, `net/http`, `os`, `reflect`,
-  `unsafe`, `sync`, `sync/atomic`, `time`, `log/slog` ou `encoding/json`;
-- nenhum arquivo de produção referencia `context.WithValue` nem lê valor de
-  contexto;
-- não existe `var` de nível de pacote em produção;
-- cada pacote exporta exatamente o conjunto de símbolos decidido;
-- cada pacote mantém exatamente o conjunto de arquivos decidido, e nenhum arquivo
-  excede 500 linhas;
-- cada gate tem um caso negativo que prova que pode falhar.
+- fecho transitivo = stdlib + este módulo;
+- DAG intramódulo exatamente `workflow -> action <- transaction`;
+- nenhum `require`, `replace`, package novo ou global mutável;
+- nenhuma goroutine de produção, chamada a `recover` ou uso de
+  `context.Background`, `TODO`, `WithValue`, `Value` ou `WithoutCancel`;
+- `Pair` e `AttemptResult` possuem somente os campos decididos e zero métodos;
+- cada export possui um consumidor compilado fora do próprio pacote;
+- superfícies, arquivos e documentos são allowlists exatas;
+- todo gate possui evidência negativa de que pode falhar.
 
-## Características de alocação e profundidade
+## Características de execução
 
-A composição aloca um closure por combinador; isso é inerente à representação e é
-medido em vez de eliminado. Uma cadeia de 10 000 estágios sequenciais executa sem
-esgotar a pilha, o que é o limite medido, não uma garantia de profundidade
-ilimitada.
+Construção e composição são lazy; `Run` é a única passagem para efeitos.
+Actions são reexecutáveis, sem memoização nem runtime. Um closure por combinador
+é medido por benchmark, sem promessa universal de zero allocation.

@@ -105,3 +105,68 @@ o sistema converge depois: consistência eventual, não atomicidade global. A
 entrega é at-least-once, então o workflow do Ledger consulta um inbox antes de
 aplicar uma mensagem — e esse inbox é uma capacidade da aplicação, não algo que
 este módulo forneça.
+
+## Transfer: composição explícita das novas operações
+
+Um endpoint recebe `TransferRequest`, adapta um workflow de usuário e combina
+lookups independentes sem paralelismo:
+
+```go
+loadUser := workflow.From(users.Find)
+loadRequestUser := workflow.Contramap(
+    loadUser,
+    func(req TransferRequest) UserID { return req.UserID },
+)
+userAction := workflow.Provide(loadRequestUser, request)
+
+authorization := action.Both(
+    userAction,
+    accounts.Find(request.FromAccount),
+    func(user User, account Account) AuthorizationInput {
+        return AuthorizationInput{User: user, Account: account}
+    },
+)
+
+accountsPair := action.Zip(
+    accounts.Find(request.FromAccount),
+    accounts.Find(request.ToAccount),
+)
+```
+
+`Both` e `Zip` executam esquerda → direita. Para auditar somente depois de
+persistência bem-sucedida, `Tap` preserva o resultado:
+
+```go
+audited := action.Tap(transfers.Save(transfer), func(saved Transfer) action.Action[struct{}] {
+    return audit.Record(AuditEntry{TransferID: saved.ID})
+})
+```
+
+Best effort continua política explícita da aplicação:
+
+```go
+attemptedAudit := action.Attempt(audit.Record(entry))
+```
+
+O caller inspeciona `AttemptResult.Err`; a biblioteca não ignora nada. Para um
+lease concreto fornecido pelo adapter:
+
+```go
+program := action.Bracket(
+    leases.Acquire(resourceID),
+    func(lease Lease) action.Action[Result] { return perform(lease) },
+    func(lease Lease) action.Action[struct{}] { return leases.Release(lease) },
+)
+```
+
+`AcquireUseRelease` é a forma descritiva do mesmo algoritmo. Release recebe o
+mesmo contexto de `Run`, inclusive cancelado, e ocorre após todo retorno normal
+de use. Panic continua panic e não promete release. Quando a operação já existe
+e precisa apenas de finalização independente do valor, use `Ensure`; quando há
+begin/commit/rollback e atomicidade, use `transaction.Within`, não `Bracket`.
+
+Nenhuma dessas composições executa antes de:
+
+```go
+result, err := action.Run(ctx, program)
+```

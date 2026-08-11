@@ -83,7 +83,7 @@ func TestContramapMapsAtApplicationAndLeavesActionLazy(t *testing.T) {
 }
 
 func TestContramapRejectsNilArgumentsAndNilResult(t *testing.T) {
-	base := workflow.From(func(input int) action.Action[int] { return action.Pure(input) })
+	base := workflow.From(action.Pure[int])
 	var nilMapper func(string) int
 
 	assertInputPanic(t, "workflow: nil workflow", func() {

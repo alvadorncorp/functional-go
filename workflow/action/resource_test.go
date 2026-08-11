@@ -144,10 +144,14 @@ func TestBracketRejectsNilArgumentsAndCallbackResults(t *testing.T) {
 	assertPanics(t, "workflow/action: nil use", func() { action.Bracket(action.Pure("r"), nilUse, validRelease) })
 	assertPanics(t, "workflow/action: nil release", func() { action.Bracket(action.Pure("r"), validUse, nilRelease) })
 	assertPanics(t, "workflow/action: nil action", func() {
-		_, _ = action.Run(t.Context(), action.Bracket(action.Pure("r"), func(string) action.Action[int] { return nil }, validRelease))
+		_, _ = action.Run(t.Context(), action.Bracket(
+			action.Pure("r"), func(string) action.Action[int] { return nil }, validRelease,
+		))
 	})
 	assertPanics(t, "workflow/action: nil action", func() {
-		_, _ = action.Run(t.Context(), action.Bracket(action.Pure("r"), validUse, func(string) action.Action[struct{}] { return nil }))
+		_, _ = action.Run(t.Context(), action.Bracket(
+			action.Pure("r"), validUse, func(string) action.Action[struct{}] { return nil },
+		))
 	})
 }
 

@@ -62,3 +62,10 @@ users := Users{
     Save: func(u User) action.Action[struct{}] { saved = u; return action.Pure(struct{}{}) },
 }
 ```
+
+## `Provide` fornece input, não dependência
+
+`workflow.Provide(loadUser, id)` aplica um input já conhecido a um workflow e
+retorna uma Action. Não registra, busca nem substitui capacidades. Dependências
+continuam entrando explicitamente no construtor; `Inject`, `Resolve`, `Container`
+e `Registry` permanecem proibidos.

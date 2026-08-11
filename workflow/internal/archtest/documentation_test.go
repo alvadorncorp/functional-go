@@ -92,3 +92,46 @@ func assertFrontmatter(t *testing.T, relative, content string) {
 		}
 	}
 }
+
+func requiredDocumentationTokens() map[string][]string {
+	return map[string][]string{
+		"README.md":                        {"Contramap", "Provide", "Bracket"},
+		"docs/actions.md":                  {"errors.Join", "Attempt", "Bracket"},
+		"docs/composition.md":              {"FlatMap", "Zip", "Both"},
+		"docs/dependency-injection.md":     {"fornece input", "Container"},
+		"docs/examples.md":                 {"AttemptResult.Err", "action.Run", "transaction.Within"},
+		"docs/transactions.md":             {"Bracket", "Within", "atomicidade"},
+		"docs/tdd/workflow/action.md":      {"AcquireUseRelease", "errors.Join", "panic"},
+		"docs/tdd/workflow/composition.md": {"Contramap", "Provide", "DI container"},
+	}
+}
+
+func missingDocumentationTokens(content string, tokens []string) []string {
+	var missing []string
+	for _, token := range tokens {
+		if !strings.Contains(content, token) {
+			missing = append(missing, token)
+		}
+	}
+	return missing
+}
+
+func TestRequiredDocumentationTerminology(t *testing.T) {
+	root := moduleRoot(t)
+	for relative, tokens := range requiredDocumentationTokens() {
+		data, err := os.ReadFile(filepath.Join(root, relative))
+		if err != nil {
+			t.Fatalf("read %s: %v", relative, err)
+		}
+		for _, token := range missingDocumentationTokens(string(data), tokens) {
+			t.Errorf("%s is missing required token %q", relative, token)
+		}
+	}
+}
+
+func TestDocumentationTerminologyGateCanFail(t *testing.T) {
+	missing := missingDocumentationTokens("Contramap and Provide", []string{"Contramap", "Bracket"})
+	if len(missing) != 1 || missing[0] != "Bracket" {
+		t.Fatalf("missing tokens = %v, want [Bracket]", missing)
+	}
+}

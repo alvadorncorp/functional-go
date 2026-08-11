@@ -14,6 +14,15 @@
 // description to execution. An Action is re-executable, never memoized, and
 // never started in the background.
 //
+// Contramap adapts Workflow inputs and Provide fixes an input without executing
+// the resulting Action. Independent Actions combine sequentially through Zip or
+// Both; Tap observes success, Attempt exposes normal errors as data, and Ensure
+// finalizes normal returns. Bracket and AcquireUseRelease delimit a generic
+// resource lifecycle without owning the concrete resource or transaction.
+// Dual primary/finalizer failures use errors.Join; single errors and panics keep
+// their existing channels. No combinator creates goroutines, shields context
+// cancellation, or recovers panics.
+//
 // Transactional composition lives in
 // github.com/alvadorncorp/gopackages/workflow/transaction, which models a
 // boundary supplied by an adapter and the scoped capabilities it provides. The

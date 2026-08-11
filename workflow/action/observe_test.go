@@ -85,7 +85,9 @@ func TestTapIsReExecutable(t *testing.T) {
 func TestTapRejectsNilArgumentsAndNilEffectAction(t *testing.T) {
 	var nilAction action.Action[int]
 	var nilEffect func(int) action.Action[struct{}]
-	assertPanics(t, "workflow/action: nil action", func() { action.Tap(nilAction, func(int) action.Action[struct{}] { return nil }) })
+	assertPanics(t, "workflow/action: nil action", func() {
+		action.Tap(nilAction, func(int) action.Action[struct{}] { return nil })
+	})
 	assertPanics(t, "workflow/action: nil effect", func() { action.Tap(action.Pure(1), nilEffect) })
 
 	program := action.Tap(action.Pure(1), func(int) action.Action[struct{}] { return nil })

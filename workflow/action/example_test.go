@@ -45,7 +45,8 @@ func ExampleRecover() {
 }
 
 func ExampleZip() {
-	var program action.Action[action.Pair[int, string]] = action.Zip(
+	// Uses action.Pair as Zip result carrier.
+	program := action.Zip(
 		action.Pure(42),
 		action.Pure("answer"),
 	)
@@ -74,8 +75,9 @@ func ExampleTap() {
 }
 
 func ExampleAttempt() {
+	// Uses action.AttemptResult as Attempt result carrier.
 	wantErr := errors.New("unavailable")
-	var program action.Action[action.AttemptResult[int]] = action.Attempt(action.Fail[int](wantErr))
+	program := action.Attempt(action.Fail[int](wantErr))
 	result, outerErr := action.Run(context.Background(), program)
 	fmt.Println(result.Value, result.Err, outerErr)
 	// Output: 0 unavailable <nil>

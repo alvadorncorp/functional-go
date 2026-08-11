@@ -4,65 +4,61 @@ id: tdd:workflow:action
 context: workflow
 title: Action representation and execution
 status: Aceito
-tags: [workflow, action, laziness, context, errors, panic]
-related: [adr:workflow:002, tdd:workflow:core, tdd:workflow:composition]
-date: 2026-08-10
+tags: [workflow, action, composition, resources, context, errors, panic]
+related: [adr:workflow:002, adr:workflow:009, tdd:workflow:core, tdd:workflow:composition]
+date: 2026-08-11
 ---
 # TDD: Representação e execução de Action
 
 ## Escopo técnico
 
-`Action[T]` é um tipo função, não um struct: não carrega identificador, metadados
-nem hooks, e a composição custa um closure por combinador.
-
-```text
-Action creation
-     │
-     X  no execution
-     │
-     ▼
-Action value
-     │
-     ▼
-Run(ctx)
-     │
-     ▼
-callback(ctx)
-```
+`Action[T] = func(context.Context) (T, error)`. É um valor reexecutável e sem
+estado interno; somente `Run` executa o closure. Todo combinador encaminha o
+mesmo contexto e nunca cria goroutine, runtime, memoização ou recovery.
 
 ## Contratos públicos
 
 ```go
-func Run[T any](ctx context.Context, action Action[T]) (T, error)
-func Do[T any](fn func(context.Context) (T, error)) Action[T]
-func Pure[T any](value T) Action[T]
-func Fail[T any](err error) Action[T]
-func Map[A, B any](action Action[A], mapper func(A) B) Action[B]
-func MapFallible[A, B any](action Action[A], mapper func(A) (B, error)) Action[B]
-func FlatMap[A, B any](action Action[A], binder func(A) Action[B]) Action[B]
-func Recover[T any](action Action[T], recovery func(error) Action[T]) Action[T]
+func Run[T any](context.Context, Action[T]) (T, error)
+func Do[T any](func(context.Context) (T, error)) Action[T]
+func Pure[T any](T) Action[T]
+func Fail[T any](error) Action[T]
+func Map[A, B any](Action[A], func(A) B) Action[B]
+func MapFallible[A, B any](Action[A], func(A) (B, error)) Action[B]
+func FlatMap[A, B any](Action[A], func(A) Action[B]) Action[B]
+func Recover[T any](Action[T], func(error) Action[T]) Action[T]
+type Pair[A, B any] struct { First A; Second B }
+func Zip[A, B any](Action[A], Action[B]) Action[Pair[A, B]]
+func Both[A, B, C any](Action[A], Action[B], func(A, B) C) Action[C]
+func Tap[T any](Action[T], func(T) Action[struct{}]) Action[T]
+func Ensure[T any](Action[T], Action[struct{}]) Action[T]
+type AttemptResult[T any] struct { Value T; Err error }
+func Attempt[T any](Action[T]) Action[AttemptResult[T]]
+func Bracket[R, T any](Action[R], func(R) Action[T], func(R) Action[struct{}]) Action[T]
+func AcquireUseRelease[R, T any](Action[R], func(R) Action[T], func(R) Action[struct{}]) Action[T]
 ```
 
-## Invariantes impostas por testes
+## Ordem e curto-circuito
 
-- **Laziness.** Construir ou compor uma `Action` não executa callback.
-- **Propagação de contexto.** Toda `Action` derivada recebe o contexto dado a
-  `Run`, inalterado; nenhum combinador deriva um novo contexto.
-- **Curto-circuito.** Em uma cadeia sequencial, uma falha impede que qualquer
-  callback a jusante rode.
-- **Identidade de erro.** Nenhum combinador embrulha um erro, então `errors.Is` e
-  `errors.As` continuam funcionando de ponta a ponta.
-- **Cancelamento.** `context.Canceled` e `context.DeadlineExceeded` chegam ao
-  caller inalterados e nunca são reclassificados.
-- **Reexecução.** Executar uma `Action` duas vezes executa o efeito duas vezes;
-  nada é memoizado.
-- **Política de pânico.** Um pânico propaga intocado; `Recover` trata apenas
-  `error` e nenhum combinador chama `recover()`.
+`Zip` e `Both` executam primeiro a Action esquerda e depois a direita. `Both`
+chama o combiner somente após dois sucessos. `Tap` chama o efeito somente após o
+sucesso da source. Independência de valores não significa paralelismo.
 
-## Comportamento com nil
+## Erros e finalização
 
-Todo combinador rejeita `Action` ou callback nil ansiosamente na construção com
-mensagem estável: `workflow/action: nil action`, `nil function`, `nil error`,
-`nil mapper`, `nil binder`, `nil recovery`. Um binder
-ou recovery que retorne nil na execução entra em pânico com
-`workflow/action: nil action`.
+Erros únicos preservam identidade. `Ensure` executa o finalizer depois de todo
+retorno normal da source. `Bracket` executa release se e somente se acquire
+retornar sucesso e também depois de um erro normal de use. Quando source/use e
+finalizer/release falham, `errors.Join(primaryErr, finalizerErr)` preserva ambos
+para `errors.Is`/`errors.As`; qualquer erro produz zero `T`.
+
+`Attempt` transforma o par normal `(value, err)` em `AttemptResult` e retorna
+erro externo nil. Não recupera panic nem implementa política best-effort.
+
+## Contexto, panic e nil
+
+O contexto de `Run`, inclusive cancelado, chega inalterado a toda etapa.
+Shielding pertence ao adapter. Nenhum combinador chama `recover`; `Ensure` não
+promete finalizer depois de panic e `Bracket` não promete release depois de
+panic. Actions/callbacks nil falham na construção; callbacks que retornam Action
+nil falham durante execução com `workflow/action: nil action`.

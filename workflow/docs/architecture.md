@@ -71,3 +71,11 @@ domínio Banking fosse substituído por completo? Se não, pertence à aplicaç�
 Ainda faria sentido sem efeitos, contexto e ciclo de vida? Se sim, pertence a
 `functional` ou `modeling`. Somente algo que seja especificamente composição mais
 execução com efeitos é candidato a `workflow`.
+
+## Lifecycle sem runtime
+
+`Bracket` conhece somente `Action[R]`, `R → Action[T]` e
+`R → Action[struct{}]`. Não conhece pool, lock, lease, tracing ou banco. `Zip` e
+`Both` não criam goroutines; `Ensure` e `Bracket` não recuperam panic nem blindam
+cancelamento. O DAG permanece `workflow -> action <- transaction`, e o fecho do
+core permanece stdlib-only.

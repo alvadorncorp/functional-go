@@ -156,7 +156,7 @@ func BenchmarkActionEnsure(b *testing.B) {
 func BenchmarkActionBracket(b *testing.B) {
 	subject := action.Bracket(
 		action.Pure(answer),
-		func(value int) action.Action[int] { return action.Pure(value) },
+		action.Pure[int],
 		func(int) action.Action[struct{}] { return action.Pure(struct{}{}) },
 	)
 	b.ReportAllocs()
@@ -168,7 +168,7 @@ func BenchmarkActionBracket(b *testing.B) {
 func BenchmarkActionAcquireUseRelease(b *testing.B) {
 	subject := action.AcquireUseRelease(
 		action.Pure(answer),
-		func(value int) action.Action[int] { return action.Pure(value) },
+		action.Pure[int],
 		func(int) action.Action[struct{}] { return action.Pure(struct{}{}) },
 	)
 	b.ReportAllocs()
@@ -179,7 +179,7 @@ func BenchmarkActionAcquireUseRelease(b *testing.B) {
 
 func BenchmarkActionBracketManual(b *testing.B) {
 	acquire := action.Pure(answer)
-	use := func(value int) action.Action[int] { return action.Pure(value) }
+	use := action.Pure[int]
 	release := func(int) action.Action[struct{}] { return action.Pure(struct{}{}) }
 	subject := action.Do(func(ctx context.Context) (int, error) {
 		resource, err := acquire(ctx)

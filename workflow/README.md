@@ -39,12 +39,20 @@ entra na execução. Construir e compor workflows não realiza I/O; apenas
 
 | Caminho de importação | Conteúdo |
 |---|---|
-| `github.com/alvadorncorp/gopackages/workflow` | `Workflow[I,O]`, `From`, `Map`, `MapFallible`, `Then` |
-| `github.com/alvadorncorp/gopackages/workflow/action` | `Action[T]`, `Run`, `Do`, `Pure`, `Fail`, `Map`, `MapFallible`, `FlatMap`, `Recover` |
+| `github.com/alvadorncorp/gopackages/workflow` | `Workflow[I,O]`, `From`, `Map`, `MapFallible`, `Then`, `Provide`, `Contramap` |
+| `github.com/alvadorncorp/gopackages/workflow/action` | `Action[T]`, construção, transformação, combinação sequencial, observação, finalização, error reification e resource safety |
 | `github.com/alvadorncorp/gopackages/workflow/transaction` | `Boundary[S]`, `Within` |
 
 O núcleo depende apenas da biblioteca padrão, e um teste de arquitetura mantém
 isso assim.
+
+## Álgebra de composição
+
+`Contramap` adapta input e `Provide` fixa o input sem executar efeitos.
+`FlatMap` representa dependência; `Zip` preserva dois resultados independentes e
+`Both` os combina, sempre em ordem sequencial. `Tap` observa sucesso, `Attempt`
+transforma erro em dado, `Ensure` finaliza retornos normais e `Bracket` delimita
+acquire/use/release sem possuir o recurso concreto.
 
 ## O que não é
 
@@ -56,7 +64,7 @@ retry, timeout, paralelismo nem atomicidade distribuída.
 
 Comece pela [visão geral](docs/overview.md), depois a
 [arquitetura](docs/architecture.md). Índice completo em
-[docs/README.md](docs/README.md), incluindo oito ADRs e cinco desenhos técnicos.
+[docs/README.md](docs/README.md), incluindo nove ADRs e cinco desenhos técnicos.
 
 Os cenários executáveis de ponta a ponta vivem no módulo separado
 `workflow/examples`: um fluxo de saque com outbox transacional e uma transferência
