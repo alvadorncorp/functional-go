@@ -15,17 +15,18 @@ import (
 )
 
 const (
-	modelingModule      = "github.com/alvadorncorp/gopackages/modeling"
-	functionalModule    = "github.com/alvadorncorp/gopackages/functional"
-	functionalImmutable = functionalModule + "/immutable"
-	functionalOptional  = functionalModule + "/values/optional"
-	functionalPredicate = functionalModule + "/primitives/predicate"
-	functionalFunction  = functionalModule + "/primitives/function"
-	archtestPackage     = modelingModule + "/internal/archtest"
-	policyPackage       = modelingModule + "/policy"
-	changePackage       = modelingModule + "/change"
-	reducerPackage      = modelingModule + "/reducer"
-	projectionPackage   = modelingModule + "/projection"
+	modelingModule       = "github.com/alvadorncorp/gopackages/modeling"
+	functionalModule     = "github.com/alvadorncorp/gopackages/functional"
+	functionalImmutable  = functionalModule + "/immutable"
+	functionalOptional   = functionalModule + "/values/optional"
+	functionalPredicate  = functionalModule + "/primitives/predicate"
+	functionalFunction   = functionalModule + "/primitives/function"
+	archtestPackage      = modelingModule + "/internal/archtest"
+	policyPackage        = modelingModule + "/policy"
+	specificationPackage = modelingModule + "/specification"
+	changePackage        = modelingModule + "/change"
+	reducerPackage       = modelingModule + "/reducer"
+	projectionPackage    = modelingModule + "/projection"
 )
 
 type listedPackage struct {
@@ -117,6 +118,8 @@ func directImportForbidden(importingPackage, importPath string) bool {
 		return importPath != functionalImmutable
 	case policyPackage:
 		return importPath != functionalOptional && importPath != functionalPredicate
+	case specificationPackage:
+		return true
 	case changePackage:
 		return importPath != functionalFunction
 	case reducerPackage, projectionPackage:
