@@ -24,12 +24,11 @@ func TestNoForbiddenExportedNames(t *testing.T) {
 func exactSurface() map[string][]string {
 	return map[string][]string{
 		workflowModule: {
-			"Contramap", "FlatMap", "From", "Map", "MapFallible",
-			"Pure", "Recover", "Tap", "Then", "Workflow",
+			"From", "Map", "MapFallible", "Then", "Workflow",
 		},
 		actionPackage: {
 			"Action", "Do", "Fail", "FlatMap", "Map",
-			"MapFallible", "Pure", "Recover", "Run", "Tap",
+			"MapFallible", "Pure", "Recover", "Run",
 		},
 		transactionPackage: {
 			"Boundary", "Within",

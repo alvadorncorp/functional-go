@@ -111,37 +111,11 @@ func TestWorkflowDependencyCaptureIsStable(t *testing.T) {
 	}
 }
 
-func TestPureLiftsAFunctionWithoutEffects(t *testing.T) {
-	t.Parallel()
-
-	calls := 0
-	subject := workflow.Pure(func(id userID) string {
-		calls++
-		return "user"
-	})
-
-	program := subject(firstID)
-	if calls != 0 {
-		t.Fatalf("calls = %d, want 0 before Run", calls)
-	}
-
-	value, err := action.Run(t.Context(), program)
-	if err != nil {
-		t.Fatalf("Run() error = %v, want nil", err)
-	}
-	if value != "user" || calls != 1 {
-		t.Fatalf("Run() = (%q, calls=%d), want (\"user\", calls=1)", value, calls)
-	}
-}
-
 func TestConstructorsPanicOnNilArguments(t *testing.T) {
 	t.Parallel()
 
 	assertPanics(t, "workflow: nil function", func() {
 		_ = workflow.From[userID, user](nil)
-	})
-	assertPanics(t, "workflow: nil function", func() {
-		_ = workflow.Pure[userID, string](nil)
 	})
 }
 

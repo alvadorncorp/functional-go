@@ -142,45 +142,6 @@ func TestFlatMapPropagatesTheRunContext(t *testing.T) {
 	}
 }
 
-func TestTapKeepsTheOriginalValueAndRunsTheObserver(t *testing.T) {
-	t.Parallel()
-
-	observed := 0
-	tapped := action.Tap(action.Pure(answer), func(value int) action.Action[struct{}] {
-		return action.Do(func(context.Context) (struct{}, error) {
-			observed = value
-			return struct{}{}, nil
-		})
-	})
-
-	value, err := action.Run(t.Context(), tapped)
-	if err != nil {
-		t.Fatalf("Run() error = %v, want nil", err)
-	}
-	if value != answer {
-		t.Fatalf("Run() value = %d, want the original %d", value, answer)
-	}
-	if observed != answer {
-		t.Fatalf("observed = %d, want %d", observed, answer)
-	}
-}
-
-func TestTapFailurePropagates(t *testing.T) {
-	t.Parallel()
-
-	tapped := action.Tap(action.Pure(answer), func(int) action.Action[struct{}] {
-		return action.Fail[struct{}](errBoom)
-	})
-
-	value, err := action.Run(t.Context(), tapped)
-	if !errors.Is(err, errBoom) {
-		t.Fatalf("Run() error = %v, want errBoom", err)
-	}
-	if value != 0 {
-		t.Fatalf("Run() value = %d, want the zero value", value)
-	}
-}
-
 func TestTransformCombinatorsPanicOnNilArguments(t *testing.T) {
 	t.Parallel()
 
@@ -195,8 +156,5 @@ func TestTransformCombinatorsPanicOnNilArguments(t *testing.T) {
 	})
 	assertPanics(t, "workflow/action: nil binder", func() {
 		_ = action.FlatMap[int, int](action.Pure(answer), nil)
-	})
-	assertPanics(t, "workflow/action: nil observer", func() {
-		_ = action.Tap[int](action.Pure(answer), nil)
 	})
 }

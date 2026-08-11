@@ -125,82 +125,6 @@ func TestMapFallibleShortCircuitsTheDownstream(t *testing.T) {
 	}
 }
 
-func TestContramapAdaptsTheInput(t *testing.T) {
-	t.Parallel()
-
-	byID := loadUser(fixedUsers("ada", nil))
-	byRequest := workflow.Contramap(byID, func(raw string) userID {
-		if raw == "first" {
-			return firstID
-		}
-		return secondID
-	})
-
-	loaded, err := action.Run(t.Context(), byRequest("first"))
-	if err != nil {
-		t.Fatalf("Run() error = %v, want nil", err)
-	}
-	if loaded.ID != firstID {
-		t.Fatalf("Run() id = %d, want %d", loaded.ID, firstID)
-	}
-}
-
-func TestFlatMapSequencesADependentAction(t *testing.T) {
-	t.Parallel()
-
-	subject := workflow.FlatMap(loadUser(fixedUsers("ada", nil)), func(loaded user) action.Action[string] {
-		return action.Pure(strings.ToUpper(loaded.Name))
-	})
-
-	value, err := action.Run(t.Context(), subject(firstID))
-	if err != nil {
-		t.Fatalf("Run() error = %v, want nil", err)
-	}
-	if value != "ADA" {
-		t.Fatalf("Run() value = %q, want %q", value, "ADA")
-	}
-}
-
-func TestTapKeepsTheOutput(t *testing.T) {
-	t.Parallel()
-
-	observed := ""
-	subject := workflow.Tap(loadUser(fixedUsers("ada", nil)), func(loaded user) action.Action[struct{}] {
-		return action.Do(func(context.Context) (struct{}, error) {
-			observed = loaded.Name
-			return struct{}{}, nil
-		})
-	})
-
-	loaded, err := action.Run(t.Context(), subject(firstID))
-	if err != nil {
-		t.Fatalf("Run() error = %v, want nil", err)
-	}
-	if loaded.Name != "ada" || observed != "ada" {
-		t.Fatalf("value = %q, observed = %q, want both %q", loaded.Name, observed, "ada")
-	}
-}
-
-func TestRecoverSubstitutesAFallback(t *testing.T) {
-	t.Parallel()
-
-	missing := users{
-		Find: func(userID) action.Action[user] { return action.Fail[user](errNotFound) },
-	}
-
-	subject := workflow.Recover(loadUser(missing), func(error) action.Action[user] {
-		return action.Pure(user{Name: "anonymous", Active: true})
-	})
-
-	loaded, err := action.Run(t.Context(), subject(firstID))
-	if err != nil {
-		t.Fatalf("Run() error = %v, want nil", err)
-	}
-	if loaded.Name != "anonymous" {
-		t.Fatalf("Run() name = %q, want %q", loaded.Name, "anonymous")
-	}
-}
-
 func TestComposeCombinatorsPanicOnNilArguments(t *testing.T) {
 	t.Parallel()
 
@@ -214,18 +138,6 @@ func TestComposeCombinatorsPanicOnNilArguments(t *testing.T) {
 	})
 	assertPanics(t, "workflow: nil workflow", func() {
 		_ = workflow.Then(valid, workflow.Workflow[user, string](nil))
-	})
-	assertPanics(t, "workflow: nil mapper", func() {
-		_ = workflow.Contramap[string, userID, user](valid, nil)
-	})
-	assertPanics(t, "workflow: nil binder", func() {
-		_ = workflow.FlatMap[userID, user, string](valid, nil)
-	})
-	assertPanics(t, "workflow: nil observer", func() {
-		_ = workflow.Tap[userID, user](valid, nil)
-	})
-	assertPanics(t, "workflow: nil recovery", func() {
-		_ = workflow.Recover[userID, user](valid, nil)
 	})
 }
 

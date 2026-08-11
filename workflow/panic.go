@@ -8,7 +8,4 @@ const (
 	panicNilAction   = "workflow: nil action"
 	panicNilFunction = "workflow: nil function"
 	panicNilMapper   = "workflow: nil mapper"
-	panicNilBinder   = "workflow: nil binder"
-	panicNilObserver = "workflow: nil observer"
-	panicNilRecovery = "workflow: nil recovery"
 )

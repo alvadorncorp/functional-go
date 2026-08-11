@@ -78,38 +78,3 @@ func FlatMap[A, B any](action Action[A], binder func(A) Action[B]) Action[B] {
 		return next(ctx)
 	}
 }
-
-// Tap runs a side effect over the value action produces and yields that value
-// unchanged, so a step performed for its effect does not have to be threaded
-// back through the result type.
-//
-// The observed Action runs after action and before the value is returned, with
-// the same context. A failure of either propagates unchanged, and the zero
-// value of T is returned in that case. Tap panics with
-// "workflow/action: nil action" or "workflow/action: nil observer" at
-// construction, and with "workflow/action: nil action" at execution when
-// observer returns nil.
-func Tap[T any](action Action[T], observer func(T) Action[struct{}]) Action[T] {
-	if action == nil {
-		panic(panicNilAction)
-	}
-	if observer == nil {
-		panic(panicNilObserver)
-	}
-	return func(ctx context.Context) (T, error) {
-		value, err := action(ctx)
-		if err != nil {
-			var zero T
-			return zero, err
-		}
-		effect := observer(value)
-		if effect == nil {
-			panic(panicNilAction)
-		}
-		if _, err := effect(ctx); err != nil {
-			var zero T
-			return zero, err
-		}
-		return value, nil
-	}
-}

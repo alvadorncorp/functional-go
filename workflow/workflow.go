@@ -1,8 +1,6 @@
 package workflow
 
 import (
-	"context"
-
 	"github.com/alvadorncorp/gopackages/workflow/action"
 )
 
@@ -36,24 +34,6 @@ func From[I, O any](fn func(I) action.Action[O]) Workflow[I, O] {
 		panic(panicNilFunction)
 	}
 	return fn
-}
-
-// Pure lifts a total pure function into a Workflow that never fails and
-// performs no effect. Use it where a pure step must participate in a
-// composition; a pure function that stands alone should stay an ordinary
-// function.
-//
-// fn is not called by Pure; it runs once per Run. Pure panics with
-// "workflow: nil function" when fn is nil.
-func Pure[I, O any](fn func(I) O) Workflow[I, O] {
-	if fn == nil {
-		panic(panicNilFunction)
-	}
-	return func(input I) action.Action[O] {
-		return action.Do(func(_ context.Context) (O, error) {
-			return fn(input), nil
-		})
-	}
 }
 
 // apply applies wf to input and rejects a Workflow that yields a nil Action,
