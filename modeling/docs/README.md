@@ -7,6 +7,8 @@ catalog and must not acquire a `docs/` tree.
 
 - [Architecture overview](overview.md)
 - [Change package](packages/change.md)
+- [Policy package](packages/policy.md)
+- [Specification package](packages/specification.md)
 - [Projection package](packages/projection.md)
 
 ## Architecture decisions
@@ -18,6 +20,8 @@ catalog and must not acquire a `docs/` tree.
 - [ADR-005: additive Policy capability boundary](adr/modeling/adr-005-policy-capability-boundary.md)
 - [ADR-006: additive reducer capability boundary](adr/modeling/adr-006-reducer-capability-boundary.md)
 - [ADR-007: additive projection capability boundary](adr/modeling/adr-007-projection-capability-boundary.md)
+- [ADR-008: nominal Specification capability](adr/modeling/adr-008-specification-capability-boundary.md)
+- [ADR-009: completed Policy composition algebra](adr/modeling/adr-009-policy-composition-algebra.md)
 
 ## Technical designs
 
@@ -26,6 +30,7 @@ catalog and must not acquire a `docs/` tree.
 - [TDD: Rules and Requirements](tdd/modeling/rules-requirements.md)
 - [TDD: Change and state evolution](tdd/modeling/change.md)
 - [TDD: Policy](tdd/modeling/policy.md)
+- [TDD: Specification](tdd/modeling/specification.md)
 - [TDD: Reducer and Replay](tdd/modeling/reducer-replay.md)
 - [TDD: Projection and Project](tdd/modeling/projection.md)
 

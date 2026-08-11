@@ -58,12 +58,62 @@ func TestFallbackIsLazyAndForwardsInput(t *testing.T) {
 	}
 }
 
+func TestChooseEvaluatesOnlyTheSelectedBranch(t *testing.T) {
+	var trace []string
+	condition := predicate.Predicate[int](func(input int) bool {
+		trace = append(trace, "predicate")
+		return input > 0
+	})
+	whenTrue := policy.Policy[int, string](func(int) string {
+		trace = append(trace, "true")
+		return "positive"
+	})
+	whenFalse := policy.Policy[int, string](func(int) string {
+		trace = append(trace, "false")
+		return "non-positive"
+	})
+	choose := policy.Choose(condition, whenTrue, whenFalse)
+
+	if got := choose(1); got != "positive" || len(trace) != 2 || trace[1] != "true" {
+		t.Fatalf("true result/trace = %q/%v, want positive/[predicate true]", got, trace)
+	}
+	trace = nil
+	if got := choose(0); got != "non-positive" || len(trace) != 2 || trace[1] != "false" {
+		t.Fatalf("false result/trace = %q/%v, want non-positive/[predicate false]", got, trace)
+	}
+}
+
+func TestOrElsePreservesOrderAndShortCircuits(t *testing.T) {
+	var trace []string
+	leftSome := func(int) optional.Optional[string] {
+		trace = append(trace, "left")
+		return optional.Some("left")
+	}
+	right := func(int) optional.Optional[string] {
+		trace = append(trace, "right")
+		return optional.Some("right")
+	}
+	if got := policy.OrElse(leftSome, right)(0).OrZero(); got != "left" || len(trace) != 1 {
+		t.Fatalf("Some result/trace = %q/%v, want left/[left]", got, trace)
+	}
+
+	trace = nil
+	leftNone := func(int) optional.Optional[string] {
+		trace = append(trace, "left")
+		return optional.None[string]()
+	}
+	if got := policy.OrElse(leftNone, right)(0).OrZero(); got != "right" || len(trace) != 2 {
+		t.Fatalf("None result/trace = %q/%v, want right/[left right]", got, trace)
+	}
+}
+
 func TestConditionalsRejectNil(t *testing.T) {
 	truePredicate := predicate.Predicate[int](func(int) bool { return true })
 	p := policy.Policy[int, int](twice)
 	var nilPredicate predicate.Predicate[int]
 	var nilPolicy policy.Policy[int, int]
 	var nilConditional conditionalPolicy[int, int]
+
 	assertPanic(t, "modeling/policy: nil predicate", func() { policy.When(nilPredicate, p) })
 	assertPanic(t, "modeling/policy: nil policy", func() { policy.When(truePredicate, nilPolicy) })
 	assertPanic(t, "modeling/policy: nil conditional", func() { policy.FirstApplicable(nilConditional) })
@@ -73,5 +123,20 @@ func TestConditionalsRejectNil(t *testing.T) {
 	assertPanic(t, "modeling/policy: nil conditional", func() { policy.Fallback(nilConditional, p) })
 	assertPanic(t, "modeling/policy: nil policy", func() {
 		policy.Fallback(func(int) optional.Optional[int] { return optional.None[int]() }, nilPolicy)
+	})
+	assertPanic(t, "modeling/policy: nil predicate", func() {
+		policy.Choose(nilPredicate, p, p)
+	})
+	assertPanic(t, "modeling/policy: nil policy", func() {
+		policy.Choose(truePredicate, nilPolicy, p)
+	})
+	assertPanic(t, "modeling/policy: nil policy", func() {
+		policy.Choose(truePredicate, p, nilPolicy)
+	})
+	assertPanic(t, "modeling/policy: nil conditional", func() {
+		policy.OrElse(nilConditional, func(int) optional.Optional[int] { return optional.None[int]() })
+	})
+	assertPanic(t, "modeling/policy: nil conditional", func() {
+		policy.OrElse(func(int) optional.Optional[int] { return optional.None[int]() }, nilConditional)
 	})
 }

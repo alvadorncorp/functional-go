@@ -30,6 +30,16 @@ func TestDependencyGateCanFail(t *testing.T) {
 			t.Errorf("policy direct-import gate accepted %s", imported)
 		}
 	}
+	for _, imported := range []string{
+		functionalModule,
+		functionalPredicate,
+		functionalOptional,
+		functionalModule + "/values/result",
+	} {
+		if !directImportForbidden(specificationPackage, imported) {
+			t.Errorf("specification direct-import gate accepted %s", imported)
+		}
+	}
 	if directImportForbidden(changePackage, functionalFunction) {
 		t.Fatalf("change direct-import gate rejected %s", functionalFunction)
 	}

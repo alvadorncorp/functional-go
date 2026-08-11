@@ -49,7 +49,7 @@ func TestReplayNameIsReducerOnly(t *testing.T) {
 }
 
 func TestPackageEnumerationIsComplete(t *testing.T) {
-	got := make([]string, 0, 7)
+	got := make([]string, 0, 8)
 	for _, pkg := range goList(t, "-json", modelingModule+"/...") {
 		got = append(got, pkg.ImportPath)
 	}
@@ -63,6 +63,7 @@ func TestPackageEnumerationIsComplete(t *testing.T) {
 		policyPackage,
 		projectionPackage,
 		reducerPackage,
+		specificationPackage,
 	}
 	slices.Sort(want)
 
@@ -82,6 +83,7 @@ func TestExternallyImportableClassification(t *testing.T) {
 		{name: "public policy", importPath: policyPackage, want: true},
 		{name: "public projection", importPath: projectionPackage, want: true},
 		{name: "public reducer", importPath: reducerPackage, want: true},
+		{name: "public specification", importPath: specificationPackage, want: true},
 		{name: "internal root", importPath: modelingModule + "/internal", want: false},
 		{name: "internal child", importPath: modelingModule + "/internal/decision", want: false},
 	}

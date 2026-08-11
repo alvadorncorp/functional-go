@@ -12,12 +12,9 @@ type discountContext struct {
 	Campaign bool
 }
 
-type discount struct {
-	Percentage int
-}
+type discount struct{ Percentage int }
 
-func isVIP(context discountContext) bool { return context.VIP }
-
+func isVIP(context discountContext) bool       { return context.VIP }
 func hasCampaign(context discountContext) bool { return context.Campaign }
 
 func ExamplePolicy_conditionalSelection() {
@@ -30,7 +27,7 @@ func ExamplePolicy_conditionalSelection() {
 		policy.Constant[discountContext](discount{Percentage: 10}),
 	)
 	discountPolicy := policy.Fallback(
-		policy.FirstApplicable(vip, campaign),
+		policy.OrElse(vip, campaign),
 		policy.Constant[discountContext](discount{}),
 	)
 
@@ -41,4 +38,61 @@ func ExamplePolicy_conditionalSelection() {
 	// 15
 	// 10
 	// 0
+}
+
+func ExampleCompose() {
+	tier := policy.Policy[int, string](func(points int) string {
+		if points >= 100 {
+			return "gold"
+		}
+		return "standard"
+	})
+	creditLimit := policy.Policy[string, int](func(tier string) int {
+		if tier == "gold" {
+			return 5_000
+		}
+		return 1_000
+	})
+
+	fmt.Println(policy.Compose(tier, creditLimit)(120))
+	// Output: 5000
+}
+
+func ExampleZip() {
+	type pricingDecision struct {
+		Discount int
+		Shipping string
+	}
+	discountPolicy := policy.Policy[int, int](func(total int) int {
+		if total >= 1_000 {
+			return 10
+		}
+		return 0
+	})
+	shippingPolicy := policy.Policy[int, string](func(total int) string {
+		if total >= 500 {
+			return "express"
+		}
+		return "standard"
+	})
+	pricing := policy.Zip(discountPolicy, shippingPolicy, func(discount int, shipping string) pricingDecision {
+		return pricingDecision{Discount: discount, Shipping: shipping}
+	})
+
+	fmt.Println(pricing(1_200))
+	// Output: {10 express}
+}
+
+func ExampleChoose() {
+	shipping := policy.Choose(
+		predicate.Predicate[bool](func(international bool) bool { return international }),
+		policy.Constant[bool]("international"),
+		policy.Constant[bool]("domestic"),
+	)
+
+	fmt.Println(shipping(true))
+	fmt.Println(shipping(false))
+	// Output:
+	// international
+	// domestic
 }

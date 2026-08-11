@@ -16,6 +16,10 @@
 // It owns transformation and Optional-based conditional selection without
 // adding Policy aliases to this root package.
 //
+// The specification subpackage names pure Boolean domain classifications. It
+// owns All, Any, Not, and Contramap without importing Policy, the modeling root,
+// functional packages, infrastructure, or runtime behavior.
+//
 // Decision composition uses MapState, MapEvents, Emit, AppendEvents, and
 // Combine. Decision remains the canonical root-package type; persistent
 // mechanics live behind a Go internal package and are not consumer surface.
