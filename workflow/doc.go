@@ -28,10 +28,17 @@
 // boundary supplied by an adapter and the scoped capabilities it provides. The
 // module defines no transaction implementation and no concrete scope type.
 //
+// Explicit non-executable structure lives in
+// github.com/alvadorncorp/gopackages/workflow/plan. Plan describes a workflow
+// without executing it. Explicit Action transformations live in
+// github.com/alvadorncorp/gopackages/workflow/resilience, which offers
+// selective Retry and cooperative Timeout over an Action without becoming an
+// engine. Only Run remains the execution passage.
+//
 // Business rules stay in the application domain, and infrastructure stays
 // behind application-defined capabilities. The module has no engine, runner,
 // scheduler, registry, container, service locator, dispatcher, reflection,
 // persistence, transport, or global runtime, and it makes no durability,
-// retry, timeout, parallelism, or distributed-atomicity promise. Exported
-// signatures remain ordinary Go and standard-library types.
+// parallelism, or distributed-atomicity promise. Exported signatures remain
+// ordinary Go and standard-library types.
 package workflow

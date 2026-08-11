@@ -6,27 +6,33 @@ Três módulos, três perguntas:
 |---|---|---|---|
 | `functional` | mecânicas funcionais genéricas | como os valores se compõem? | `Transform`, `Optional`, `Result`, coleções imutáveis |
 | `modeling` | semântica de domínio pura | o que o domínio decide? | `Requirement`, `Transition`, `Invariant`, `Decision`, `Policy` |
-| `workflow` | composição reutilizável com efeitos | como a operação é conduzida? | `Workflow`, `Action`, fronteiras de transação |
+| `workflow` | composição reutilizável com efeitos | como a operação é conduzida? | `Workflow`, `Action`, `Boundary`, `Plan`, `Retry`, `Timeout` |
 | aplicação | regras e capacidades concretas | o que é este negócio? | `Withdraw`, `Accounts`, `Outbox` |
 | adaptadores | execução técnica | como o efeito de fato acontece? | PostgreSQL, HTTP, Kafka |
 
-## Os três momentos
+## Descrição e execução
 
 ```text
-dependencies
-     ↓  construction
-Workflow[I,O]
-     ↓  input
-Action[O]
-     ↓  context
-Run
-     ↓
-result / error
+Plan (explicit data; optional)       dependencies
+          │                              │ construction
+          │ describes                    ▼
+          │                        Workflow[I,O]
+          │                              │ explicit input I
+          │                              ▼
+          │                         Action[O]
+          │                              │ optional resilience
+          │                              ▼
+          └─────────────────────── tooling only
+                                         │ Run(context)
+                                         ▼
+                                   result / error
 ```
 
 A construção é livre de contexto; a execução é ligada a contexto. Construir um
 workflow não realiza I/O, compor workflows não realiza I/O e aplicar um workflow
-a uma entrada não realiza I/O. Apenas `action.Run` inicia qualquer coisa.
+a uma entrada não realiza I/O. Apenas `action.Run` inicia qualquer coisa. Plan
+é dado explícito e opcional: descreve estrutura para humanos e tooling, sem
+executar.
 
 ## Glossário
 
@@ -35,17 +41,34 @@ a uma entrada não realiza I/O. Apenas `action.Run` inicia qualquer coisa.
 **Action** — uma computação adiada e ligada a contexto, `Context → (O, error)`.
 Reexecutável, nunca memoizada, nunca iniciada em segundo plano.
 
+**Plan** — descrição estrutural explícita, imutável e não executável da
+operação. Inspecionável sem contexto, sem I/O e sem abrir transação.
+
+**Resilience** — transformações explícitas e cooperativas de `Action`
+(`Retry`, `Timeout`) aplicadas pelo adapter que conhece o orçamento e a classe
+de falha.
+
+**Run** — o único ponto em que efeitos começam: `action.Run(ctx, program)`.
+
 **Capacidade** — uma função, ou um pequeno struct de funções, fornecida a um
 workflow para que ele execute uma operação externa.
 
-**Escopo de transação** — o conjunto de capacidades ligadas a uma fronteira de
-transação concreta.
+**Boundary** — o escopo de transação concreto fornecido pelo adapter
+(`transaction.Boundary[S]`), não um motor de atomicidade do núcleo.
 
 **Decisão de domínio** — o resultado puro que o domínio produz, em geral um
 `modeling.Decision`.
 
 **Adaptador** — uma implementação concreta de capacidade usando uma tecnologia
 externa.
+
+## Dados de negócio e contexto de execução
+
+Se uma informação pode alterar uma decisão de domínio — CustomerID, TenantID,
+ActorID, quantidade — ela entra no input explícito do Workflow. Context é
+reservado a lifetime operacional: cancelamento, deadline e propagação de
+instrumentação feita pelos adapters. Não existe WorkflowContext,
+ExecutionContext, RequestContext nem leitura de ctx.Value para regra de negócio.
 
 ## O que este módulo não é
 
@@ -60,7 +83,7 @@ Tampouco é uma máquina de estados. Um workflow pode coordenar uma máquina de
 estados de domínio, mas não tem ciclo de vida persistido próprio e não define
 vocabulário `Pending`/`Running`/`Completed`.
 
-## Quatro dimensões de composição
+## Dimensões de composição
 
 | Dimensão | Operações | Significado |
 |---|---|---|
@@ -68,6 +91,7 @@ vocabulário `Pending`/`Running`/`Completed`.
 | computação | `FlatMap`, `Zip`, `Both` | dependência ou independência sequencial |
 | observação/finalização | `Tap`, `Attempt`, `Ensure` | sucesso, erro como dado e término normal |
 | resource lifecycle | `Bracket`, `AcquireUseRelease` | acquire/use/release explícito |
+| operacional | `resilience.Retry`, `resilience.Timeout` | orçamento e repetição seletiva, dono = camada que conhece o requisito operacional |
 
 Essas dimensões descrevem efeitos; adapters continuam donos de conexões, leases,
 locks, spans e qualquer política operacional concreta.

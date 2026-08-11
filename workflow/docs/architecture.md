@@ -77,5 +77,13 @@ execução com efeitos é candidato a `workflow`.
 `Bracket` conhece somente `Action[R]`, `R → Action[T]` e
 `R → Action[struct{}]`. Não conhece pool, lock, lease, tracing ou banco. `Zip` e
 `Both` não criam goroutines; `Ensure` e `Bracket` não recuperam panic nem blindam
-cancelamento. O DAG permanece `workflow -> action <- transaction`, e o fecho do
-core permanece stdlib-only.
+cancelamento. O DAG permanece `workflow -> action <- transaction`, com
+`plan` como folha stdlib e `resilience -> action`. O fecho do core permanece
+stdlib-only.
+
+## Resilience sem preempção
+
+`workflow/resilience` transforma `action.Action` de forma lazy e síncrona. É a
+única exceção arquitetural para `time` e `context.WithTimeout`. Timeout é
+cooperativo: deriva um contexto filho e chama a origem no mesmo goroutine; uma
+Action que ignora contexto não é interrompida por preempção.

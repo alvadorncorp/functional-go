@@ -1,11 +1,22 @@
 package archtest
 
 import (
+	"time"
+
 	"github.com/alvadorncorp/gopackages/workflow"
 	"github.com/alvadorncorp/gopackages/workflow/action"
+	"github.com/alvadorncorp/gopackages/workflow/plan"
+	"github.com/alvadorncorp/gopackages/workflow/resilience"
 )
 
 var (
+	_ plan.Kind                    = plan.KindEmpty
+	_ func(string) plan.Plan       = plan.Step
+	_ func(...plan.Plan) plan.Plan = plan.Sequence
+	_ func(...plan.Plan) plan.Plan = plan.Transaction
+	_ func(plan.Plan) plan.Kind    = plan.Plan.Kind
+	_ func(plan.Plan) string       = plan.Plan.Name
+	_ func(plan.Plan) []plan.Plan  = plan.Plan.Children
 	_ func(
 		workflow.Workflow[int, string],
 		int,
@@ -42,4 +53,6 @@ var (
 		func(string) action.Action[int],
 		func(string) action.Action[struct{}],
 	) action.Action[int] = action.AcquireUseRelease[string, int]
+	_ func(resilience.RetryPolicy, action.Action[int]) action.Action[int] = resilience.Retry[int]
+	_ func(time.Duration, action.Action[int]) action.Action[int]          = resilience.Timeout[int]
 )

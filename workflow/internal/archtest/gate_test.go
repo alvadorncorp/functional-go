@@ -30,12 +30,18 @@ func TestGateCanFail(t *testing.T) {
 
 	t.Run("importForbidden rejects infrastructure and non-goal primitives", func(t *testing.T) {
 		for _, path := range []string{"database/sql", "net/http", "reflect", "unsafe", "sync", "time"} {
-			if !importForbidden(path) {
+			if !importForbidden(workflowModule, path) {
 				t.Errorf("importForbidden(%q) = false, want true", path)
 			}
 		}
-		if importForbidden("context") {
+		if importForbidden(workflowModule, "context") {
 			t.Error("importForbidden(\"context\") = true, want false")
+		}
+		if importForbidden(resiliencePackage, "time") {
+			t.Error("resilience time import rejected")
+		}
+		if !importForbidden(workflowModule, "time") {
+			t.Error("workflow time import accepted")
 		}
 	})
 
@@ -56,6 +62,12 @@ func TestGateCanFail(t *testing.T) {
 				t.Errorf("%q is a decided algebra export but remains forbidden", allowed)
 			}
 		}
+		if exportForbidden(resiliencePackage, "Retry") || exportForbidden(resiliencePackage, "Timeout") {
+			t.Error("resilience Retry/Timeout export rejected")
+		}
+		if !exportForbidden(actionPackage, "Retry") || !exportForbidden(workflowModule, "Timeout") {
+			t.Error("Retry/Timeout export accepted outside resilience")
+		}
 	})
 
 	t.Run("allowedInternalEdges forbids the reverse edge", func(t *testing.T) {
@@ -65,6 +77,17 @@ func TestGateCanFail(t *testing.T) {
 		}
 		if _, permitted := edges[workflowModule][actionPackage]; !permitted {
 			t.Error("workflow -> action is forbidden, want permitted")
+		}
+		if len(edges[planPackage]) != 0 {
+			t.Errorf("plan edges = %v, want none", edges[planPackage])
+		}
+		if _, permitted := edges[resiliencePackage][actionPackage]; !permitted {
+			t.Error("resilience -> action is forbidden, want permitted")
+		}
+		for _, forbiddenTarget := range []string{workflowModule, planPackage, transactionPackage} {
+			if _, permitted := edges[resiliencePackage][forbiddenTarget]; permitted {
+				t.Errorf("resilience -> %s is permitted, want forbidden", forbiddenTarget)
+			}
 		}
 	})
 
@@ -94,7 +117,7 @@ func TestGateCanFail(t *testing.T) {
 
 	t.Run("expectedFiles declares every production package", func(t *testing.T) {
 		envelope := expectedFiles()
-		for _, pkg := range []string{workflowModule, actionPackage, transactionPackage} {
+		for _, pkg := range []string{workflowModule, actionPackage, planPackage, resiliencePackage, transactionPackage} {
 			files, declared := envelope[pkg]
 			if !declared || len(files) == 0 {
 				t.Errorf("%s missing from expectedFiles", pkg)
@@ -138,9 +161,26 @@ func TestGateCanFail(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if violation, forbidden := forbiddenContextUse(file); !forbidden {
+			if violation, forbidden := forbiddenContextUse(workflowModule, file); !forbidden {
 				t.Errorf("context policy accepted %s snippet; violation=%q", name, violation)
 			}
+		}
+	})
+
+	t.Run("context policy permits WithTimeout only in resilience", func(t *testing.T) {
+		source := `package p; import (
+	"context"
+	"time"
+); func f(parent context.Context) { _, cancel := context.WithTimeout(parent, time.Second); cancel() }`
+		file, err := parser.ParseFile(token.NewFileSet(), "withtimeout.go", source, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if violation, forbidden := forbiddenContextUse(resiliencePackage, file); forbidden {
+			t.Errorf("resilience WithTimeout rejected; violation=%q", violation)
+		}
+		if violation, forbidden := forbiddenContextUse(workflowModule, file); !forbidden {
+			t.Errorf("workflow WithTimeout accepted; violation=%q", violation)
 		}
 	})
 }

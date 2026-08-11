@@ -78,7 +78,11 @@ contexto inalterado e uma única implementação de lifecycle.
 
 ## Não-objetivos
 
-Engine, runtime, scheduler, retry, timeout, paralelismo, observabilidade
-automática, service locator, DI container, adapters, transação distribuída,
-panic-safe cleanup e uma nova álgebra funcional de valores continuam fora do
-módulo.
+Engine, runtime, scheduler, paralelismo, observabilidade automática, service
+locator, DI container, adapters, transação distribuída, panic-safe cleanup e uma
+nova álgebra funcional de valores continuam fora do módulo.
+
+> Atualização: a exclusão absoluta de retry e timeout desta primeira álgebra foi
+> superada por [ADR-011](adr-011-explicit-resilience-as-action-transformation.md).
+> Permanecem válidas as exclusões de engine, runtime, background work,
+> paralelismo implícito e execução durável.
