@@ -17,6 +17,7 @@ func requiredDocuments() []string {
 		"docs/architecture.md",
 		"docs/actions.md",
 		"docs/plan.md",
+		"docs/resilience.md",
 		"docs/composition.md",
 		"docs/dependency-injection.md",
 		"docs/transactions.md",
@@ -32,6 +33,7 @@ func requiredDocuments() []string {
 		"docs/adr/workflow/adr-008-transactional-outbox-as-application-composition.md",
 		"docs/adr/workflow/adr-009-composition-and-resource-safety.md",
 		"docs/adr/workflow/adr-010-plan-as-explicit-non-executable-workflow-description.md",
+		"docs/adr/workflow/adr-011-explicit-resilience-as-action-transformation.md",
 		"docs/tdd/workflow/core.md",
 		"docs/tdd/workflow/action.md",
 		"docs/tdd/workflow/composition.md",
@@ -97,9 +99,12 @@ func assertFrontmatter(t *testing.T, relative, content string) {
 
 func requiredDocumentationTokens() map[string][]string {
 	return map[string][]string{
-		"README.md":                        {"Contramap", "Provide", "Bracket"},
-		"docs/actions.md":                  {"errors.Join", "Attempt", "Bracket"},
-		"docs/plan.md":                     {"Plan descreve", "não executa", "KindEmpty", "defensiva", "Specification"},
+		"README.md":       {"Contramap", "Provide", "Bracket"},
+		"docs/actions.md": {"errors.Join", "Attempt", "Bracket"},
+		"docs/plan.md":    {"Plan descreve", "não executa", "KindEmpty", "defensiva", "Specification"},
+		"docs/resilience.md": {
+			"Attempts", "1-based", "idempot", "cooperativo", "Timeout(Retry", "Retry(Timeout",
+		},
 		"docs/composition.md":              {"FlatMap", "Zip", "Both"},
 		"docs/dependency-injection.md":     {"fornece input", "Container"},
 		"docs/examples.md":                 {"AttemptResult.Err", "action.Run", "transaction.Within"},

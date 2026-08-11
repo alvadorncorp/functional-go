@@ -22,7 +22,7 @@ func forbiddenContextSelectors() map[string]struct{} {
 	}
 }
 
-func forbiddenContextUse(file *ast.File) (string, bool) {
+func forbiddenContextUse(pkg string, file *ast.File) (string, bool) {
 	aliases := map[string]struct{}{}
 	for _, imported := range file.Imports {
 		if imported.Path.Value != `"context"` {
@@ -56,6 +56,9 @@ func forbiddenContextUse(file *ast.File) (string, bool) {
 		if _, contextAlias := aliases[receiver.Name]; !contextAlias {
 			return true
 		}
+		if selector.Sel.Name == "WithTimeout" && pkg == resiliencePackage {
+			return true
+		}
 		if _, watched := selectors[selector.Sel.Name]; watched {
 			violation = receiver.Name + "." + selector.Sel.Name
 			return false
@@ -71,7 +74,7 @@ func forbiddenContextUse(file *ast.File) (string, bool) {
 func TestNoHiddenContextPolicy(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		for _, file := range productionFiles(t, &production) {
-			if violation, forbidden := forbiddenContextUse(file); forbidden {
+			if violation, forbidden := forbiddenContextUse(production.ImportPath, file); forbidden {
 				t.Errorf("%s uses %s; context policy must remain explicit",
 					production.ImportPath, violation)
 			}

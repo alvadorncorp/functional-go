@@ -11,7 +11,7 @@ import (
 func TestNoForbiddenExportedNames(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		for _, name := range productionNames(t, &production) {
-			if _, forbidden := forbiddenExportedNames[name]; forbidden {
+			if exportForbidden(production.ImportPath, name) {
 				t.Errorf("%s exports forbidden runtime API %s", production.ImportPath, name)
 			}
 		}
@@ -33,6 +33,9 @@ func exactSurface() map[string][]string {
 		planPackage: {
 			"Kind", "KindEmpty", "KindSequence", "KindStep", "KindTransaction",
 			"Plan", "Sequence", "Step", "Transaction",
+		},
+		resiliencePackage: {
+			"Backoff", "Retry", "RetryPolicy", "Timeout",
 		},
 		transactionPackage: {
 			"Boundary", "Within",

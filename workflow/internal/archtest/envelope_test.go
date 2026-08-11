@@ -20,6 +20,7 @@ func expectedFiles() map[string][]string {
 			"observe.go", "panic.go", "resource.go", "transform.go",
 		},
 		planPackage:        {"panic.go", "plan.go"},
+		resiliencePackage:  {"panic.go", "resilience.go", "retry.go", "timeout.go"},
 		transactionPackage: {"transaction.go"},
 	}
 }

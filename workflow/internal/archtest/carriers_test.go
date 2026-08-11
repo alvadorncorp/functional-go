@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/alvadorncorp/gopackages/workflow/action"
+	"github.com/alvadorncorp/gopackages/workflow/resilience"
 )
 
 func TestPairIsAFieldOnlyCarrier(t *testing.T) {
@@ -16,7 +17,7 @@ func TestPairIsAFieldOnlyCarrier(t *testing.T) {
 	if pair.NumMethod() != 0 {
 		t.Fatalf("Pair methods = %d, want 0", pair.NumMethod())
 	}
-	assertNoCarrierMethods(t, "Pair")
+	assertNoCarrierMethods(t, actionPackage, "Pair")
 }
 
 func TestAttemptResultIsAFieldOnlyCarrier(t *testing.T) {
@@ -27,13 +28,37 @@ func TestAttemptResultIsAFieldOnlyCarrier(t *testing.T) {
 	if result.NumMethod() != 0 {
 		t.Fatalf("AttemptResult methods = %d, want 0", result.NumMethod())
 	}
-	assertNoCarrierMethods(t, "AttemptResult")
+	assertNoCarrierMethods(t, actionPackage, "AttemptResult")
 }
 
-func assertNoCarrierMethods(t *testing.T, carrier string) {
+func TestRetryPolicyIsAFieldOnlyCarrier(t *testing.T) {
+	policy := reflect.TypeFor[resilience.RetryPolicy]()
+	if policy.NumField() != 3 {
+		t.Fatalf("RetryPolicy fields = %d, want 3", policy.NumField())
+	}
+	if policy.Field(0).Name != "Attempts" || policy.Field(0).Type.Kind() != reflect.Int {
+		t.Fatalf("RetryPolicy field 0 = %s %s, want Attempts int", policy.Field(0).Name, policy.Field(0).Type)
+	}
+	when := policy.Field(1)
+	if when.Name != "When" || when.Type.Kind() != reflect.Func ||
+		when.Type.NumIn() != 1 || when.Type.NumOut() != 1 ||
+		when.Type.In(0) != reflect.TypeFor[error]() || when.Type.Out(0).Kind() != reflect.Bool {
+		t.Fatalf("RetryPolicy field 1 = %s %s, want When func(error) bool", when.Name, when.Type)
+	}
+	backoff := policy.Field(2)
+	if backoff.Name != "Backoff" || backoff.Type != reflect.TypeFor[resilience.Backoff]() {
+		t.Fatalf("RetryPolicy field 2 = %s %s, want Backoff resilience.Backoff", backoff.Name, backoff.Type)
+	}
+	if policy.NumMethod() != 0 {
+		t.Fatalf("RetryPolicy methods = %d, want 0", policy.NumMethod())
+	}
+	assertNoCarrierMethods(t, resiliencePackage, "RetryPolicy")
+}
+
+func assertNoCarrierMethods(t *testing.T, pkg, carrier string) {
 	t.Helper()
 	for _, production := range productionPackages(t) {
-		if production.ImportPath != actionPackage {
+		if production.ImportPath != pkg {
 			continue
 		}
 		for _, file := range productionFiles(t, &production) {

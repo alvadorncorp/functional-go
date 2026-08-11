@@ -69,6 +69,22 @@ func TestPlanIsAStdlibLeaf(t *testing.T) {
 	t.Fatalf("%s not found among production packages", planPackage)
 }
 
+func TestResilienceDependsOnlyOnActionAndStdlib(t *testing.T) {
+	for _, production := range productionPackages(t) {
+		if production.ImportPath != resiliencePackage {
+			continue
+		}
+		want := []string{"context", actionPackage, "time"}
+		got := slices.Clone(production.Imports)
+		slices.Sort(got)
+		if !slices.Equal(got, want) {
+			t.Errorf("%s imports %v, want exactly %v", resiliencePackage, production.Imports, want)
+		}
+		return
+	}
+	t.Fatalf("%s not found among production packages", resiliencePackage)
+}
+
 // TestNoForbiddenDirectImports proves no production package reaches for
 // infrastructure or for the primitives that would implement a documented
 // non-goal (R5).
@@ -76,7 +92,7 @@ func TestNoForbiddenDirectImports(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		t.Run(production.ImportPath, func(t *testing.T) {
 			for _, imported := range production.Imports {
-				if importForbidden(imported) {
+				if importForbidden(production.ImportPath, imported) {
 					t.Errorf("%s directly imports forbidden %s", production.ImportPath, imported)
 				}
 			}

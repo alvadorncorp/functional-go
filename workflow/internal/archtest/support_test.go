@@ -16,6 +16,7 @@ const (
 	workflowModule     = "github.com/alvadorncorp/gopackages/workflow"
 	actionPackage      = workflowModule + "/action"
 	planPackage        = workflowModule + "/plan"
+	resiliencePackage  = workflowModule + "/resilience"
 	transactionPackage = workflowModule + "/transaction"
 	archtestPackage    = workflowModule + "/internal/archtest"
 	examplesModule     = workflowModule + "/examples"
@@ -163,8 +164,19 @@ func dependencyAllowed(pkg *listedPackage) bool {
 		strings.HasPrefix(pkg.ImportPath, workflowModule+"/")
 }
 
-func importForbidden(importPath string) bool {
+func importForbidden(pkg, importPath string) bool {
+	if pkg == resiliencePackage && importPath == "time" {
+		return false
+	}
 	_, forbidden := forbiddenDirectImports[importPath]
+	return forbidden
+}
+
+func exportForbidden(pkg, name string) bool {
+	if pkg == resiliencePackage && (name == "Retry" || name == "Timeout") {
+		return false
+	}
+	_, forbidden := forbiddenExportedNames[name]
 	return forbidden
 }
 
