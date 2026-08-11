@@ -45,6 +45,11 @@ func TestGateCanFail(t *testing.T) {
 		if _, forbidden := forbiddenExportedNames["Provide"]; forbidden {
 			t.Error("Provide remains forbidden after becoming input provision")
 		}
+		for _, allowed := range []string{"Attempt", "AttemptResult", "Pair", "Tap"} {
+			if _, forbidden := forbiddenExportedNames[allowed]; forbidden {
+				t.Errorf("%q is a decided algebra export but remains forbidden", allowed)
+			}
+		}
 	})
 
 	t.Run("allowedInternalEdges forbids the reverse edge", func(t *testing.T) {

@@ -13,10 +13,11 @@ const (
 )
 
 var (
-	actionBenchSink      action.Action[int]
-	actionValueBenchSink int
-	actionErrorBenchSink error
-	actionPairBenchSink  action.Pair[int, int]
+	actionBenchSink        action.Action[int]
+	actionValueBenchSink   int
+	actionErrorBenchSink   error
+	actionPairBenchSink    action.Pair[int, int]
+	actionAttemptBenchSink action.AttemptResult[int]
 )
 
 func BenchmarkActionPure(b *testing.B) {
@@ -112,5 +113,34 @@ func BenchmarkActionBothManual(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
 		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionTap(b *testing.B) {
+	subject := action.Tap(action.Pure(answer), func(int) action.Action[struct{}] {
+		return action.Pure(struct{}{})
+	})
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionTapManual(b *testing.B) {
+	effect := func(int) action.Action[struct{}] { return action.Pure(struct{}{}) }
+	subject := action.FlatMap(action.Pure(answer), func(value int) action.Action[int] {
+		return action.Map(effect(value), func(struct{}) int { return value })
+	})
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionAttempt(b *testing.B) {
+	subject := action.Attempt(action.Pure(answer))
+	b.ReportAllocs()
+	for b.Loop() {
+		actionAttemptBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
 	}
 }

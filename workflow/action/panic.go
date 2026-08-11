@@ -12,4 +12,5 @@ const (
 	panicNilBinder   = "workflow/action: nil binder"
 	panicNilRecovery = "workflow/action: nil recovery"
 	panicNilCombiner = "workflow/action: nil combiner"
+	panicNilEffect   = "workflow/action: nil effect"
 )

@@ -60,3 +60,23 @@ func ExampleBoth() {
 	fmt.Println(value, err)
 	// Output: 42 <nil>
 }
+
+func ExampleTap() {
+	program := action.Tap(action.Pure(42), func(value int) action.Action[struct{}] {
+		fmt.Println("observed", value)
+		return action.Pure(struct{}{})
+	})
+	value, err := action.Run(context.Background(), program)
+	fmt.Println("result", value, err)
+	// Output:
+	// observed 42
+	// result 42 <nil>
+}
+
+func ExampleAttempt() {
+	wantErr := errors.New("unavailable")
+	var program action.Action[action.AttemptResult[int]] = action.Attempt(action.Fail[int](wantErr))
+	result, outerErr := action.Run(context.Background(), program)
+	fmt.Println(result.Value, result.Err, outerErr)
+	// Output: 0 unavailable <nil>
+}

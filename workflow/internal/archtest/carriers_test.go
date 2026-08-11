@@ -19,6 +19,17 @@ func TestPairIsAFieldOnlyCarrier(t *testing.T) {
 	assertNoCarrierMethods(t, "Pair")
 }
 
+func TestAttemptResultIsAFieldOnlyCarrier(t *testing.T) {
+	result := reflect.TypeFor[action.AttemptResult[int]]()
+	if result.NumField() != 2 || result.Field(0).Name != "Value" || result.Field(1).Name != "Err" {
+		t.Fatalf("AttemptResult fields = %v, want exactly Value and Err", result)
+	}
+	if result.NumMethod() != 0 {
+		t.Fatalf("AttemptResult methods = %d, want 0", result.NumMethod())
+	}
+	assertNoCarrierMethods(t, "AttemptResult")
+}
+
 func assertNoCarrierMethods(t *testing.T, carrier string) {
 	t.Helper()
 	for _, production := range productionPackages(t) {
