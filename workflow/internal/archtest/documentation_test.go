@@ -16,6 +16,7 @@ func requiredDocuments() []string {
 		"docs/overview.md",
 		"docs/architecture.md",
 		"docs/actions.md",
+		"docs/plan.md",
 		"docs/composition.md",
 		"docs/dependency-injection.md",
 		"docs/transactions.md",
@@ -30,6 +31,7 @@ func requiredDocuments() []string {
 		"docs/adr/workflow/adr-007-functional-integration-without-effect-duplication.md",
 		"docs/adr/workflow/adr-008-transactional-outbox-as-application-composition.md",
 		"docs/adr/workflow/adr-009-composition-and-resource-safety.md",
+		"docs/adr/workflow/adr-010-plan-as-explicit-non-executable-workflow-description.md",
 		"docs/tdd/workflow/core.md",
 		"docs/tdd/workflow/action.md",
 		"docs/tdd/workflow/composition.md",
@@ -97,6 +99,7 @@ func requiredDocumentationTokens() map[string][]string {
 	return map[string][]string{
 		"README.md":                        {"Contramap", "Provide", "Bracket"},
 		"docs/actions.md":                  {"errors.Join", "Attempt", "Bracket"},
+		"docs/plan.md":                     {"Plan descreve", "não executa", "KindEmpty", "defensiva", "Specification"},
 		"docs/composition.md":              {"FlatMap", "Zip", "Both"},
 		"docs/dependency-injection.md":     {"fornece input", "Container"},
 		"docs/examples.md":                 {"AttemptResult.Err", "action.Run", "transaction.Within"},

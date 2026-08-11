@@ -12,6 +12,7 @@ func allowedInternalEdges() map[string]map[string]struct{} {
 	return map[string]map[string]struct{}{
 		workflowModule:     {actionPackage: {}},
 		actionPackage:      {},
+		planPackage:        {},
 		transactionPackage: {actionPackage: {}},
 	}
 }

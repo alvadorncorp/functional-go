@@ -5,6 +5,7 @@
 - [Visão geral](overview.md) — a tríade, os três momentos e o glossário
 - [Arquitetura](architecture.md) — camadas, propriedade e núcleo funcional / casca com efeitos
 - [Actions](actions.md) — execução adiada, contexto, composição, saída de emergência
+- [Plan](plan.md) — descrição estrutural explícita, imutável e não executável
 - [Composição](composition.md) — construindo um vocabulário reutilizável de workflows
 - [Injeção de dependências](dependency-injection.md) — capacidades e a composition root
 - [Transações](transactions.md) — fronteiras, escopos e as quatro coisas chamadas "transação"
@@ -22,6 +23,7 @@
 - [ADR-007 — Integração com functional sem duplicar efeitos](adr/workflow/adr-007-functional-integration-without-effect-duplication.md)
 - [ADR-008 — Outbox transacional como composição da aplicação](adr/workflow/adr-008-transactional-outbox-as-application-composition.md)
 - [ADR-009 — Composição avançada e resource safety em retornos normais](adr/workflow/adr-009-composition-and-resource-safety.md)
+- [ADR-010 — Plan como descrição explícita e não executável de workflow](adr/workflow/adr-010-plan-as-explicit-non-executable-workflow-description.md)
 
 ## Desenhos técnicos
 

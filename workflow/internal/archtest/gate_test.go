@@ -66,6 +66,9 @@ func TestGateCanFail(t *testing.T) {
 		if _, permitted := edges[workflowModule][actionPackage]; !permitted {
 			t.Error("workflow -> action is forbidden, want permitted")
 		}
+		if len(edges[planPackage]) != 0 {
+			t.Errorf("plan edges = %v, want none", edges[planPackage])
+		}
 	})
 
 	t.Run("exactSurface is sorted and non-empty", func(t *testing.T) {
@@ -94,7 +97,7 @@ func TestGateCanFail(t *testing.T) {
 
 	t.Run("expectedFiles declares every production package", func(t *testing.T) {
 		envelope := expectedFiles()
-		for _, pkg := range []string{workflowModule, actionPackage, transactionPackage} {
+		for _, pkg := range []string{workflowModule, actionPackage, planPackage, transactionPackage} {
 			files, declared := envelope[pkg]
 			if !declared || len(files) == 0 {
 				t.Errorf("%s missing from expectedFiles", pkg)

@@ -15,11 +15,10 @@ import (
 const (
 	workflowModule     = "github.com/alvadorncorp/gopackages/workflow"
 	actionPackage      = workflowModule + "/action"
+	planPackage        = workflowModule + "/plan"
 	transactionPackage = workflowModule + "/transaction"
 	archtestPackage    = workflowModule + "/internal/archtest"
-	// examples live under the monorepo root (examples/workflow/<slug>), not
-	// nested inside this module. The prefix filters any accidental dependency.
-	examplesModulePrefix = "github.com/alvadorncorp/gopackages/examples/workflow"
+	examplesModule     = workflowModule + "/examples"
 )
 
 // listedPackage is the subset of `go list -json` this gate reads.
@@ -134,9 +133,11 @@ func goModPath(t *testing.T) string {
 
 // productionPackages lists this module's production packages.
 //
-// Packages with no GoFiles (the gate package itself is test-only) are skipped.
-// Examples live under github.com/alvadorncorp/gopackages/examples/workflow/...
-// and no longer share this module's import-path prefix.
+// The `<module>/...` wildcard is workspace-wide, so once the nested
+// workflow/examples module joins go.work its packages match this pattern too —
+// their import paths start with the same prefix. They are filtered out here so
+// every gate below judges the CORE only. Packages with no GoFiles (the gate
+// package itself is test-only) are skipped for the same reason.
 func productionPackages(t *testing.T) []listedPackage {
 	t.Helper()
 
@@ -154,8 +155,7 @@ func productionPackages(t *testing.T) []listedPackage {
 }
 
 func isExamples(importPath string) bool {
-	return importPath == examplesModulePrefix ||
-		strings.HasPrefix(importPath, examplesModulePrefix+"/")
+	return importPath == examplesModule || strings.HasPrefix(importPath, examplesModule+"/")
 }
 
 func dependencyAllowed(pkg *listedPackage) bool {

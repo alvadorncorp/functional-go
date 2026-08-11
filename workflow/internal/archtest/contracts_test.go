@@ -3,9 +3,17 @@ package archtest
 import (
 	"github.com/alvadorncorp/gopackages/workflow"
 	"github.com/alvadorncorp/gopackages/workflow/action"
+	"github.com/alvadorncorp/gopackages/workflow/plan"
 )
 
 var (
+	_ plan.Kind                    = plan.KindEmpty
+	_ func(string) plan.Plan       = plan.Step
+	_ func(...plan.Plan) plan.Plan = plan.Sequence
+	_ func(...plan.Plan) plan.Plan = plan.Transaction
+	_ func(plan.Plan) plan.Kind    = plan.Plan.Kind
+	_ func(plan.Plan) string       = plan.Plan.Name
+	_ func(plan.Plan) []plan.Plan  = plan.Plan.Children
 	_ func(
 		workflow.Workflow[int, string],
 		int,
