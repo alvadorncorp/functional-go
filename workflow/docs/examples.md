@@ -1,9 +1,11 @@
 # Exemplos
 
-Os exemplos vivem em um módulo separado, `workflow/examples`, porque consomem
-`modeling` e PostgreSQL enquanto o núcleo garante um fecho de dependências
-apenas stdlib. São testes de aceitação de arquitetura: se uma mudança de API os
-torna desajeitados, a API é o que deve ser reconsiderada.
+Os exemplos vivem sob `examples/workflow/<slug>/` (módulos locais não
+publicados, um `go.mod` por slug), porque consomem `modeling` e PostgreSQL
+enquanto o núcleo garante um fecho de dependências apenas stdlib. Cada slug tem
+`main.go` e usa `replace` para a árvore do monorepo. São testes de aceitação de
+arquitetura: se uma mudança de API os torna desajeitados, a API é o que deve ser
+reconsiderada. Catálogo: [`examples/README.md`](../../examples/README.md).
 
 ## withdraw
 

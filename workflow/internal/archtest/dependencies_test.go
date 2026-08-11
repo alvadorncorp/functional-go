@@ -80,8 +80,7 @@ func TestCoreDoesNotDependOnModeling(t *testing.T) {
 		"github.com/alvadorncorp/gopackages/postgres",
 	}
 
-	// Walk each core package's own closure rather than the workspace-wide
-	// wildcard, which would sweep in the nested examples module.
+	// Walk each core package's own dependency closure.
 	for _, production := range productionPackages(t) {
 		for _, dependency := range goList(t, "-deps", "-json", production.ImportPath) {
 			for _, sibling := range siblings {
@@ -94,13 +93,13 @@ func TestCoreDoesNotDependOnModeling(t *testing.T) {
 	}
 }
 
-// TestExamplesDoNotLeakIntoCore proves the nested examples module is invisible
-// to the core's closure (R14).
+// TestExamplesDoNotLeakIntoCore proves monorepo examples/workflow packages are
+// invisible to the core's closure (R14).
 func TestExamplesDoNotLeakIntoCore(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		for _, dependency := range goList(t, "-deps", "-json", production.ImportPath) {
 			if isExamples(dependency.ImportPath) {
-				t.Errorf("%s must not depend on the examples module: %s",
+				t.Errorf("%s must not depend on examples: %s",
 					production.ImportPath, dependency.ImportPath)
 			}
 		}

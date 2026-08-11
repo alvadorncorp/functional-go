@@ -66,6 +66,8 @@ Comece pela [visão geral](docs/overview.md), depois a
 [arquitetura](docs/architecture.md). Índice completo em
 [docs/README.md](docs/README.md), incluindo nove ADRs e cinco desenhos técnicos.
 
-Os cenários executáveis de ponta a ponta vivem no módulo separado
-`workflow/examples`: um fluxo de saque com outbox transacional e uma transferência
-cross-context nas topologias de banco compartilhado e de bancos independentes.
+Os cenários executáveis de ponta a ponta vivem em
+[`examples/workflow/`](../examples/workflow/) (módulos locais não publicados):
+`withdraw` (saque com outbox transacional) e `crosscontext` (transferência nas
+topologias de banco compartilhado e de bancos independentes). Catálogo em
+[`examples/README.md`](../examples/README.md).

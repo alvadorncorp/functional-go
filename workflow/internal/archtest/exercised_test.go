@@ -10,7 +10,7 @@ import (
 
 // TestSurfaceIsExercised proves every exported core symbol is used by something
 // other than its own package's tests — a sibling core package, a doc example, or
-// the examples module.
+// a monorepo examples/workflow slug.
 //
 // This is the simplicity criterion made mechanical: an API kept only for
 // symmetry has no consumer and should not ship.
@@ -38,7 +38,7 @@ func shortPackageName(importPath string) string {
 
 // consumerSources concatenates every Go file that legitimately counts as a
 // consumer of the core surface: this module's example_test.go files, and every
-// file of the nested examples module.
+// file under monorepo examples/workflow/.
 //
 // A package's own behaviour tests are deliberately excluded. A symbol used only
 // by the tests written for it has no consumer, and counting those tests would
@@ -48,6 +48,8 @@ func consumerSources(t *testing.T) string {
 	t.Helper()
 
 	root := moduleRoot(t)
+	workspaceRoot := filepath.Dir(root)
+	examplesRoot := filepath.Join(workspaceRoot, "examples", "workflow")
 	separator := string(filepath.Separator)
 	archtestDir := separator + "internal" + separator + "archtest" + separator
 	examplesDir := separator + "examples" + separator
@@ -76,7 +78,10 @@ func consumerSources(t *testing.T) string {
 	}
 
 	if err := filepath.WalkDir(root, walk); err != nil {
-		t.Fatalf("scan consumers: %v", err)
+		t.Fatalf("scan consumers in %s: %v", root, err)
+	}
+	if err := filepath.WalkDir(examplesRoot, walk); err != nil {
+		t.Fatalf("scan consumers in %s: %v", examplesRoot, err)
 	}
 
 	// go vet keeps the walk honest: a consumer that does not compile is not a
