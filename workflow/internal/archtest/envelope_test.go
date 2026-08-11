@@ -15,7 +15,7 @@ const maxProductionFileLines = 500
 func expectedFiles() map[string][]string {
 	return map[string][]string{
 		workflowModule:     {"compose.go", "doc.go", "input.go", "panic.go", "workflow.go"},
-		actionPackage:      {"action.go", "construct.go", "control.go", "panic.go", "transform.go"},
+		actionPackage:      {"action.go", "combine.go", "construct.go", "control.go", "panic.go", "transform.go"},
 		transactionPackage: {"transaction.go"},
 	}
 }

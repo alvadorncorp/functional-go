@@ -43,3 +43,20 @@ func ExampleRecover() {
 	fmt.Println(value, err)
 	// Output: fallback: account not found <nil>
 }
+
+func ExampleZip() {
+	var program action.Action[action.Pair[int, string]] = action.Zip(
+		action.Pure(42),
+		action.Pure("answer"),
+	)
+	pair, err := action.Run(context.Background(), program)
+	fmt.Println(pair.First, pair.Second, err)
+	// Output: 42 answer <nil>
+}
+
+func ExampleBoth() {
+	program := action.Both(action.Pure(20), action.Pure(22), func(a, b int) int { return a + b })
+	value, err := action.Run(context.Background(), program)
+	fmt.Println(value, err)
+	// Output: 42 <nil>
+}

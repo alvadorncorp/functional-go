@@ -27,8 +27,8 @@ func exactSurface() map[string][]string {
 			"Contramap", "From", "Map", "MapFallible", "Provide", "Then", "Workflow",
 		},
 		actionPackage: {
-			"Action", "Do", "Fail", "FlatMap", "Map",
-			"MapFallible", "Pure", "Recover", "Run",
+			"Action", "Both", "Do", "Fail", "FlatMap", "Map",
+			"MapFallible", "Pair", "Pure", "Recover", "Run", "Zip",
 		},
 		transactionPackage: {
 			"Boundary", "Within",
