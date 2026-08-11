@@ -27,6 +27,33 @@ func When[I, O any](
 	}
 }
 
+// Choose returns a total Policy that invokes exactly one branch.
+func Choose[I, O any](
+	condition predicate.Predicate[I],
+	whenTrue Policy[I, O],
+	whenFalse Policy[I, O],
+) Policy[I, O] {
+	if condition == nil {
+		panic(panicNilPredicate)
+	}
+	requirePolicy(whenTrue)
+	requirePolicy(whenFalse)
+	return func(input I) O {
+		if condition(input) {
+			return whenTrue(input)
+		}
+		return whenFalse(input)
+	}
+}
+
+// OrElse returns the first applicable result from two conditional policies.
+func OrElse[I, O any](
+	left func(I) optional.Optional[O],
+	right func(I) optional.Optional[O],
+) func(I) optional.Optional[O] {
+	return FirstApplicable(left, right)
+}
+
 // FirstApplicable returns the first Some result in declaration order.
 func FirstApplicable[I, O any](
 	first func(I) optional.Optional[O],

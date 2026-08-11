@@ -1,47 +1,48 @@
 package archtest
 
 import (
-	"path/filepath"
 	"slices"
 	"sort"
 	"testing"
 )
 
-func TestPolicyPackageHasExactDependencies(t *testing.T) {
-	for _, production := range productionPackages(t) {
-		if production.ImportPath != policyPackage {
-			continue
+func policyProductionPackage(t *testing.T) *listedPackage {
+	t.Helper()
+	productions := productionPackages(t)
+	for i := range productions {
+		if productions[i].ImportPath == policyPackage {
+			return &productions[i]
 		}
-		got := slices.Clone(production.Imports)
-		sort.Strings(got)
-		want := []string{functionalPredicate, functionalOptional}
-		if !slices.Equal(got, want) {
-			t.Fatalf("policy imports = %v, want %v", got, want)
-		}
-		return
 	}
 	t.Fatalf("production packages missing %s", policyPackage)
+	return nil
 }
 
-func TestPolicyFilesHaveExactPublicSurface(t *testing.T) {
-	tests := map[string][]string{
-		"conditional.go": {"Fallback", "FirstApplicable", "When"},
-		"policy.go":      {"Constant", "Policy"},
-		"transform.go":   {"Contramap", "Map"},
+func TestPolicyPackageHasExactDependencies(t *testing.T) {
+	got := slices.Clone(policyProductionPackage(t).Imports)
+	sort.Strings(got)
+	want := []string{functionalPredicate, functionalOptional}
+	if !slices.Equal(got, want) {
+		t.Fatalf("policy imports = %v, want %v", got, want)
 	}
-	for filename, want := range tests {
-		t.Run(filename, func(t *testing.T) {
-			got := exportedNamesInSource(t, filepath.Join("..", "..", "policy", filename))
-			if !slices.Equal(got, want) {
-				t.Fatalf("exports in %s = %v, want %v", filename, got, want)
-			}
-		})
+}
+
+func TestPolicyHasExactPublicSurface(t *testing.T) {
+	got := productionNames(t, policyProductionPackage(t))
+	slices.Sort(got)
+	want := []string{
+		"Choose", "Compose", "Constant", "Contramap", "Fallback", "FirstApplicable",
+		"Map", "OrElse", "Policy", "When", "Zip",
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("policy exports = %v, want %v", got, want)
 	}
 }
 
 func TestRootDoesNotReexportPolicy(t *testing.T) {
 	forbiddenNames := []string{
-		"Policy", "Constant", "Map", "Contramap", "When", "FirstApplicable", "Fallback",
+		"Choose", "Compose", "Constant", "Contramap", "Fallback", "FirstApplicable",
+		"Map", "OrElse", "Policy", "When", "Zip",
 	}
 	for _, production := range productionPackages(t) {
 		if production.ImportPath != modelingModule {
