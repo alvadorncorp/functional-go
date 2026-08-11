@@ -41,12 +41,12 @@ entra na execução. Construir e compor workflows não realiza I/O; apenas
 |---|---|
 | `github.com/alvadorncorp/gopackages/workflow` | `Workflow[I,O]`, `From`, `Map`, `MapFallible`, `Then`, `Provide`, `Contramap` |
 | `github.com/alvadorncorp/gopackages/workflow/action` | `Action[T]`, construção, transformação, combinação sequencial, observação, finalização, error reification e resource safety |
-| `github.com/alvadorncorp/gopackages/workflow/plan` | descrição estrutural explícita, imutável e não executável |
+| `github.com/alvadorncorp/gopackages/workflow/plan` | `plan.Plan` — descrição estrutural explícita, imutável e não executável |
 | `github.com/alvadorncorp/gopackages/workflow/resilience` | `Retry`, `Timeout` e política de backoff como transformações explícitas de Action |
 | `github.com/alvadorncorp/gopackages/workflow/transaction` | `Boundary[S]`, `Within` |
 
-Plan describes; Workflow constructs; Action defers; Resilience transforms;
-Boundary scopes; Run executes.
+Plan descreve; Workflow constrói; Action adia; Resilience transforma;
+Boundary delimita; Run executa.
 
 O núcleo depende apenas da biblioteca padrão, e um teste de arquitetura mantém
 isso assim.
@@ -74,5 +74,5 @@ Comece pela [visão geral](docs/overview.md), depois a
 [Resilience](docs/resilience.md), ADRs e desenhos técnicos.
 
 Os cenários executáveis de ponta a ponta vivem no módulo separado
-`workflow/examples`: um fluxo de saque com outbox transacional e uma transferência
+`examples/workflow`: um fluxo de saque com outbox transacional e uma transferência
 cross-context nas topologias de banco compartilhado e de bancos independentes.

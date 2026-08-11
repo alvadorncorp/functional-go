@@ -1,11 +1,9 @@
 # Exemplos
 
-Os exemplos vivem sob `examples/workflow/<slug>/` (módulos locais não
-publicados, um `go.mod` por slug), porque consomem `modeling` e PostgreSQL
-enquanto o núcleo garante um fecho de dependências apenas stdlib. Cada slug tem
-`main.go` e usa `replace` para a árvore do monorepo. São testes de aceitação de
-arquitetura: se uma mudança de API os torna desajeitados, a API é o que deve ser
-reconsiderada. Catálogo: [`examples/README.md`](../../examples/README.md).
+Os exemplos vivem em um módulo separado, `examples/workflow`, porque consomem
+`modeling` e PostgreSQL enquanto o núcleo garante um fecho de dependências
+apenas stdlib. São testes de aceitação de arquitetura: se uma mudança de API os
+torna desajeitados, a API é o que deve ser reconsiderada.
 
 ## withdraw
 
@@ -178,3 +176,69 @@ Nenhuma dessas composições executa antes de:
 ```go
 result, err := action.Run(ctx, program)
 ```
+
+## createorder: Plan, HTTP, Consumer e Resilience
+
+`createorder` é o cenário de aceitação que reúne Plan, Workflow compartilhado,
+DTOs distintos, resiliência de transporte e outbox local.
+
+### Descrição e execução são artefatos paralelos
+
+```text
+DESCRIPTION                         EXECUTION
+
+CreateOrderPlan                     CreateOrder
+└─ Sequence                         └─ Workflow[CreateOrder,Order]
+   ├─ load-customer                    └─ Action[Order]
+   ├─ load-product                        ├─ Find customer
+   ├─ decide-order                        ├─ Find product
+   └─ Transaction                         ├─ pure DecideOrder
+      ├─ save-order                       └─ Within
+      └─ append-outbox                       ├─ SaveOrder
+                                                └─ AppendOutbox
+                                             └─ Run(ctx)
+```
+
+O Plan é declarado pela aplicação. Ele não é compilado para Action; a Action
+não é decompilada para Plan. Inspecionar o Plan não chama capability, não abre
+transação e não exige contexto.
+
+### Dois DTOs, um input de domínio, um Workflow
+
+```text
+CreateOrderHTTPRequest{customer_id,product_id,quantity}
+                                      ┐
+                                      ├─> domain.CreateOrder
+CreateOrderMessage{customer,product,units}
+                                      ┘
+```
+
+Ambos os adapters possuem o mesmo
+`workflow.Workflow[domain.CreateOrder,domain.Order]`. HTTP aplica
+`Timeout(3s, program)` e chama `Run` com o contexto da requisição; o consumer
+aplica `Timeout(30s, Retry(policy, program))` e chama `Run` com o contexto do
+consumer. O Timeout externo é orçamento total, inclusive backoff.
+
+### Ownership e fronteiras de falha
+
+```go
+httpProgram := resilience.Timeout(3*time.Second, source)
+
+consumerProgram := resilience.Timeout(30*time.Second,
+    resilience.Retry(resilience.RetryPolicy{
+        Attempts: 3,
+        When:     faults.IsUnavailable,
+        Backoff:  exponentialBackoff,
+    }, source),
+)
+```
+
+- `faults` é importado somente pelo examples/adapter e nunca pelo core de
+  resilience.
+- Falhas de domínio Invalid/Conflict/Permission não são retentadas.
+- Retry exige semântica idempotente ou deduplicada adequada à operação.
+- Timeout é cooperativo e não preempta uma Action que ignora o contexto.
+- SaveOrder e AppendOutbox compartilham um Boundary fornecido pelo adapter neste
+  exemplo; o nó Transaction do Plan descreve intenção e não prova ACID.
+- Dados de negócio são mapeados antes do Workflow; o contexto de execução chega
+  somente a `Run`.
