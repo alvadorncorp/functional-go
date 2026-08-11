@@ -14,7 +14,7 @@ const maxProductionFileLines = 500
 // deliberate structural change and must appear here in the same commit.
 func expectedFiles() map[string][]string {
 	return map[string][]string{
-		workflowModule:     {"compose.go", "doc.go", "panic.go", "workflow.go"},
+		workflowModule:     {"compose.go", "doc.go", "input.go", "panic.go", "workflow.go"},
 		actionPackage:      {"action.go", "construct.go", "control.go", "panic.go", "transform.go"},
 		transactionPackage: {"transaction.go"},
 	}

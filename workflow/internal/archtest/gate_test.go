@@ -42,6 +42,9 @@ func TestGateCanFail(t *testing.T) {
 				t.Errorf("%q missing from forbiddenExportedNames", name)
 			}
 		}
+		if _, forbidden := forbiddenExportedNames["Provide"]; forbidden {
+			t.Error("Provide remains forbidden after becoming input provision")
+		}
 	})
 
 	t.Run("allowedInternalEdges forbids the reverse edge", func(t *testing.T) {

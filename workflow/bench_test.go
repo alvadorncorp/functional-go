@@ -58,3 +58,21 @@ func loadUserBench() workflow.Workflow[userID, user] {
 		return action.Pure(user{ID: id, Name: "ada", Active: true})
 	})
 }
+
+func BenchmarkWorkflowProvide(b *testing.B) {
+	subject := loadUserBench()
+
+	b.ReportAllocs()
+	for b.Loop() {
+		workflowActionSink = workflow.Provide(subject, firstID)
+	}
+}
+
+func BenchmarkWorkflowContramap(b *testing.B) {
+	subject := workflow.Contramap(loadUserBench(), func(id int) userID { return userID(id) })
+
+	b.ReportAllocs()
+	for b.Loop() {
+		workflowActionSink = subject(int(firstID))
+	}
+}

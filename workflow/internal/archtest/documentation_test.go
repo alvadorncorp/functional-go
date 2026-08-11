@@ -29,6 +29,7 @@ func requiredDocuments() []string {
 		"docs/adr/workflow/adr-006-no-distributed-transaction-abstraction.md",
 		"docs/adr/workflow/adr-007-functional-integration-without-effect-duplication.md",
 		"docs/adr/workflow/adr-008-transactional-outbox-as-application-composition.md",
+		"docs/adr/workflow/adr-009-composition-and-resource-safety.md",
 		"docs/tdd/workflow/core.md",
 		"docs/tdd/workflow/action.md",
 		"docs/tdd/workflow/composition.md",

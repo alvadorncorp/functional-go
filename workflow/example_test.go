@@ -76,3 +76,25 @@ func ExampleWorkflow_dependencyInjection() {
 	// in-memory
 	// remote
 }
+
+func ExampleProvide() {
+	load := workflow.From(func(id userID) action.Action[user] {
+		return action.Pure(user{ID: id, Name: "provided", Active: true})
+	})
+
+	loaded, err := action.Run(context.Background(), workflow.Provide(load, userID(7)))
+	fmt.Println(loaded.Name, err)
+	// Output: provided <nil>
+}
+
+func ExampleContramap() {
+	type request struct{ ID userID }
+	load := workflow.From(func(id userID) action.Action[user] {
+		return action.Pure(user{ID: id, Name: "adapted", Active: true})
+	})
+	fromRequest := workflow.Contramap(load, func(input request) userID { return input.ID })
+
+	loaded, err := action.Run(context.Background(), fromRequest(request{ID: 9}))
+	fmt.Println(loaded.ID, loaded.Name, err)
+	// Output: 9 adapted <nil>
+}

@@ -76,7 +76,6 @@ var forbiddenExportedNames = map[string]struct{}{
 	"Outbox":                 {},
 	"Parallel":               {},
 	"Promise":                {},
-	"Provide":                {},
 	"Register":               {},
 	"Registry":               {},
 	"Repository":             {},
