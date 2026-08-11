@@ -1,6 +1,9 @@
 package archtest
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 // TestGateCanFail proves every predicate this package relies on actually
 // rejects a bad input. Without it a refactor could silently turn a gate into a
@@ -37,6 +40,27 @@ func TestGateCanFail(t *testing.T) {
 		for _, name := range []string{"Register", "Container", "Repository", "Retry", "Timeout", "DistributedTransaction"} {
 			if _, forbidden := forbiddenExportedNames[name]; !forbidden {
 				t.Errorf("%q missing from forbiddenExportedNames", name)
+			}
+		}
+	})
+
+	t.Run("allowedInternalEdges forbids the reverse edge", func(t *testing.T) {
+		edges := allowedInternalEdges()
+		if _, permitted := edges[actionPackage][workflowModule]; permitted {
+			t.Error("action -> workflow is permitted, want forbidden")
+		}
+		if _, permitted := edges[workflowModule][actionPackage]; !permitted {
+			t.Error("workflow -> action is forbidden, want permitted")
+		}
+	})
+
+	t.Run("exactSurface is sorted and non-empty", func(t *testing.T) {
+		for pkg, names := range exactSurface() {
+			if len(names) == 0 {
+				t.Errorf("%s declares an empty surface", pkg)
+			}
+			if !slices.IsSorted(names) {
+				t.Errorf("%s surface is not sorted: %v", pkg, names)
 			}
 		}
 	})
