@@ -61,3 +61,11 @@ estado e uma linha de outbox, e deixe a entrega acontecer depois.
 
 Chamadas aninhadas de `Within` não carregam semântica automática de savepoint ou
 transação aninhada.
+
+## `Bracket` não é `Within`
+
+`Bracket` descreve acquire/use/release de qualquer recurso e não promete
+atomicidade. `Within` executa uma Action dentro de `Boundary[S]`, cuja
+implementação define begin, commit e rollback. Um adapter pode usar lifecycle
+internamente para implementar sua Boundary, mas os contratos públicos não são
+fundidos.

@@ -115,3 +115,41 @@ func TestDeepCompositionIsStable(t *testing.T) {
 		t.Fatalf("Run() value = %d, want %d", value, deepChainDepth)
 	}
 }
+
+func TestContramapIdentityAndCompositionLaws(t *testing.T) {
+	base := workflow.From(func(input string) action.Action[string] { return action.Pure("value:" + input) })
+	identity := workflow.Contramap(base, func(input string) string { return input })
+
+	baseValue, baseErr := action.Run(t.Context(), base("x"))
+	identityValue, identityErr := action.Run(t.Context(), identity("x"))
+	if baseValue != identityValue || baseErr != identityErr {
+		t.Fatalf("identity = (%q, %v), base = (%q, %v)", identityValue, identityErr, baseValue, baseErr)
+	}
+
+	f := func(input int64) int { return int(input) + 1 }
+	g := func(input int) string { return string(rune('a' + input)) }
+	left := workflow.Contramap(workflow.Contramap(base, g), f)
+	right := workflow.Contramap(base, func(input int64) string { return g(f(input)) })
+
+	leftValue, leftErr := action.Run(t.Context(), left(1))
+	rightValue, rightErr := action.Run(t.Context(), right(1))
+	if leftValue != rightValue || leftErr != rightErr {
+		t.Fatalf("composition left = (%q, %v), right = (%q, %v)", leftValue, leftErr, rightValue, rightErr)
+	}
+}
+
+func TestProvideLawMatchesDirectApplication(t *testing.T) {
+	runs := 0
+	base := workflow.From(func(input int) action.Action[int] {
+		return action.Do(func(context.Context) (int, error) {
+			runs++
+			return input + 1, nil
+		})
+	})
+
+	provided, providedErr := action.Run(t.Context(), workflow.Provide(base, 41))
+	direct, directErr := action.Run(t.Context(), base(41))
+	if provided != direct || providedErr != directErr || runs != 2 {
+		t.Fatalf("provided=(%d,%v) direct=(%d,%v) runs=%d", provided, providedErr, direct, directErr, runs)
+	}
+}

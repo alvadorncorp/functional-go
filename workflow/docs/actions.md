@@ -18,13 +18,20 @@ nunca engole nem reclassifica `context.Canceled` ou `context.DeadlineExceeded`.
 
 ## Composição
 
-`Pure` eleva um valor. `Map` transforma um resultado. `MapFallible` aplica uma
-função pura falível — a costura onde uma decisão de domínio entra em uma cadeia
-com efeitos. `FlatMap` sequencia um efeito dependente. `Recover` substitui uma
-falha.
+`Pure` eleva valor; `Map`/`MapFallible` transformam; `FlatMap` sequencia uma
+Action dependente. `Zip` executa duas Actions independentes em ordem e preserva
+ambos os resultados; `Both` executa na mesma ordem e chama um combiner. Não há
+paralelismo implícito.
 
-Uma falha curto-circuita tudo a jusante, de modo que uma cadeia se lê de cima
-para baixo e para no primeiro problema.
+`Tap` executa um efeito apenas depois de sucesso e preserva o valor. `Attempt`
+entrega o par normal valor/erro como `AttemptResult`, sem recuperar panic.
+`Ensure` executa um finalizer depois de retorno normal. `Bracket` associa
+explicitamente acquire, use e release; `AcquireUseRelease` é o mesmo algoritmo
+com nome descritivo.
+
+Erros únicos permanecem idênticos. Dupla falha de trabalho e finalização usa
+`errors.Join`, preservando ambos. O mesmo contexto de `Run`, ainda que cancelado,
+chega a toda etapa; shielding pertence ao adapter.
 
 ## Saída de emergência
 

@@ -43,3 +43,82 @@ func ExampleRecover() {
 	fmt.Println(value, err)
 	// Output: fallback: account not found <nil>
 }
+
+func ExampleZip() {
+	// Uses action.Pair as Zip result carrier.
+	program := action.Zip(
+		action.Pure(42),
+		action.Pure("answer"),
+	)
+	pair, err := action.Run(context.Background(), program)
+	fmt.Println(pair.First, pair.Second, err)
+	// Output: 42 answer <nil>
+}
+
+func ExampleBoth() {
+	program := action.Both(action.Pure(20), action.Pure(22), func(a, b int) int { return a + b })
+	value, err := action.Run(context.Background(), program)
+	fmt.Println(value, err)
+	// Output: 42 <nil>
+}
+
+func ExampleTap() {
+	program := action.Tap(action.Pure(42), func(value int) action.Action[struct{}] {
+		fmt.Println("observed", value)
+		return action.Pure(struct{}{})
+	})
+	value, err := action.Run(context.Background(), program)
+	fmt.Println("result", value, err)
+	// Output:
+	// observed 42
+	// result 42 <nil>
+}
+
+func ExampleAttempt() {
+	// Uses action.AttemptResult as Attempt result carrier.
+	wantErr := errors.New("unavailable")
+	program := action.Attempt(action.Fail[int](wantErr))
+	result, outerErr := action.Run(context.Background(), program)
+	fmt.Println(result.Value, result.Err, outerErr)
+	// Output: 0 unavailable <nil>
+}
+
+func ExampleEnsure() {
+	program := action.Ensure(
+		action.Pure(42),
+		action.Do(func(context.Context) (struct{}, error) { fmt.Println("finalized"); return struct{}{}, nil }),
+	)
+	value, err := action.Run(context.Background(), program)
+	fmt.Println(value, err)
+	// Output:
+	// finalized
+	// 42 <nil>
+}
+
+func ExampleBracket() {
+	program := action.Bracket(
+		action.Pure("resource"),
+		func(resource string) action.Action[int] { fmt.Println("use", resource); return action.Pure(42) },
+		func(resource string) action.Action[struct{}] {
+			fmt.Println("release", resource)
+			return action.Pure(struct{}{})
+		},
+	)
+	value, err := action.Run(context.Background(), program)
+	fmt.Println(value, err)
+	// Output:
+	// use resource
+	// release resource
+	// 42 <nil>
+}
+
+func ExampleAcquireUseRelease() {
+	program := action.AcquireUseRelease(
+		action.Pure("lease"),
+		func(string) action.Action[int] { return action.Pure(42) },
+		func(string) action.Action[struct{}] { return action.Pure(struct{}{}) },
+	)
+	value, err := action.Run(context.Background(), program)
+	fmt.Println(value, err)
+	// Output: 42 <nil>
+}

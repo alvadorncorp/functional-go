@@ -13,9 +13,11 @@ const (
 )
 
 var (
-	actionBenchSink      action.Action[int]
-	actionValueBenchSink int
-	actionErrorBenchSink error
+	actionBenchSink        action.Action[int]
+	actionValueBenchSink   int
+	actionErrorBenchSink   error
+	actionPairBenchSink    action.Pair[int, int]
+	actionAttemptBenchSink action.AttemptResult[int]
 )
 
 func BenchmarkActionPure(b *testing.B) {
@@ -70,6 +72,130 @@ func benchmarkActionChain(b *testing.B, depth int) {
 		subject = action.Map(subject, func(value int) int { return value + 1 })
 	}
 
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionZip(b *testing.B) {
+	subject := action.Zip(action.Pure(20), action.Pure(22))
+	b.ReportAllocs()
+	for b.Loop() {
+		actionPairBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionZipManual(b *testing.B) {
+	subject := action.FlatMap(action.Pure(20), func(first int) action.Action[action.Pair[int, int]] {
+		return action.Map(action.Pure(22), func(second int) action.Pair[int, int] {
+			return action.Pair[int, int]{First: first, Second: second}
+		})
+	})
+	b.ReportAllocs()
+	for b.Loop() {
+		actionPairBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionBoth(b *testing.B) {
+	subject := action.Both(action.Pure(20), action.Pure(22), func(a, c int) int { return a + c })
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionBothManual(b *testing.B) {
+	subject := action.FlatMap(action.Pure(20), func(first int) action.Action[int] {
+		return action.Map(action.Pure(22), func(second int) int { return first + second })
+	})
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionTap(b *testing.B) {
+	subject := action.Tap(action.Pure(answer), func(int) action.Action[struct{}] {
+		return action.Pure(struct{}{})
+	})
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionTapManual(b *testing.B) {
+	effect := func(int) action.Action[struct{}] { return action.Pure(struct{}{}) }
+	subject := action.FlatMap(action.Pure(answer), func(value int) action.Action[int] {
+		return action.Map(effect(value), func(struct{}) int { return value })
+	})
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionAttempt(b *testing.B) {
+	subject := action.Attempt(action.Pure(answer))
+	b.ReportAllocs()
+	for b.Loop() {
+		actionAttemptBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionEnsure(b *testing.B) {
+	subject := action.Ensure(action.Pure(answer), action.Pure(struct{}{}))
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionBracket(b *testing.B) {
+	subject := action.Bracket(
+		action.Pure(answer),
+		action.Pure[int],
+		func(int) action.Action[struct{}] { return action.Pure(struct{}{}) },
+	)
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionAcquireUseRelease(b *testing.B) {
+	subject := action.AcquireUseRelease(
+		action.Pure(answer),
+		action.Pure[int],
+		func(int) action.Action[struct{}] { return action.Pure(struct{}{}) },
+	)
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionBracketManual(b *testing.B) {
+	acquire := action.Pure(answer)
+	use := action.Pure[int]
+	release := func(int) action.Action[struct{}] { return action.Pure(struct{}{}) }
+	subject := action.Do(func(ctx context.Context) (int, error) {
+		resource, err := acquire(ctx)
+		if err != nil {
+			return 0, err
+		}
+		value, useErr := use(resource)(ctx)
+		_, releaseErr := release(resource)(ctx)
+		if useErr != nil {
+			return 0, useErr
+		}
+		if releaseErr != nil {
+			return 0, releaseErr
+		}
+		return value, nil
+	})
 	b.ReportAllocs()
 	for b.Loop() {
 		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)

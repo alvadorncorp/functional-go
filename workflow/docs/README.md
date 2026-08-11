@@ -21,6 +21,7 @@
 - [ADR-006 — Sem abstração de transação distribuída](adr/workflow/adr-006-no-distributed-transaction-abstraction.md)
 - [ADR-007 — Integração com functional sem duplicar efeitos](adr/workflow/adr-007-functional-integration-without-effect-duplication.md)
 - [ADR-008 — Outbox transacional como composição da aplicação](adr/workflow/adr-008-transactional-outbox-as-application-composition.md)
+- [ADR-009 — Composição avançada e resource safety em retornos normais](adr/workflow/adr-009-composition-and-resource-safety.md)
 
 ## Desenhos técnicos
 

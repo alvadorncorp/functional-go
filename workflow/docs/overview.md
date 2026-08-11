@@ -59,3 +59,15 @@ agendador de jobs — que um workflow pode coordenar, mas não possui.
 Tampouco é uma máquina de estados. Um workflow pode coordenar uma máquina de
 estados de domínio, mas não tem ciclo de vida persistido próprio e não define
 vocabulário `Pending`/`Running`/`Completed`.
+
+## Quatro dimensões de composição
+
+| Dimensão | Operações | Significado |
+|---|---|---|
+| input | `Contramap`, `Provide` | adaptar e depois fornecer a entrada |
+| computação | `FlatMap`, `Zip`, `Both` | dependência ou independência sequencial |
+| observação/finalização | `Tap`, `Attempt`, `Ensure` | sucesso, erro como dado e término normal |
+| resource lifecycle | `Bracket`, `AcquireUseRelease` | acquire/use/release explícito |
+
+Essas dimensões descrevem efeitos; adapters continuam donos de conexões, leases,
+locks, spans e qualquer política operacional concreta.

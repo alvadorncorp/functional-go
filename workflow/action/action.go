@@ -8,10 +8,10 @@
 // running the same Action twice runs its effect twice. It is neither a future
 // nor a promise, and nothing in this package begins work in the background.
 //
-// Errors travel the ordinary error channel and are never wrapped by a
-// combinator, so errors.Is and errors.As keep working and context.Canceled and
-// context.DeadlineExceeded reach the caller unchanged. Panics are never
-// converted into errors.
+// Single errors travel unchanged, so errors.Is and errors.As keep working and
+// context.Canceled and context.DeadlineExceeded reach the caller unchanged.
+// Ensure and Bracket deliberately use errors.Join only when independent primary
+// and finalizer errors both exist. Panics are never converted into errors.
 package action
 
 import "context"

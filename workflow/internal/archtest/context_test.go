@@ -5,39 +5,76 @@ import (
 	"testing"
 )
 
-// contextValueSelectors names the calls that would smuggle a value — a
-// transaction handle above all — through a context.Context.
-func contextValueSelectors() map[string]struct{} {
+func forbiddenContextSelectors() map[string]struct{} {
 	return map[string]struct{}{
-		"WithValue": {},
-		"Value":     {},
+		"AfterFunc":         {},
+		"Background":        {},
+		"TODO":              {},
+		"Value":             {},
+		"WithCancel":        {},
+		"WithCancelCause":   {},
+		"WithDeadline":      {},
+		"WithDeadlineCause": {},
+		"WithoutCancel":     {},
+		"WithTimeout":       {},
+		"WithTimeoutCause":  {},
+		"WithValue":         {},
 	}
 }
 
-// TestNoContextValueStorage proves the module neither writes nor reads context
-// values in production. This is the mechanical form of the architectural rule
-// that a context carries lifecycle — cancellation and deadlines — while
-// capabilities travel as explicit arguments (R10).
-func TestNoContextValueStorage(t *testing.T) {
-	selectors := contextValueSelectors()
+func forbiddenContextUse(file *ast.File) (string, bool) {
+	aliases := map[string]struct{}{}
+	for _, imported := range file.Imports {
+		if imported.Path.Value != `"context"` {
+			continue
+		}
+		alias := "context"
+		if imported.Name != nil {
+			alias = imported.Name.Name
+		}
+		if alias == "." {
+			return "dot-import of context", true
+		}
+		aliases[alias] = struct{}{}
+	}
 
+	selectors := forbiddenContextSelectors()
+	var violation string
+	ast.Inspect(file, func(node ast.Node) bool {
+		selector, ok := node.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		if selector.Sel.Name == "Value" {
+			violation = "context value access via .Value"
+			return false
+		}
+		receiver, ok := selector.X.(*ast.Ident)
+		if !ok {
+			return true
+		}
+		if _, contextAlias := aliases[receiver.Name]; !contextAlias {
+			return true
+		}
+		if _, watched := selectors[selector.Sel.Name]; watched {
+			violation = receiver.Name + "." + selector.Sel.Name
+			return false
+		}
+		return true
+	})
+	return violation, violation != ""
+}
+
+// TestNoHiddenContextPolicy proves production neither stores capabilities in a
+// context nor creates/shields a context behind a combinator. Context lifecycle
+// policy remains explicit at the caller or adapter.
+func TestNoHiddenContextPolicy(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		for _, file := range productionFiles(t, &production) {
-			ast.Inspect(file, func(node ast.Node) bool {
-				selector, ok := node.(*ast.SelectorExpr)
-				if !ok {
-					return true
-				}
-				if _, watched := selectors[selector.Sel.Name]; !watched {
-					return true
-				}
-				receiver, ok := selector.X.(*ast.Ident)
-				if ok && (receiver.Name == "context" || receiver.Name == "ctx") {
-					t.Errorf("%s uses %s.%s; capabilities must travel as arguments",
-						production.ImportPath, receiver.Name, selector.Sel.Name)
-				}
-				return true
-			})
+			if violation, forbidden := forbiddenContextUse(file); forbidden {
+				t.Errorf("%s uses %s; context policy must remain explicit",
+					production.ImportPath, violation)
+			}
 		}
 	}
 }

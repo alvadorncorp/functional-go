@@ -4,49 +4,46 @@ id: tdd:workflow:composition
 context: workflow
 title: Workflow composition
 status: Aceito
-tags: [workflow, composition, generics, closures, reuse]
-related: [adr:workflow:001, adr:workflow:003, tdd:workflow:action]
-date: 2026-08-10
+tags: [workflow, composition, inputs, generics, closures, reuse]
+related: [adr:workflow:001, adr:workflow:003, adr:workflow:009, tdd:workflow:action]
+date: 2026-08-11
 ---
 # TDD: Composição de Workflow
 
 ## Escopo técnico
 
 ```text
-Workflow[I,O]
-     │  input I
-     ▼
-Action[O]
-
-Workflow[A,B] + Workflow[B,C] ──► Workflow[A,C]
+Workflow[I,O] + I       --Provide-->   Action[O]
+Workflow[I,O] + (A→I)  --Contramap--> Workflow[A,O]
+Workflow[A,B] + Workflow[B,C] --Then--> Workflow[A,C]
 ```
 
-Dependências sobrevivem sem runtime porque um construtor fecha sobre elas. O
-valor de função retornado *é* o grafo de dependências, por isso reatribuir a
-variável original depois não muda nada.
+Dependências entram na construção, input entra na aplicação e contexto entra em
+`Run`. Aplicar um workflow pode projetar o input e construir uma Action, mas não
+executa o efeito descrito por ela.
 
 ## Contratos públicos
 
 ```go
-func From[I, O any](fn func(I) action.Action[O]) Workflow[I, O]
-func Map[I, A, B any](wf Workflow[I, A], mapper func(A) B) Workflow[I, B]
-func MapFallible[I, A, B any](wf Workflow[I, A], mapper func(A) (B, error)) Workflow[I, B]
-func Then[A, B, C any](first Workflow[A, B], second Workflow[B, C]) Workflow[A, C]
+func From[I, O any](func(I) action.Action[O]) Workflow[I, O]
+func Map[I, A, B any](Workflow[I, A], func(A) B) Workflow[I, B]
+func MapFallible[I, A, B any](Workflow[I, A], func(A) (B, error)) Workflow[I, B]
+func Then[A, B, C any](Workflow[A, B], Workflow[B, C]) Workflow[A, C]
+func Provide[I, O any](Workflow[I, O], I) action.Action[O]
+func Contramap[A, I, O any](Workflow[I, O], func(A) I) Workflow[A, O]
 ```
 
-## Invariantes impostas por testes
+## Leis
 
-- aplicar um workflow a uma entrada não produz efeito;
-- um workflow construído serve a muitas entradas e muitos contextos
-  concorrentemente;
-- dependências capturadas são estáveis — não existe resolução tardia;
-- `Then` é determinístico em ordem e curto-circuita na primeira falha;
-- um workflow composto é um `Workflow` ordinário, indistinguível de um primitivo
-  para fins de composição.
+- `Contramap(wf, identity)` é observacionalmente equivalente a `wf`;
+- contramaps aninhados equivalem à composição dos mappers;
+- `Provide(wf, input)` equivale a aplicar `wf(input)`, incluindo resultado,
+  erro, contexto e contagem de execução;
+- `Contramap` chama mapper na aplicação, não na construção;
+- `Provide` e `Contramap` nunca chamam `Run` nem executam efeitos.
 
-## Por que a composição é binária
+## Limites
 
-Os genéricos de Go não preservam um tipo intermediário que muda ao longo de uma
-lista variádica. `Then(a, b, c)` exigiria `any`, reflection ou asserções de tipo
-em runtime. Encadear `Then(Then(a, b), c)` mantém cada tipo checado em
-compilação, e a ergonomia nunca supera a segurança de tipos aqui.
+Composição permanece binária e type-safe. Não existe lista variádica heterogênea,
+reflection, resolução tardia de dependências, DI container, engine ou runtime.
+`Provide` fornece input; não registra nem resolve dependências.
