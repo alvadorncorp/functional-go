@@ -10,8 +10,9 @@ import (
 // A package missing from this map is an unreviewed addition and fails the gate.
 func allowedInternalEdges() map[string]map[string]struct{} {
 	return map[string]map[string]struct{}{
-		workflowModule: {actionPackage: {}},
-		actionPackage:  {},
+		workflowModule:     {actionPackage: {}},
+		actionPackage:      {},
+		transactionPackage: {actionPackage: {}},
 	}
 }
 

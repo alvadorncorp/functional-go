@@ -64,4 +64,26 @@ func TestGateCanFail(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("contextValueSelectors watches both directions", func(t *testing.T) {
+		selectors := contextValueSelectors()
+		for _, name := range []string{"WithValue", "Value"} {
+			if _, watched := selectors[name]; !watched {
+				t.Errorf("%q is not watched, want watched", name)
+			}
+		}
+	})
+
+	t.Run("expectedFiles declares every production package", func(t *testing.T) {
+		envelope := expectedFiles()
+		for _, pkg := range []string{workflowModule, actionPackage, transactionPackage} {
+			files, declared := envelope[pkg]
+			if !declared || len(files) == 0 {
+				t.Errorf("%s missing from expectedFiles", pkg)
+			}
+			if !slices.IsSorted(files) {
+				t.Errorf("%s file list is not sorted: %v", pkg, files)
+			}
+		}
+	})
 }
