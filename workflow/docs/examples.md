@@ -26,6 +26,8 @@ sequenceDiagram
     ACC-->>WF: Account
 
     WF->>DOM: Withdraw(account, command)
+    DOM->>DOM: RequiresManualReview(command)
+    DOM->>DOM: SelectWithdrawalMode(command)
     DOM-->>WF: Decision
 
     WF->>TX: Within(...)
@@ -37,6 +39,10 @@ sequenceDiagram
 
     WF-->>HTTP: Receipt
 ```
+
+Dentro do passo puro de domínio, uma Specification classifica o comando e uma
+Policy escolhe a estratégia. Requirement, Transition, Invariant e Decision
+continuam explícitos; nenhum desses valores carrega efeito ou infraestrutura.
 
 Chamadas efetivas começam somente após `action.Run(ctx, program)`. Entre
 construir o comando e chamar `Run`, zero efeitos ocorrem — um teste afirma isso

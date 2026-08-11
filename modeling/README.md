@@ -25,10 +25,16 @@ Requirement, Transition, Invariant, Change, and Decision as their domain flow
 requires; modeling provides no runner.
 
 Context-derived domain strategies live in the public
-[`modeling/policy`](policy/) capability. `Policy[I,O]` is a pure function type;
-`Constant`, `Map`, and `Contramap` adapt it, while `When`,
-`FirstApplicable`, and `Fallback` provide ordered Optional-based selection.
-No Policy symbol is reexported from the root package.
+[`modeling/policy`](docs/packages/policy.md) capability. `Policy[I,O]` is a pure
+function type; `Map`/`Contramap`, `Compose`/`Zip`, and
+`Choose`/`When`/`OrElse`/`FirstApplicable`/`Fallback` provide the complete
+closed algebra. No Policy symbol is reexported from the root package.
+
+Boolean domain classifications live in the independent public
+[`modeling/specification`](docs/packages/specification.md) capability.
+`Specification[T]` is nominal `T -> bool`; `All`, `Any`, `Not`, and `Contramap`
+compose classifications without validation, errors, effects, sibling imports,
+or root reexports.
 
 The additive [`modeling/reducer`](reducer/) capability defines
 `Reducer[S,E] func(S,E) S` and ordered `Replay` over `immutable.List[E]`.
@@ -47,16 +53,21 @@ reexported from the root package.
 - [Documentation index](docs/README.md)
 - [Architecture overview](docs/overview.md)
 - [Change package guide](docs/packages/change.md)
+- [Policy package guide](docs/packages/policy.md)
+- [Specification package guide](docs/packages/specification.md)
 - [ADR-001: minimal type-safe domain modeling](docs/adr/modeling/adr-001-minimal-type-safe-domain-modeling.md)
 - [ADR-002: root facade over an internal Decision package](docs/adr/modeling/adr-002-root-facade-internal-decision.md)
 - [ADR-003: nominal rules and operation requirements](docs/adr/modeling/adr-003-rules-and-requirements.md)
 - [ADR-004: public Change capability boundary](docs/adr/modeling/adr-004-change-capability-boundary.md)
 - [ADR-005: additive Policy capability boundary](docs/adr/modeling/adr-005-policy-capability-boundary.md)
+- [ADR-008: nominal Specification capability](docs/adr/modeling/adr-008-specification-capability-boundary.md)
+- [ADR-009: completed Policy composition algebra](docs/adr/modeling/adr-009-policy-composition-algebra.md)
 - [TDD: behavioral core](docs/tdd/modeling/core.md)
 - [TDD: Decision composition](docs/tdd/modeling/decision-composition.md)
 - [TDD: Rules and Requirements](docs/tdd/modeling/rules-requirements.md)
 - [TDD: Change and state evolution](docs/tdd/modeling/change.md)
 - [TDD: Policy](docs/tdd/modeling/policy.md)
+- [TDD: Specification](docs/tdd/modeling/specification.md)
 - [ADR-006: additive reducer capability boundary](docs/adr/modeling/adr-006-reducer-capability-boundary.md)
 - [TDD: Reducer and Replay](docs/tdd/modeling/reducer-replay.md)
 - [Projection package guide](docs/packages/projection.md)

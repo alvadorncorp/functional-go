@@ -71,17 +71,22 @@ errors remain application-owned.
 
 ## Policy capability
 
-`modeling/policy` represents `I → O`: a pure strategy that derives a domain
-result from one explicit context. `Constant`, `Map`, and `Contramap` reuse and
-adapt policies. `When` turns a Policy into `I → Optional[O]`,
-`FirstApplicable` selects the first Some in declaration order, and `Fallback`
-restores a total Policy.
+`modeling/policy` represents `I -> O`: a pure strategy that derives a domain
+result from explicit input. Map transforms output, Contramap adapts input,
+Compose chains decisions, Zip combines two decisions on the same input, Choose
+selects one total strategy, and When/OrElse/FirstApplicable/Fallback model
+ordered applicability. Policy validates nothing and executes no effect.
 
-Policy is not Rule (`T → error`), Requirement (`S × I → error`), Transition
-(`S × I → O`), Change (`S → S`), Reducer (`S × E → S`), or Projection
-(`P × E → P`). It executes no effects and imports no sibling modeling
-capability. Applicability is Optional, never error. Multiple inputs belong in
-an application-owned context struct.
+`modeling/specification` represents nominal `T -> bool`: a Boolean domain
+classification. All/Any evaluate left-to-right with short-circuit, Not derives
+a complementary category, and Contramap adapts input. The package has zero
+production imports and is independent from Policy and every sibling.
+
+Policy asks which result or strategy to use. Specification asks whether a value
+belongs to a domain category. Rule explains a failed value condition,
+Requirement authorizes an operation, Invariant validates resulting state, and
+Change performs `S -> S`. Equal underlying signatures never erase those
+semantic responsibilities.
 
 ## Reducer and Replay
 

@@ -33,7 +33,7 @@ composição que importa ambos.
 
 | Conceito | Dono |
 |---|---|
-| `Rule`, `Requirement`, `Transition`, `Invariant`, `Policy`, `Decision` | `modeling` |
+| `Specification`, `Policy`, `Rule`, `Requirement`, `Transition`, `Invariant`, `Decision` | `modeling` |
 | regra ou limiar de negócio concreto | domínio da aplicação |
 | capacidades `Load`, `Save` | aplicação |
 | `OutboxMessage`, `EventEncoder` | aplicação |
@@ -42,6 +42,9 @@ composição que importa ambos.
 
 ## Invariantes demonstradas pelos exemplos
 
+- uma `Specification` classifica input puro e alimenta uma `Policy` por
+  adaptação explícita na aplicação; nenhum package core ganha uma aresta
+  `workflow -> modeling` ou `modeling -> workflow`;
 - o domínio compila e é testado sem `context`, `workflow`, banco ou transporte;
 - uma decisão recusada retorna antes de qualquer transação ser aberta;
 - a ordem de eventos de `Decision.Events()` é preservada quando as mensagens são

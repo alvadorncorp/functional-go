@@ -21,11 +21,11 @@ transaction         effectful boundary
 A propriedade não se confunde:
 
 ```text
-Rule, Requirement, Transition, Invariant, Policy  →  domain (via modeling)
-Decision                                          →  domain result
-Load, Save                                        →  workflow capability
-Outbox                                            →  application capability
-Transaction                                       →  workflow execution boundary
+Specification, Policy, Rule, Requirement, Transition, Invariant  -> domain (via modeling)
+Decision                                                          -> domain result
+Load, Save                                                        -> workflow capability
+Outbox                                                            -> application capability
+Transaction                                                       -> workflow execution boundary
 ```
 
 ## Carregar, decidir, confirmar
@@ -37,6 +37,26 @@ decision, err := domain.Withdraw(account, cmd)
 O workflow chama uma função de domínio ordinária. Ele não usa
 `modeling.Requirement` diretamente, porque a função de domínio é onde as regras
 pertencem juntas.
+
+## Specification classifica, Policy escolhe
+
+```text
+WithdrawCommand
+      |
+      v
+RequiresManualReview Specification   pure classification
+      |
+      v
+SelectWithdrawalMode Policy          pure strategy
+      |
+      v
+Withdraw domain function             requirements + transition + invariant + decision
+```
+
+Specification e Policy recebem somente dados já carregados. Banco, HTTP,
+broker, clock, filesystem e `context.Context` permanecem fora das duas. A
+closure explícita entre a Specification nominal e `policy.Choose` mostra a
+fronteira sem criar dependência entre os packages.
 
 ## Policy escolhe, workflow executa
 
