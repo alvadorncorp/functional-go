@@ -1,6 +1,9 @@
 package archtest
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"slices"
 	"testing"
 )
@@ -37,7 +40,10 @@ func TestGateCanFail(t *testing.T) {
 	})
 
 	t.Run("forbiddenExportedNames covers the documented non-goals", func(t *testing.T) {
-		for _, name := range []string{"Register", "Container", "Repository", "Retry", "Timeout", "DistributedTransaction"} {
+		for _, name := range []string{
+			"Container", "DistributedTransaction", "Fork", "Join", "ParZip", "Race",
+			"Register", "Repository", "Retry", "Runner", "SagaEngine", "Timeout", "Worker",
+		} {
 			if _, forbidden := forbiddenExportedNames[name]; !forbidden {
 				t.Errorf("%q missing from forbiddenExportedNames", name)
 			}
@@ -73,9 +79,13 @@ func TestGateCanFail(t *testing.T) {
 		}
 	})
 
-	t.Run("contextValueSelectors watches both directions", func(t *testing.T) {
-		selectors := contextValueSelectors()
-		for _, name := range []string{"WithValue", "Value"} {
+	t.Run("forbiddenContextSelectors watches storage creation and shielding", func(t *testing.T) {
+		selectors := forbiddenContextSelectors()
+		for _, name := range []string{
+			"AfterFunc", "Background", "TODO", "Value", "WithCancel", "WithCancelCause",
+			"WithDeadline", "WithDeadlineCause", "WithoutCancel", "WithTimeout",
+			"WithTimeoutCause", "WithValue",
+		} {
 			if _, watched := selectors[name]; !watched {
 				t.Errorf("%q is not watched, want watched", name)
 			}
@@ -91,6 +101,45 @@ func TestGateCanFail(t *testing.T) {
 			}
 			if !slices.IsSorted(files) {
 				t.Errorf("%s file list is not sorted: %v", pkg, files)
+			}
+		}
+	})
+
+	t.Run("execution policy rejects go and recover", func(t *testing.T) {
+		for name, source := range map[string]string{
+			"go":      "package p; func f() { go func(){}() }",
+			"recover": "package p; func f() { _ = recover() }",
+		} {
+			file, err := parser.ParseFile(token.NewFileSet(), name+".go", source, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := ""
+			ast.Inspect(file, func(node ast.Node) bool {
+				if violation := forbiddenExecutionNode(node); violation != "" {
+					found = violation
+				}
+				return true
+			})
+			if found == "" {
+				t.Errorf("execution policy did not reject %s snippet", name)
+			}
+		}
+	})
+
+	t.Run("context policy rejects aliases dot imports and named receivers", func(t *testing.T) {
+		for name, source := range map[string]string{
+			"alias":  "package p; import c \"context\"; func f() { _ = c.Background() }",
+			"derive": "package p; import c \"context\"; func f(parent c.Context) { _, _ = c.WithCancel(parent) }",
+			"dot":    "package p; import . \"context\"; func f() { _ = Background() }",
+			"value":  "package p; import \"context\"; func f(runCtx context.Context) { _ = runCtx.Value(\"key\") }",
+		} {
+			file, err := parser.ParseFile(token.NewFileSet(), name+".go", source, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if violation, forbidden := forbiddenContextUse(file); !forbidden {
+				t.Errorf("context policy accepted %s snippet; violation=%q", name, violation)
 			}
 		}
 	})

@@ -48,8 +48,8 @@ func TestActionIsASink(t *testing.T) {
 		if production.ImportPath != actionPackage {
 			continue
 		}
-		if !slices.Equal(production.Imports, []string{"context"}) {
-			t.Errorf("%s imports %v, want exactly [context]", actionPackage, production.Imports)
+		if !slices.Equal(production.Imports, []string{"context", "errors"}) {
+			t.Errorf("%s imports %v, want exactly [context errors]", actionPackage, production.Imports)
 		}
 		return
 	}

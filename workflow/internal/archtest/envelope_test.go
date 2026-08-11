@@ -16,8 +16,8 @@ func expectedFiles() map[string][]string {
 	return map[string][]string{
 		workflowModule: {"compose.go", "doc.go", "input.go", "panic.go", "workflow.go"},
 		actionPackage: {
-			"action.go", "attempt.go", "combine.go", "construct.go",
-			"control.go", "observe.go", "panic.go", "transform.go",
+			"action.go", "attempt.go", "combine.go", "construct.go", "control.go",
+			"observe.go", "panic.go", "resource.go", "transform.go",
 		},
 		transactionPackage: {"transaction.go"},
 	}

@@ -80,3 +80,43 @@ func ExampleAttempt() {
 	fmt.Println(result.Value, result.Err, outerErr)
 	// Output: 0 unavailable <nil>
 }
+
+func ExampleEnsure() {
+	program := action.Ensure(
+		action.Pure(42),
+		action.Do(func(context.Context) (struct{}, error) { fmt.Println("finalized"); return struct{}{}, nil }),
+	)
+	value, err := action.Run(context.Background(), program)
+	fmt.Println(value, err)
+	// Output:
+	// finalized
+	// 42 <nil>
+}
+
+func ExampleBracket() {
+	program := action.Bracket(
+		action.Pure("resource"),
+		func(resource string) action.Action[int] { fmt.Println("use", resource); return action.Pure(42) },
+		func(resource string) action.Action[struct{}] {
+			fmt.Println("release", resource)
+			return action.Pure(struct{}{})
+		},
+	)
+	value, err := action.Run(context.Background(), program)
+	fmt.Println(value, err)
+	// Output:
+	// use resource
+	// release resource
+	// 42 <nil>
+}
+
+func ExampleAcquireUseRelease() {
+	program := action.AcquireUseRelease(
+		action.Pure("lease"),
+		func(string) action.Action[int] { return action.Pure(42) },
+		func(string) action.Action[struct{}] { return action.Pure(struct{}{}) },
+	)
+	value, err := action.Run(context.Background(), program)
+	fmt.Println(value, err)
+	// Output: 42 <nil>
+}

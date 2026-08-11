@@ -144,3 +144,60 @@ func BenchmarkActionAttempt(b *testing.B) {
 		actionAttemptBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
 	}
 }
+
+func BenchmarkActionEnsure(b *testing.B) {
+	subject := action.Ensure(action.Pure(answer), action.Pure(struct{}{}))
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionBracket(b *testing.B) {
+	subject := action.Bracket(
+		action.Pure(answer),
+		func(value int) action.Action[int] { return action.Pure(value) },
+		func(int) action.Action[struct{}] { return action.Pure(struct{}{}) },
+	)
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionAcquireUseRelease(b *testing.B) {
+	subject := action.AcquireUseRelease(
+		action.Pure(answer),
+		func(value int) action.Action[int] { return action.Pure(value) },
+		func(int) action.Action[struct{}] { return action.Pure(struct{}{}) },
+	)
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionBracketManual(b *testing.B) {
+	acquire := action.Pure(answer)
+	use := func(value int) action.Action[int] { return action.Pure(value) }
+	release := func(int) action.Action[struct{}] { return action.Pure(struct{}{}) }
+	subject := action.Do(func(ctx context.Context) (int, error) {
+		resource, err := acquire(ctx)
+		if err != nil {
+			return 0, err
+		}
+		value, useErr := use(resource)(ctx)
+		_, releaseErr := release(resource)(ctx)
+		if useErr != nil {
+			return 0, useErr
+		}
+		if releaseErr != nil {
+			return 0, releaseErr
+		}
+		return value, nil
+	})
+	b.ReportAllocs()
+	for b.Loop() {
+		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
