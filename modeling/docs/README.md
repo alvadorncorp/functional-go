@@ -1,7 +1,7 @@
 # modeling documentation
 
-The module documentation is owned here. The repository root remains a module
-catalog and must not acquire a `docs/` tree.
+A documentação do módulo é de propriedade daqui. A raiz do repositório
+permanece um catálogo de módulos e não deve adquirir uma árvore `docs/`.
 
 ## Guides
 
@@ -9,6 +9,7 @@ catalog and must not acquire a `docs/` tree.
 - [Change package](packages/change.md)
 - [Policy package](packages/policy.md)
 - [Specification package](packages/specification.md)
+- [Reducer package](packages/reducer.md)
 - [Projection package](packages/projection.md)
 
 ## Architecture decisions
@@ -22,6 +23,7 @@ catalog and must not acquire a `docs/` tree.
 - [ADR-007: additive projection capability boundary](adr/modeling/adr-007-projection-capability-boundary.md)
 - [ADR-008: nominal Specification capability](adr/modeling/adr-008-specification-capability-boundary.md)
 - [ADR-009: completed Policy composition algebra](adr/modeling/adr-009-policy-composition-algebra.md)
+- [ADR-010: Replay/Project sobre iter.Seq (stdlib only)](adr/modeling/adr-010-streaming-replay-project-seq.md)
 
 ## Technical designs
 
@@ -34,4 +36,5 @@ catalog and must not acquire a `docs/` tree.
 - [TDD: Reducer and Replay](tdd/modeling/reducer-replay.md)
 - [TDD: Projection and Project](tdd/modeling/projection.md)
 
-Formal records use the module-owned AKB spine; no copy belongs at repository root.
+Registros formais usam a spine AKB do módulo; nenhuma cópia pertence à raiz do
+repositório.

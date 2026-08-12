@@ -54,10 +54,8 @@ func TestDependencyGateCanFail(t *testing.T) {
 		}
 	}
 	for _, pkg := range []string{reducerPackage, projectionPackage} {
-		if directImportForbidden(pkg, functionalImmutable) {
-			t.Errorf("%s direct-import gate rejected %s", pkg, functionalImmutable)
-		}
 		for _, imported := range []string{
+			functionalImmutable,
 			functionalOptional,
 			functionalPredicate,
 			functionalFunction,

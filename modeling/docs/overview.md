@@ -1,6 +1,6 @@
 # Architecture overview
 
-`modeling` provides a metamodel, not an application domain:
+`modeling` fornece um metamodelo, não um domínio de aplicação:
 
 ```text
 application domain
@@ -17,118 +17,149 @@ application domain
       │               functional/primitives/predicate
       │               functional/values/optional
       ├── specializes → modeling/reducer
-                            ↓ uses
-                     functional/immutable
-      └── specializes → modeling/projection
-                            ↓ uses
-                     functional/immutable
+      │                     ↓ uses
+      │               stdlib iter
+      ├── specializes → modeling/projection
+      │                     ↓ uses
+      │               stdlib iter
+      └── specializes → modeling/specification
+                            (zero production imports)
 ```
 
-Applications import the root package for Decision, Transition, Invariant, Rule,
-and Requirement. They import `modeling/change` when they need named pure state
-evolution, `modeling/policy` for context-derived strategies,
-`modeling/reducer` for fact-to-state replay, and `modeling/projection` for
-fact-to-derived-representation projection. The root does not re-export Change,
-Policy, Reducer, Projection, or Project symbols. The internal Decision package
-remains an enforceable implementation boundary, not another public API.
+Aplicações importam o pacote raiz para Decision, Transition, Invariant, Rule e
+Requirement. Importam `modeling/change` para evolução nomeada de estado,
+`modeling/policy` para estratégias derivadas de contexto,
+`modeling/reducer` para replay fato→estado, `modeling/projection` para
+projeção fato→representação derivada e `modeling/specification` para
+classificação booleana nominal. A raiz não reexporta Change, Policy, Reducer,
+Replay, Projection, Project nem Specification. O pacote interno de Decision
+permanece fronteira de implementação, não outra API pública.
 
-## Structural semantics
+## Semântica estrutural
 
-Value, Identity, Entity, Aggregate, and Model remain application-owned Go
-types. The module does not export marker interfaces, required embeddings, base
-types, or reflection-based equality. An aggregate is a consistency boundary,
-not a database row or repository record.
+Value, Identity, Entity, Aggregate e Model permanecem tipos Go da aplicação.
+O módulo não exporta marker interfaces, embeddings obrigatórios, tipos base
+nem igualdade por reflection. Um aggregate é fronteira de consistência, não
+linha de database nem registro de repositório.
 
-## Behavioral primitives
+## Primitivas comportamentais
 
-The root public contract contains:
+O contrato público da raiz contém:
 
-- `Decision[S,E]` with its valid zero value, constructor, observations, and
-  typed composition functions;
-- `Rule[T]` for an explanatory condition over one value, composed by ordered
-  `AllRules` or non-empty `AnyRule`;
-- `Requirement[S,I]` for an operation precondition over state plus input,
-  composed by `AllRequirements` or non-empty `AnyRequirement`;
-- `Transition[S,I,O]` and `FallibleTransition[S,I,O]` for next-state computation;
-- `Invariant[S]` for resulting-state validity, with fail-fast or accumulating
-  error composition.
-- `reducer.Reducer[S,E]` for fact-to-state evolution and
-  `reducer.Replay` for a synchronous ordered left fold over
-  `immutable.List[E]` (see the dedicated reducer section).
-- `projection.Projection[P,E]` for fact-to-derived-representation evolution and
-  `projection.Project` for the corresponding ordered batch fold.
+- `Decision[S,E]` com zero value válido, construtor, observações e funções de
+  composição tipadas;
+- `Rule[T]` para condição explicativa sobre um valor, composta por `AllRules`
+  ordenado ou `AnyRule` não vazio;
+- `Requirement[S,I]` para pré-condição operacional sobre estado + input,
+  composta por `AllRequirements` ou `AnyRequirement` não vazio;
+- `Transition[S,I,O]` e `FallibleTransition[S,I,O]` para computação de
+  próximo estado;
+- `Invariant[S]` para validade do estado resultante, com composição fail-fast
+  ou acumuladora de erros.
 
-The `modeling/change` public capability contains exactly `Change[S]`,
-`Identity`, `Compose`, `Pipe`, `Apply`, and `ApplyAll`. Change maps `S -> S`,
-composes within one state type, and captures any operation context in an
-ordinary closure.
+Capabilities em subpacotes:
 
-Rule and Invariant deliberately remain distinct nominal types even though both
-return error. Requirement answers whether an input may be applied to current
-state; it is not a Transition hook. Change neither decides applicability nor
-validates or emits events. Ordinary functions remain assignable and all domain
-errors remain application-owned.
+- `reducer.Reducer[S,E]` e `reducer.Replay` — fold esquerdo síncrono sobre
+  `iter.Seq[E]` (ver seção Reducer);
+- `projection.Projection[P,E]` e `projection.Project` — fold correspondente
+  para representações derivadas sobre `iter.Seq[E]`;
+- `change.Change[S]` com Identity, Compose, Pipe, Apply e ApplyAll;
+- `policy.Policy[I,O]` e combinadores de composição;
+- `specification.Specification[T]` com All/Any/Not/Contramap.
 
-## Policy capability
+Rule e Invariant permanecem tipos nominais distintos mesmo ambos devolvendo
+error. Requirement responde se um input pode ser aplicado ao estado corrente;
+não é hook de Transition. Change nem decide aplicabilidade nem valida ou emite
+eventos. Funções ordinárias permanecem atribuíveis e erros de domínio são da
+aplicação.
 
-`modeling/policy` represents `I -> O`: a pure strategy that derives a domain
-result from explicit input. Map transforms output, Contramap adapts input,
-Compose chains decisions, Zip combines two decisions on the same input, Choose
-selects one total strategy, and When/OrElse/FirstApplicable/Fallback model
-ordered applicability. Policy validates nothing and executes no effect.
+## Capability Policy
 
-`modeling/specification` represents nominal `T -> bool`: a Boolean domain
-classification. All/Any evaluate left-to-right with short-circuit, Not derives
-a complementary category, and Contramap adapts input. The package has zero
-production imports and is independent from Policy and every sibling.
+`modeling/policy` representa `I -> O`: estratégia pura que deriva um resultado
+de domínio a partir de input explícito. Map transforma output, Contramap
+adapta input, Compose encadeia decisões, Zip combina duas decisões no mesmo
+input, Choose seleciona uma estratégia total, e When/OrElse/FirstApplicable/
+Fallback modelam aplicabilidade ordenada. Policy não valida e não executa
+efeito.
 
-Policy asks which result or strategy to use. Specification asks whether a value
-belongs to a domain category. Rule explains a failed value condition,
-Requirement authorizes an operation, Invariant validates resulting state, and
-Change performs `S -> S`. Equal underlying signatures never erase those
-semantic responsibilities.
+`modeling/specification` representa `T -> bool` nominal: classificação
+booleana de domínio. All/Any avaliam left-to-right com short-circuit, Not
+deriva a categoria complementar e Contramap adapta input. O pacote tem zero
+imports de produção e é independente de Policy e de todo sibling.
 
-## Reducer and Replay
+Policy pergunta qual resultado ou estratégia usar. Specification pergunta se
+um valor pertence a uma categoria de domínio. Rule explica condição falha,
+Requirement autoriza operação, Invariant valida estado resultante e Change
+realiza `S -> S`. Assinaturas subjacentes iguais nunca apagam essas
+responsabilidades semânticas.
 
-`Reducer[S,E]` is an ordinary `func(S,E) S`: a fact that already occurred is
-materialized into the next state. It is deliberately distinct from Transition,
-which computes from intention/input, from Decision, which carries state plus
-emitted events, and from Policy, which derives a strategy from context.
+## Reducer e Replay
 
-`reducer.Replay(initial, events, reduce)` applies each `immutable.List` event
-exactly once in encounter order. Empty replay returns the initial state, and
-replaying concatenated lists is equivalent to replaying the left list and then
-the right list. Applications own heterogeneous event unions and may convert a
-Decision event sequence with `immutable.CollectList(decisionValue.Events())`
-when those events reconstruct state.
+`Reducer[S,E]` é um `func(S,E) S` ordinário: um fato já ocorrido materializa-se
+no próximo estado. Distingue-se deliberadamente de Transition (intenção/input),
+de Decision (estado + eventos emitidos) e de Policy (estratégia a partir de
+contexto).
 
-Replay is a pure fold, not an Event Sourcing runtime. It does not load streams,
-persist events, serialize versions, create snapshots/projections, register
-handlers, dispatch messages, or compare Decision state with reduced state.
+`reducer.Replay(initial, events, reduce)` aplica cada evento de um
+`iter.Seq[E]` exatamente uma vez, na ordem de encontro, em passagem única.
+Replay vazio devolve o estado inicial; concatenar sequências (quando a
+aplicação define `A ++ B`) é equivalente a reaplicar a esquerda e depois a
+direita. A ponte com Decision é direta:
 
-## Projection and Project
+```go
+state := reducer.Replay(previous, decision.Events(), reduce)
+```
 
-`Projection[P,E]` is an ordinary `func(P,E) P` that derives the next read model,
-summary, index, statistic, or other application-owned representation from a
-fact. `projection.Project(initial, events, project)` applies the same operation
-to an `immutable.List` in encounter order, so batch rebuild and incremental
-updates share one semantic function.
+Não é necessário `immutable.CollectList`. Quem precisar de multi-pass
+materializa explicitamente antes de chamar Replay.
 
-Projection is deliberately distinct from Reducer. Reducer explains what facts
-mean for domain state; Projection explains what they mean for a derived
-representation. The two packages are siblings, import neither one another nor
-the modeling root, and independently consume application-owned events.
+Produção de `modeling/reducer` depende somente do stdlib (`iter`). Replay é um
+fold puro, não um runtime de Event Sourcing: não carrega streams, não
+persiste, não serializa versões, não cria snapshots, não registra handlers e
+não compara estado de Decision com estado reduzido.
 
-Project iterates `events.Values()` directly. Empty input returns initial; the
-concatenation law is `Project(p,A++B,f) = Project(Project(p,A,f),B,f)`.
-Determinism and shallow immutability remain the supplied function's
-responsibility.
+## Projection e Project
 
-Projection is not a CQRS runtime and performs no persistence. Repositories,
-databases, brokers, subscriptions, offsets, checkpoints, event loading,
-background processing, and eventual consistency stay outside modeling.
+`Projection[P,E]` é um `func(P,E) P` ordinário que deriva o próximo read
+model, sumário, índice, estatística ou outra representação application-owned
+a partir de um fato. `projection.Project(initial, events, project)` aplica a
+mesma operação a um `iter.Seq[E]` na ordem de encontro, de passagem única, de
+modo que rebuild em lote e atualização incremental compartilham uma função
+semântica.
 
-## Explicit domain flow
+Projection distingue-se de Reducer. Reducer explica o que os fatos significam
+para o estado de domínio; Projection explica o que significam para uma
+representação derivada. Os dois pacotes são siblings, não se importam nem
+importam a raiz de modeling, e consomem independentemente eventos da
+aplicação.
+
+Ponte com Decision:
+
+```go
+view := projection.Project(empty, decision.Events(), project)
+```
+
+Entrada vazia devolve `initial`; a lei de concatenação é
+`Project(p,A++B,f) = Project(Project(p,A,f),B,f)` quando a aplicação define a
+concatenação. Determinismo e imutabilidade superficial permanecem
+responsabilidade da função fornecida.
+
+Produção de `modeling/projection` depende somente do stdlib (`iter`).
+Projection não é runtime CQRS e não persiste. Repositórios, databases,
+brokers, subscriptions, offsets, checkpoints, carga de eventos, processamento
+em background e consistência eventual ficam fora de modeling.
+
+## Valores grandes e `hugeParam`
+
+A regra de lint `hugeParam` (e análogas) é um **guarda-corpo arquitetural**
+sobre o tamanho de valores concretos que a aplicação escolhe copiar por
+assinatura — não um motivo para ponteirizar o metamodelo. `Reducer`,
+`Projection`, `Change` e demais tipos de capability permanecem com semântica
+de valor (`func` / valores). Estados ou projeções grandes devem ser modelados
+na aplicação; não se autoriza `//nolint` nem `Ref`/`Box`/`Readonly` no
+contrato de modeling para contornar o lint.
+
+## Fluxo explícito de domínio
 
 ```text
 Current State + Input
@@ -142,54 +173,57 @@ Invariant[O] ────── failure → application error
 Decision[O,E]
 ```
 
-The application explicitly invokes each step. modeling has no pipeline,
+A aplicação invoca cada passo explicitamente. modeling não tem pipeline,
 runner, command handler, rules engine, registry, dispatcher, state manager,
-persistence, or transport responsibility.
+persistência nem transporte.
 
-AllRules and AllRequirements preserve declaration order, stop at the first
-failure, preserve its identity, and accept zero operands. AnyRule and
-AnyRequirement require a first operand, stop at the first success, and return
-the final evaluated error when all operands fail. Nil constituents panic while
-composition is built, matching the existing Invariant programmer-error policy.
+AllRules e AllRequirements preservam ordem de declaração, param na primeira
+falha, preservam sua identidade e aceitam zero operandos. AnyRule e
+AnyRequirement exigem um primeiro operando, param no primeiro sucesso e
+devolvem o último erro avaliado quando todos falham. Constituintes nil panican
+na construção da composição, alinhados à política de erro de programador de
+Invariant.
 
-Change uses a separate contract: Identity represents no change; Compose runs
-right-to-left; Pipe and ApplyAll run left-to-right; empty composition returns
-Identity; empty ApplyAll returns its input. A nil Change gets ordinary Go
-nil-function behavior rather than Rule/Requirement eager validation.
+Change usa contrato separado: Identity representa ausência de mudança; Compose
+roda right-to-left; Pipe e ApplyAll rodam left-to-right; composição vazia
+devolve Identity; ApplyAll vazio devolve seu input. Change nil tem comportamento
+ordinário de função nil em Go, não validação eager de Rule/Requirement.
 
-`MapState` changes only Decision state; `MapEvents` changes only events in
-order. `Emit` and `AppendEvents` preserve the input snapshot. `Combine` selects
-the right state and concatenates left-before-right events. FlatMap, negation,
-predicate bridges, rule accumulation, conditional changes, guarded changes,
-validation hooks, and alias spellings are out of scope for Change.
+`MapState` altera somente o estado de Decision; `MapEvents` altera somente os
+eventos em ordem. `Emit` e `AppendEvents` preservam o snapshot de entrada.
+`Combine` seleciona o estado direito e concatena eventos left-before-right.
+FlatMap, negação, bridges de predicado, acumulação de rules, changes
+condicionais/guarded, hooks de validação e aliases ficam fora do escopo de
+Change.
 
-## Immutability and cost
+## Imutabilidade e custo
 
-The public root Decision is a facade over a private internal Value backed by an
-immutable list. Events remain exposed only as `iter.Seq[E]`, so modeling stays
-independently evolvable. Decision immutability is shallow: referenced state or
-event values remain the caller's responsibility.
+A Decision pública da raiz é uma fachada sobre Value interno privado apoiado
+por lista imutável. Eventos permanecem expostos apenas como `iter.Seq[E]`, o
+que mantém modeling evolvível de forma independente. Imutabilidade de Decision
+é superficial: estado ou valores de evento referenciados são responsabilidade
+do chamador.
 
-Change is also conceptually and shallowly immutable. Struct values can be
-copied before update, while slices, maps, pointers, and shared references remain
-the Change author's responsibility. No reflection or deep copy is attempted.
-Composition is a linear pass over the supplied functions and defines no
-machine-independent performance cap.
+Change também é conceitual e superficialmente imutável. Structs podem ser
+copiados antes da atualização; slices, maps, ponteiros e referências
+compartilhadas permanecem responsabilidade do autor do Change. Não há
+reflection nem deep copy. Composição é passagem linear sobre as funções
+fornecidas e não define teto de performance independente de máquina.
 
-## Non-goals
+## Não-objetivos
 
-The module has no reflection, annotations, scanner, registry, service locator,
-dependency-injection container, magic dispatch, command bus, event bus, event
-store, projection worker/runtime, repository, ORM, database, HTTP, broker, filesystem, or
-concrete application-domain type.
+O módulo não tem reflection, annotations, scanner, registry, service locator,
+container de DI, dispatch mágico, command bus, event bus, event store, worker
+ou runtime de projection, repositório, ORM, database, HTTP, broker,
+filesystem nem tipo concreto de domínio de aplicação.
 
-Change is not a Patch, Diff, state manager, Reducer implementation, Replay
-engine, Transition replacement, event producer, validator, guard, runtime,
-builder, or fluent API. The Change capability does not add Reducer/Replay or
-release/tag work.
+Change não é Patch, Diff, state manager, implementação de Reducer, engine de
+Replay, substituto de Transition, produtor de eventos, validador, guard,
+runtime, builder nem API fluente.
 
-`functional/state` and `functional/immutable` are optional capabilities for
-applications with larger state. They are not superclasses, and their internal
-engines never belong to modeling. `functional/primitives/function.Transform`
-supplies the private composition algorithms for Change, but it is never aliased,
-re-exported, or exposed by the modeling capability.
+`functional/state` e `functional/immutable` são capabilities opcionais para
+aplicações com estado maior. Não são superclasses, e seus engines internos
+nunca pertencem a modeling. `functional/primitives/function.Transform` supre
+os algoritmos privados de composição de Change, mas nunca é aliasado,
+reexportado ou exposto pela capability de modeling. Reducer e projection, por
+sua vez, não dependem de `functional` em produção.

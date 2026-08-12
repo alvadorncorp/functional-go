@@ -2,26 +2,28 @@
 
 **Import path:** `github.com/alvadorncorp/gopackages/modeling/projection`
 
-Projection derives application-owned read models, summaries, indexes, and
-statistics from facts. It is a pure synchronous modeling capability, not a
-persistence adapter or CQRS runtime.
+Projection deriva read models, sumários, índices e estatísticas de propriedade
+da aplicação a partir de fatos. É uma capability de modelagem síncrona e pura,
+não um adaptador de persistência nem runtime CQRS.
 
-## Public API
+## API pública
 
 ```go
 type Projection[P, E any] func(P, E) P
 
 func Project[P, E any](
     initial P,
-    events immutable.List[E],
+    events iter.Seq[E],
     project Projection[P, E],
 ) P
 ```
 
-Ordinary `func(P,E) P` functions work directly. P may be a struct, primitive,
-or persistent collection; E remains entirely application-owned.
+Funções ordinárias `func(P, E) P` funcionam diretamente. P pode ser struct,
+primitivo ou coleção persistente da aplicação; E permanece inteiramente
+application-owned. A semântica é de valor: o metamodelo não usa ponteiro,
+`Ref`, `Box` nem `Readonly` no tipo `Projection`.
 
-## Complete example
+## Exemplo completo
 
 ```go
 type SalesSummary struct {
@@ -44,18 +46,19 @@ func ProjectSales(
 
 summary := projection.Project(
     SalesSummary{},
-    events,
+    events, // iter.Seq[OrderEvent]
     ProjectSales,
 )
 ```
 
-`ProjectSales` reads no database, broker, Event Store, clock, filesystem, or
-global registry. The application supplies facts and decides what to do with the
-returned value.
+`ProjectSales` não lê database, broker, Event Store, relógio, filesystem nem
+registry global. A aplicação fornece os fatos e decide o que fazer com o valor
+devolvido.
 
-## Other representation shapes
+## Outras formas de representação
 
-A Projection need not return a view struct. A primitive statistic is valid:
+Uma Projection não precisa devolver um struct de view. Uma estatística
+primitiva é válida:
 
 ```go
 var CountPaidOrders projection.Projection[int, OrderEvent] =
@@ -67,94 +70,137 @@ var CountPaidOrders projection.Projection[int, OrderEvent] =
     }
 ```
 
-An index may use a persistent collection:
+Um índice pode usar coleção persistente da aplicação:
 
 ```go
 type ProductIndex = immutable.Map[ProductID, ProductView]
 ```
 
-Customer views, dashboards, accumulated money values, and other derived
-representations follow the same contract; modeling does not define what counts
-as a read model.
+Views de cliente, dashboards, valores monetários acumulados e outras
+representações derivadas seguem o mesmo contrato; modeling não define o que
+conta como read model.
 
-## Incremental and batch use
+## Uso incremental e em lote
 
-The Projection function is already the incremental operation:
+A função Projection já é a operação incremental:
 
 ```go
 next := ProjectSales(current, event)
 ```
 
-Project is its ordered batch form:
+Project é a forma em lote, de passagem única:
 
 ```go
 rebuilt := projection.Project(empty, history, ProjectSales)
 ```
 
-Both paths share the same `P x E -> P` semantics. Project applies events exactly
-once in immutable-list encounter order and threads each result into the next
-call. Empty input returns the initial value.
+Ambos compartilham a semântica `P x E -> P`. Project aplica eventos exatamente
+uma vez na ordem de encontro da sequência e encadeia cada resultado. Entrada
+vazia devolve o valor inicial.
+
+## Ponte com Decision
+
+`Decision[S,E].Events()` já é `iter.Seq[E]`:
+
+```go
+view := projection.Project(empty, decision.Events(), ProjectSales)
+```
+
+Não é necessário `immutable.CollectList`. Multi-pass exige materialização
+explícita antes de Project.
 
 ## Projection versus Reducer
 
-Both types have a `value x event -> value` shape, but they communicate different
-ownership:
+Ambos têm forma `valor x evento -> valor`, com ownership distinto:
 
-- `reducer.Reducer[S,E]` evolves domain state from facts;
-- `projection.Projection[P,E]` evolves a derived representation from facts.
+- `reducer.Reducer[S,E]` evolui estado de domínio a partir de fatos;
+- `projection.Projection[P,E]` evolui uma representação derivada a partir de
+  fatos.
 
-The same event history can be replayed into domain state and projected into a
-read model independently. The packages do not import one another.
+A mesma história de eventos pode ser reaplicada em estado de domínio e
+projetada em read model de forma independente. Os pacotes não se importam.
 
-## Ignored and unknown events
+## Eventos ignorados e desconhecidos
 
-A Projection ignores an event by returning its current representation:
+Uma Projection ignora um evento devolvendo a representação corrente:
 
 ```go
 default:
     return current
 ```
 
-The application owns heterogeneous event unions and unknown-kind policy. The
-package adds no error, optional value, marker interface, registry, or reflection
-dispatcher for this case.
+A aplicação é dona de uniões heterogêneas e da política de kind desconhecido.
+O pacote não adiciona erro, optional, marker, registry nem reflection para
+esse caso.
 
-## Persistent collections
+## Coleções persistentes
 
-P may contain or be an `immutable.Map`, List, or Set. Returning the new value
-uses those collections' structural sharing naturally. Projection does not
-convert persistent collections to mutable slices or maps.
+P pode conter ou ser um `immutable.Map`, List ou Set da aplicação. Devolver o
+novo valor usa o compartilhamento estrutural dessas coleções. Projection não
+converte coleções persistentes em slices ou maps mutáveis e **não** depende de
+`functional/immutable` em produção — quem usa Map/List o faz no código da
+aplicação.
 
-## Persistence and CQRS boundary
+## Dependência e custo
 
-A typical application flow is:
+Produção importa somente a biblioteca padrão (`iter`). Project roda em
+`O(n * cost(f))`, consome a sequência uma vez e não materializa a lista de
+eventos.
 
-```text
-load facts/current view -> Projection -> save returned view
-```
-
-Only the middle transformation belongs to this package. Loading, repositories,
-database writes, subscriptions, offsets, checkpoints, retries, consumer groups,
-background workers, and eventual consistency remain in application or
-infrastructure layers.
-
-## Laws and cost
-
-Project satisfies empty identity and concatenation:
+Leis:
 
 ```text
 Project(p, empty, f) = p
 Project(p, A ++ B, f) = Project(Project(p, A, f), B, f)
 ```
 
-For deterministic f, repeated calls with equal inputs return equal results.
-Project runs in `O(n * cost(f))`, iterates `List.Values()` directly, and does not
-materialize the event list. Benchmarks report behavior rather than promise a
-machine-independent threshold.
+Para `f` determinístico, entradas iguais produzem resultados iguais.
+Benchmarks de `Project` cobrem N ∈ {0, 1, 10, 100, 1000, 10000} com
+`b.ReportAllocs()`. Os números abaixo são evidência local (não limiar de CI).
 
-## Deliberate exclusions
+### Baseline local (darwin/arm64, Apple M2 Max, go1.26.4)
 
-There is no FallibleProjection, ContramapEvent, Compose, Zip, Map,
-ContramapState, Replay alias, parallel API, ReadModel/View/Event marker,
-registry, dispatcher, handler, persistence, broker consumer, Event Store, or
-CQRS runtime in this package.
+Comando:
+
+```bash
+go test -bench=BenchmarkProjectInt -benchtime=50ms -count=1 ./projection/
+```
+
+| N | ns/op | B/op | allocs/op |
+|---|------:|-----:|----------:|
+| 0 | 2.3 | 0 | 0 |
+| 1 | 2.1 | 0 | 0 |
+| 10 | 4.8 | 0 | 0 |
+| 100 | 34 | 0 | 0 |
+| 1000 | 331 | 0 | 0 |
+| 10000 | 3172 | 0 | 0 |
+
+`Project` sobre `int` não aloca no hot path; o custo cresce linearmente com N.
+Valores medidos em 2026-08-12; reexecute o comando ao comparar outra máquina.
+
+## Valores grandes e `hugeParam`
+
+`hugeParam` é um guarda-corpo sobre o tamanho de valores concretos na
+aplicação — não um motivo para ponteirizar `Projection` ou o metamodelo.
+Representações grandes devem ser modeladas pela aplicação; o pacote não
+autoriza `//nolint` nem `Projection[*P, E]` como atalho.
+
+## Persistência e fronteira CQRS
+
+Fluxo típico da aplicação:
+
+```text
+carregar fatos/view corrente -> Projection -> salvar view devolvida
+```
+
+Somente a transformação do meio pertence a este pacote. Carga, repositórios,
+escritas em database, subscriptions, offsets, checkpoints, retries, consumer
+groups, workers em background e consistência eventual permanecem em camadas de
+aplicação ou infraestrutura.
+
+## Exclusões deliberadas
+
+Não há FallibleProjection, ContramapEvent, Compose, Zip, Map, ContramapState,
+alias Replay, API paralela, marker ReadModel/View/Event, registry, dispatcher,
+handler, persistência, broker consumer, Event Store nem runtime CQRS neste
+pacote.

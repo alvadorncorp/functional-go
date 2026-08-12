@@ -1,16 +1,17 @@
 package reducer_test
 
 import (
+	"iter"
 	"slices"
+	"strconv"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
 	"github.com/alvadorncorp/gopackages/modeling/reducer"
 )
 
 type replayFunc[S, E any] func(
 	S,
-	immutable.List[E],
+	iter.Seq[E],
 	reducer.Reducer[S, E],
 ) S
 
@@ -18,6 +19,35 @@ var (
 	_ replayFunc[int, int]              = reducer.Replay[int, int]
 	_ replayFunc[[]int, map[string]int] = reducer.Replay[[]int, map[string]int]
 )
+
+func seqOf[E any](events ...E) iter.Seq[E] {
+	return func(yield func(E) bool) {
+		for _, event := range events {
+			if !yield(event) {
+				return
+			}
+		}
+	}
+}
+
+func emptySeq[E any]() iter.Seq[E] {
+	return func(func(E) bool) {}
+}
+
+func concatSeq[E any](left, right iter.Seq[E]) iter.Seq[E] {
+	return func(yield func(E) bool) {
+		for event := range left {
+			if !yield(event) {
+				return
+			}
+		}
+		for event := range right {
+			if !yield(event) {
+				return
+			}
+		}
+	}
+}
 
 func decimalReducer(state, event int) int {
 	return state*10 + event
@@ -32,7 +62,7 @@ func TestReplayThreadsStateInEncounterOrder(t *testing.T) {
 		return decimalReducer(state, event)
 	}
 
-	got := reducer.Replay(0, immutable.ListOf(1, 2, 3), reduce)
+	got := reducer.Replay(0, seqOf(1, 2, 3), reduce)
 
 	if got != 123 {
 		t.Fatalf("Replay result = %d, want 123", got)
@@ -51,7 +81,7 @@ func TestReplayEmptyReturnsInitialWithoutCallingReducer(t *testing.T) {
 		return state + event
 	}
 
-	got := reducer.Replay(42, immutable.List[int]{}, reduce)
+	got := reducer.Replay(42, emptySeq[int](), reduce)
 
 	if got != 42 {
 		t.Fatalf("Replay empty result = %d, want 42", got)
@@ -67,7 +97,7 @@ func TestReplayEmptyAcceptsNilReducer(t *testing.T) {
 	initial := []int{1, 2}
 	var reduce reducer.Reducer[[]int, map[string]int]
 
-	got := reducer.Replay(initial, immutable.List[map[string]int]{}, reduce)
+	got := reducer.Replay(initial, emptySeq[map[string]int](), reduce)
 
 	if !slices.Equal(got, initial) {
 		t.Fatalf("Replay empty with nil reducer = %v, want %v", got, initial)
@@ -86,7 +116,7 @@ func TestReplayNonEmptyNilReducerHasOrdinaryFunctionPanic(t *testing.T) {
 	var reduce reducer.Reducer[[]int, map[string]int]
 	_ = reducer.Replay(
 		[]int{},
-		immutable.ListOf(map[string]int{"value": 1}),
+		seqOf(map[string]int{"value": 1}),
 		reduce,
 	)
 }
@@ -96,7 +126,7 @@ func TestReplaySupportsNonComparableStateAndEvent(t *testing.T) {
 
 	got := reducer.Replay(
 		[]int{1},
-		immutable.ListOf(map[string]int{"value": 2}),
+		seqOf(map[string]int{"value": 2}),
 		func(state []int, event map[string]int) []int {
 			return append(state, event["value"])
 		},
@@ -110,9 +140,9 @@ func TestReplaySupportsNonComparableStateAndEvent(t *testing.T) {
 func TestReplayConcatenationLaw(t *testing.T) {
 	t.Parallel()
 
-	left := immutable.ListOf(1, 2)
-	right := immutable.ListOf(3, 4)
-	joined := left.Append(right.Items()...)
+	left := seqOf(1, 2)
+	right := seqOf(3, 4)
+	joined := concatSeq(left, right)
 
 	direct := reducer.Replay(0, joined, decimalReducer)
 	staged := reducer.Replay(
@@ -126,22 +156,73 @@ func TestReplayConcatenationLaw(t *testing.T) {
 	}
 }
 
-func TestReplayIsDeterministicForDeterministicReducerAndPreservesEvents(t *testing.T) {
+func TestReplayIsDeterministicForDeterministicReducer(t *testing.T) {
 	t.Parallel()
 
-	events := immutable.ListOf(2, 3, 5)
-	before := events.Items()
+	events := []int{2, 3, 5}
 	reduce := func(state, event int) int {
 		return state*31 + event
 	}
 
-	first := reducer.Replay(7, events, reduce)
-	second := reducer.Replay(7, events, reduce)
+	first := reducer.Replay(7, seqOf(events...), reduce)
+	second := reducer.Replay(7, seqOf(events...), reduce)
 
 	if first != second {
 		t.Fatalf("deterministic Replay results = %d and %d", first, second)
 	}
-	if !slices.Equal(events.Items(), before) {
-		t.Fatalf("Replay changed events: got %v, want %v", events.Items(), before)
+	if !slices.Equal(events, []int{2, 3, 5}) {
+		t.Fatalf("Replay changed source slice: got %v", events)
+	}
+}
+
+func TestReplayIsSinglePass(t *testing.T) {
+	t.Parallel()
+
+	passes := 0
+	events := func(yield func(int) bool) {
+		passes++
+		if passes > 1 {
+			t.Fatal("Replay ranged over events more than once")
+		}
+		for _, event := range []int{1, 2} {
+			if !yield(event) {
+				return
+			}
+		}
+	}
+
+	got := reducer.Replay(0, events, decimalReducer)
+	if got != 12 {
+		t.Fatalf("Replay single-pass result = %d, want 12", got)
+	}
+	if passes != 1 {
+		t.Fatalf("Replay passes = %d, want 1", passes)
+	}
+}
+
+var (
+	replaySumSink        int
+	replayBenchmarkSizes = [...]int{0, 1, 10, 100, 1000, 10000}
+)
+
+func benchmarkIntEvents(size int) iter.Seq[int] {
+	events := make([]int, size)
+	for index := range events {
+		events[index] = index
+	}
+	return seqOf(events...)
+}
+
+func BenchmarkReplayInt(b *testing.B) {
+	for _, size := range replayBenchmarkSizes {
+		b.Run(strconv.Itoa(size), func(b *testing.B) {
+			events := benchmarkIntEvents(size)
+			b.ReportAllocs()
+			for b.Loop() {
+				replaySumSink = reducer.Replay(0, events, func(total, event int) int {
+					return total + event
+				})
+			}
+		})
 	}
 }

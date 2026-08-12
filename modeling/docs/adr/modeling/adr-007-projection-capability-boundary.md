@@ -6,10 +6,18 @@ title: Additive projection capability boundary
 status: Aceita
 tags: [modeling, projection, read-model, packages, compatibility, immutability]
 deciders: [alvadorn]
-related: [adr:modeling:001, adr:modeling:004, adr:modeling:005, adr:modeling:006, tdd:modeling:projection]
+related: [adr:modeling:001, adr:modeling:004, adr:modeling:005, adr:modeling:006, adr:modeling:010, tdd:modeling:projection]
 date: 2026-08-10
 ---
 # ADR-007: Additive projection capability boundary
+
+> **Supersessão parcial (ADR-010):** o parâmetro `events` de `Project` passou de
+> `immutable.List[E]` para `iter.Seq[E]`. A dependência de produção de
+> `modeling/projection` é somente stdlib (`import "iter"`). A ponte com Decision
+> é `Project(initial, decision.Events(), project)` sem materializar List. O
+> restante desta ADR — boundary do pacote, tipo `Projection[P,E]`, exclusões de
+> CQRS/runtime e independência de reducer — permanece em vigor. Ver
+> [ADR-010](adr-010-streaming-replay-project-seq.md).
 
 ## Context and problem
 

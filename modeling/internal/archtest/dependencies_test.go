@@ -123,7 +123,8 @@ func directImportForbidden(importingPackage, importPath string) bool {
 	case changePackage:
 		return importPath != functionalFunction
 	case reducerPackage, projectionPackage:
-		return importPath != functionalImmutable
+		// Leaf stdlib-only packages: any functional import is forbidden.
+		return true
 	default:
 		return true
 	}
@@ -160,10 +161,11 @@ func TestNoForbiddenDirectImports(t *testing.T) {
 
 func TestFunctionalTypesDoNotLeakOutsideApprovedPackages(t *testing.T) {
 	for _, production := range productionPackages(t) {
+		// policy still exports Predicate/Optional in composition helpers' docs,
+		// but functional types must not appear on public signatures outside the
+		// approved Optional/Predicate policy surface checked elsewhere.
 		if !externallyImportable(production.ImportPath) ||
-			production.ImportPath == policyPackage ||
-			production.ImportPath == reducerPackage ||
-			production.ImportPath == projectionPackage {
+			production.ImportPath == policyPackage {
 			continue
 		}
 		t.Run(production.ImportPath, func(t *testing.T) {

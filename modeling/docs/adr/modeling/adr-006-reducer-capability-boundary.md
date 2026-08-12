@@ -6,10 +6,19 @@ title: Additive reducer capability boundary
 status: Aceita
 tags: [modeling, reducer, replay, packages, compatibility, immutability]
 deciders: [alvadorn]
-related: [adr:modeling:001, adr:modeling:002, adr:modeling:003, adr:modeling:004, adr:modeling:005, tdd:modeling:reducer-replay]
+related: [adr:modeling:001, adr:modeling:002, adr:modeling:003, adr:modeling:004, adr:modeling:005, adr:modeling:010, tdd:modeling:reducer-replay]
 date: 2026-08-10
 ---
 # ADR-006: Additive reducer capability boundary
+
+> **Supersessão parcial (ADR-010):** o parâmetro `events` de `Replay` passou de
+> `immutable.List[E]` para `iter.Seq[E]`. A dependência de produção de
+> `modeling/reducer` é somente stdlib (`import "iter"`). A conversão via
+> `immutable.CollectList(decision.Events())` não é mais necessária; use
+> `Replay(initial, decision.Events(), reduce)` diretamente. O restante desta
+> ADR — boundary do pacote, tipo `Reducer[S,E]`, exclusões de runtime e
+> independência de siblings — permanece em vigor. Ver
+> [ADR-010](adr-010-streaming-replay-project-seq.md).
 
 ## Context and problem
 

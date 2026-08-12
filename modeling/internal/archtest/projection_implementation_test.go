@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestProjectUsesValuesWithoutMaterialization(t *testing.T) {
+func TestProjectRangesDirectlyOverSequence(t *testing.T) {
 	pkg := projectionProductionPackage(t)
 	path := filepath.Join(pkg.Dir, "project.go")
 	file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
@@ -22,6 +22,9 @@ func TestProjectUsesValuesWithoutMaterialization(t *testing.T) {
 		importPath, err := strconv.Unquote(imported.Path.Value)
 		if err != nil {
 			t.Fatalf("unquote import %s: %v", imported.Path.Value, err)
+		}
+		if strings.HasPrefix(importPath, functionalModule) {
+			t.Errorf("Project imports functional package %s", importPath)
 		}
 		if strings.HasPrefix(importPath, functionalModule+"/primitives/fold") {
 			t.Errorf("Project imports materializing fold package %s", importPath)
@@ -43,68 +46,37 @@ func TestProjectUsesValuesWithoutMaterialization(t *testing.T) {
 		t.Fatal("project.go has no Project function")
 	}
 
-	eventMethodCalls := 0
+	var eventsRange *ast.RangeStmt
 	ast.Inspect(project.Body, func(node ast.Node) bool {
-		call, ok := node.(*ast.CallExpr)
+		rangeStatement, ok := node.(*ast.RangeStmt)
 		if !ok {
 			return true
 		}
-		selector, ok := call.Fun.(*ast.SelectorExpr)
-		if !ok {
+		ident, ok := rangeStatement.X.(*ast.Ident)
+		if !ok || ident.Name != "events" {
 			return true
 		}
-		receiver, ok := selector.X.(*ast.Ident)
-		if !ok || receiver.Name != "events" {
-			return true
+		if eventsRange != nil {
+			t.Fatal("Project has more than one range over events")
 		}
-		eventMethodCalls++
-		if selector.Sel.Name != "Values" {
-			t.Errorf("Project calls forbidden events method %s", selector.Sel.Name)
-		}
+		eventsRange = rangeStatement
 		return true
 	})
-
-	if eventMethodCalls != 1 {
-		t.Fatalf("Project event method calls = %d, want one Values call", eventMethodCalls)
+	if eventsRange == nil {
+		t.Fatal("Project does not range directly over events")
 	}
 
-	var valuesRange *ast.RangeStmt
-	for _, statement := range project.Body.List {
-		rangeStatement, ok := statement.(*ast.RangeStmt)
-		if !ok {
-			continue
-		}
-		call, ok := rangeStatement.X.(*ast.CallExpr)
-		if !ok {
-			continue
-		}
-		selector, ok := call.Fun.(*ast.SelectorExpr)
-		if !ok || selector.Sel.Name != "Values" {
-			continue
-		}
-		receiver, ok := selector.X.(*ast.Ident)
-		if ok && receiver.Name == "events" {
-			if valuesRange != nil {
-				t.Fatal("Project has more than one range over events.Values()")
-			}
-			valuesRange = rangeStatement
-		}
+	event, ok := eventsRange.Key.(*ast.Ident)
+	if !ok || event.Name != "event" || eventsRange.Value != nil {
+		t.Fatal("Project range must bind exactly one event variable")
 	}
-	if valuesRange == nil {
-		t.Fatal("Project does not range directly over events.Values()")
+	if len(eventsRange.Body.List) != 1 {
+		t.Fatalf("Project range statements = %d, want 1", len(eventsRange.Body.List))
 	}
-
-	event, ok := valuesRange.Key.(*ast.Ident)
-	if !ok || event.Name != "event" || valuesRange.Value != nil {
-		t.Fatal("Project Values range must bind exactly one event variable")
-	}
-	if len(valuesRange.Body.List) != 1 {
-		t.Fatalf("Project Values range statements = %d, want 1", len(valuesRange.Body.List))
-	}
-	assignment, ok := valuesRange.Body.List[0].(*ast.AssignStmt)
+	assignment, ok := eventsRange.Body.List[0].(*ast.AssignStmt)
 	if !ok || assignment.Tok != token.ASSIGN ||
 		len(assignment.Lhs) != 1 || len(assignment.Rhs) != 1 {
-		t.Fatal("Project Values range must assign one projected result")
+		t.Fatal("Project range must assign one projected result")
 	}
 	projected, lhsOK := assignment.Lhs[0].(*ast.Ident)
 	call, rhsOK := assignment.Rhs[0].(*ast.CallExpr)

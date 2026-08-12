@@ -3,7 +3,6 @@ package reducer_test
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
 	"github.com/alvadorncorp/gopackages/modeling/reducer"
 )
 
@@ -38,7 +37,7 @@ func reduceAccount(state accountState, event accountEvent) accountState {
 }
 
 func ExampleReplay() {
-	events := immutable.ListOf(
+	events := seqOf(
 		accountEvent{kind: eventAccountOpened, amount: 100},
 		accountEvent{kind: eventMoneyDeposited, amount: 25},
 		accountEvent{kind: eventAccountClosed},

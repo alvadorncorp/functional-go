@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestReplayUsesValuesWithoutMaterialization(t *testing.T) {
+func TestReplayRangesDirectlyOverSequence(t *testing.T) {
 	pkg := reducerProductionPackage(t)
 	path := filepath.Join(pkg.Dir, "replay.go")
 	file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
@@ -22,6 +22,9 @@ func TestReplayUsesValuesWithoutMaterialization(t *testing.T) {
 		importPath, err := strconv.Unquote(imported.Path.Value)
 		if err != nil {
 			t.Fatalf("unquote import %s: %v", imported.Path.Value, err)
+		}
+		if strings.HasPrefix(importPath, functionalModule) {
+			t.Errorf("Replay imports functional package %s", importPath)
 		}
 		if strings.HasPrefix(importPath, functionalModule+"/primitives/fold") {
 			t.Errorf("Replay imports materializing fold package %s", importPath)
@@ -40,34 +43,52 @@ func TestReplayUsesValuesWithoutMaterialization(t *testing.T) {
 		t.Fatal("replay.go has no Replay function")
 	}
 
-	valuesCalls := 0
-	itemsCalls := 0
+	var eventsRange *ast.RangeStmt
 	ast.Inspect(replay.Body, func(node ast.Node) bool {
-		call, ok := node.(*ast.CallExpr)
+		rangeStatement, ok := node.(*ast.RangeStmt)
 		if !ok {
 			return true
 		}
-		selector, ok := call.Fun.(*ast.SelectorExpr)
-		if !ok {
+		ident, ok := rangeStatement.X.(*ast.Ident)
+		if !ok || ident.Name != "events" {
 			return true
 		}
-		switch selector.Sel.Name {
-		case "Values":
-			receiver, ok := selector.X.(*ast.Ident)
-			if ok && receiver.Name == "events" {
-				valuesCalls++
-			}
-		case "Items":
-			itemsCalls++
+		if eventsRange != nil {
+			t.Fatal("Replay has more than one range over events")
 		}
+		eventsRange = rangeStatement
 		return true
 	})
-
-	if valuesCalls != 1 {
-		t.Errorf("Replay Values calls = %d, want exactly 1", valuesCalls)
+	if eventsRange == nil {
+		t.Fatal("Replay does not range directly over events")
 	}
-	if itemsCalls != 0 {
-		t.Errorf("Replay Items calls = %d, want 0", itemsCalls)
+
+	event, ok := eventsRange.Key.(*ast.Ident)
+	if !ok || event.Name != "event" || eventsRange.Value != nil {
+		t.Fatal("Replay range must bind exactly one event variable")
+	}
+	if len(eventsRange.Body.List) != 1 {
+		t.Fatalf("Replay range statements = %d, want 1", len(eventsRange.Body.List))
+	}
+	assignment, ok := eventsRange.Body.List[0].(*ast.AssignStmt)
+	if !ok || assignment.Tok != token.ASSIGN ||
+		len(assignment.Lhs) != 1 || len(assignment.Rhs) != 1 {
+		t.Fatal("Replay range must assign one reduced result")
+	}
+	state, lhsOK := assignment.Lhs[0].(*ast.Ident)
+	call, rhsOK := assignment.Rhs[0].(*ast.CallExpr)
+	if !lhsOK || state.Name != "state" || !rhsOK {
+		t.Fatal("Replay range must assign state from a call")
+	}
+	callee, callOK := call.Fun.(*ast.Ident)
+	if !callOK || callee.Name != "reduce" || len(call.Args) != 2 {
+		t.Fatal("Replay range must assign state = reduce(state, event)")
+	}
+	current, currentOK := call.Args[0].(*ast.Ident)
+	input, inputOK := call.Args[1].(*ast.Ident)
+	if !currentOK || current.Name != "state" ||
+		!inputOK || input.Name != event.Name {
+		t.Fatal("Replay range threads state and the ranged event")
 	}
 }
 

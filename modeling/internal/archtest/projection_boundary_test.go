@@ -54,13 +54,16 @@ func TestProjectionHasExactDependencyBoundary(t *testing.T) {
 	pkg := projectionProductionPackage(t)
 	imports := slices.Clone(pkg.Imports)
 	slices.Sort(imports)
-	want := []string{functionalImmutable}
+	want := []string{"iter"}
 	if !slices.Equal(imports, want) {
 		t.Fatalf("projection imports = %v, want exactly %v", imports, want)
 	}
 	for _, imported := range imports {
 		if imported == modelingModule || strings.HasPrefix(imported, modelingModule+"/") {
 			t.Errorf("%s imports forbidden modeling capability %s", projectionPackage, imported)
+		}
+		if imported == functionalImmutable || strings.HasPrefix(imported, functionalModule) {
+			t.Errorf("%s imports forbidden functional package %s", projectionPackage, imported)
 		}
 	}
 }

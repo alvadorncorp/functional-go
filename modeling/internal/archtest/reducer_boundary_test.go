@@ -37,6 +37,21 @@ func TestReducerDoesNotDependOnModelingCapabilities(t *testing.T) {
 	}
 }
 
+func TestReducerHasExactDependencyBoundary(t *testing.T) {
+	pkg := reducerProductionPackage(t)
+	imports := slices.Clone(pkg.Imports)
+	slices.Sort(imports)
+	want := []string{"iter"}
+	if !slices.Equal(imports, want) {
+		t.Fatalf("reducer imports = %v, want exactly %v", imports, want)
+	}
+	for _, imported := range imports {
+		if imported == functionalImmutable || strings.HasPrefix(imported, functionalModule) {
+			t.Errorf("%s imports forbidden functional package %s", reducerPackage, imported)
+		}
+	}
+}
+
 func TestReplayNameIsReducerOnly(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		if production.ImportPath == reducerPackage {
