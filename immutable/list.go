@@ -13,26 +13,47 @@ import (
 // full contract, including why List is not ==-comparable and why documented
 // complexity is an upper bound rather than today's constant.
 //
-// Representation: List holds an unexported vector.Root. The zero List is a
-// valid empty list — it relies on the zero vector.Root (nil trie, empty
-// tail, count 0): Len is 0, At panics, and Append starts a lineage from that
-// seed. Constructed Lists (ListOf, CollectList, Builder.Build, and every
-// Append/Set/Delete result) use a proper Empty-seeded root when they first
-// materialize elements.
+// Representation: List is a small handle to an unexported *vector.Root.
+// A nil handle is a valid empty list (same as the zero List): Len is 0, At
+// panics, and Append starts a lineage from Empty. Constructed Lists
+// (ListOf, CollectList, Builder.Build, and every non-empty Append/Set/Delete
+// result) hold a pointer to a published root; empty results collapse back to
+// the nil handle so zero/empty paths stay allocation-free.
 //
 // The blank [0]func() field keeps List deliberately not ==-comparable,
-// matching Map/Set: representation identity must never be observable via ==.
-// Use Equal instead.
+// matching Map/Set: pointer identity of the root must never be observable
+// via ==. Use Equal instead.
 type List[T any] struct {
 	_    [0]func()
-	root vector.Root[T]
+	root *vector.Root[T]
+}
+
+// rootValue returns the published vector root, treating a nil handle as Empty.
+func (l List[T]) rootValue() vector.Root[T] {
+	if l.root == nil {
+		return vector.Empty[T]()
+	}
+	return *l.root
+}
+
+// listFromRoot returns a List handle for root. Empty roots collapse to the
+// nil handle so the zero List and empty results stay representation-equal
+// and allocation-free.
+func listFromRoot[T any](root vector.Root[T]) List[T] {
+	if root.Len() == 0 {
+		return List[T]{}
+	}
+	return List[T]{root: &root}
 }
 
 // ListOf returns a List holding a copy of items, in order. The caller's
 // slice is never retained: later mutation of items through the caller's own
 // reference does not reach the returned List.
 func ListOf[T any](items ...T) List[T] {
-	return List[T]{root: vector.Empty[T]().Append(items...)}
+	if len(items) == 0 {
+		return List[T]{}
+	}
+	return listFromRoot(vector.Empty[T]().Append(items...))
 }
 
 // CollectList drains seq into a new List, in iteration order.
@@ -41,14 +62,14 @@ func CollectList[T any](seq iter.Seq[T]) List[T] {
 	for v := range seq {
 		root = root.Append(v)
 	}
-	return List[T]{root: root}
+	return listFromRoot(root)
 }
 
 // Len returns the number of elements in l.
-func (l List[T]) Len() int { return l.root.Len() }
+func (l List[T]) Len() int { return l.rootValue().Len() }
 
 // IsEmpty reports whether l holds no elements. The zero List is empty.
-func (l List[T]) IsEmpty() bool { return l.root.Len() == 0 }
+func (l List[T]) IsEmpty() bool { return l.Len() == 0 }
 
 // At returns the element at index i. It panics with
 // "immutable: index out of range" when i is outside [0, Len).
@@ -56,10 +77,11 @@ func (l List[T]) IsEmpty() bool { return l.root.Len() == 0 }
 // Bounds are checked here so a vector engine panic never leaks a "vector:"
 // message to public callers.
 func (l List[T]) At(i int) T {
-	if i < 0 || i >= l.root.Len() {
+	root := l.rootValue()
+	if i < 0 || i >= root.Len() {
 		panic(panicIndexOutOfRange)
 	}
-	return l.root.At(i)
+	return root.At(i)
 }
 
 // Append returns a new List with items added to the end, in order. l is
@@ -69,7 +91,10 @@ func (l List[T]) At(i int) T {
 // Calling Append n times in a loop still allocates n intermediate Lists;
 // use Builder for bulk construction.
 func (l List[T]) Append(items ...T) List[T] {
-	return List[T]{root: l.root.Append(items...)}
+	if len(items) == 0 {
+		return l
+	}
+	return listFromRoot(l.rootValue().Append(items...))
 }
 
 // Set returns a new List with the element at index i replaced by v. l is
@@ -79,10 +104,11 @@ func (l List[T]) Append(items ...T) List[T] {
 // Bounds are checked here so a vector engine panic never leaks a "vector:"
 // message to public callers.
 func (l List[T]) Set(i int, v T) List[T] {
-	if i < 0 || i >= l.root.Len() {
+	root := l.rootValue()
+	if i < 0 || i >= root.Len() {
 		panic(panicIndexOutOfRange)
 	}
-	return List[T]{root: l.root.Set(i, v)}
+	return listFromRoot(root.Set(i, v))
 }
 
 // Delete returns a new List without the element at index i; every later
@@ -93,16 +119,18 @@ func (l List[T]) Set(i int, v T) List[T] {
 // than a path-aware shift. Bounds are checked here so a vector engine panic
 // never leaks a "vector:" message to public callers.
 func (l List[T]) Delete(i int) List[T] {
-	if i < 0 || i >= l.root.Len() {
+	root := l.rootValue()
+	if i < 0 || i >= root.Len() {
 		panic(panicIndexOutOfRange)
 	}
-	return List[T]{root: l.root.Delete(i)}
+	return listFromRoot(root.Delete(i))
 }
 
 // Values returns an iterator over l's elements in index order.
 func (l List[T]) Values() iter.Seq[T] {
+	root := l.rootValue()
 	return func(yield func(T) bool) {
-		for _, v := range l.root.All() {
+		for _, v := range root.All() {
 			if !yield(v) {
 				return
 			}
@@ -112,19 +140,20 @@ func (l List[T]) Values() iter.Seq[T] {
 
 // All returns an iterator over l's (index, element) pairs in index order.
 func (l List[T]) All() iter.Seq2[int, T] {
-	return l.root.All()
+	return l.rootValue().All()
 }
 
 // Items returns a new slice holding a copy of l's elements, in order. The
 // caller owns the result: mutating it never reaches l, and later writes to l
 // never reach a slice returned earlier.
 func (l List[T]) Items() []T {
-	n := l.root.Len()
+	root := l.rootValue()
+	n := root.Len()
 	if n == 0 {
 		return nil
 	}
 	items := make([]T, 0, n)
-	for _, v := range l.root.All() {
+	for _, v := range root.All() {
 		items = append(items, v)
 	}
 	return items
@@ -133,11 +162,13 @@ func (l List[T]) Items() []T {
 // Equal reports whether l and other hold the same elements in the same
 // order, comparing each pair with functional/internal/eq.Equal.
 func (l List[T]) Equal(other List[T]) bool {
-	if l.root.Len() != other.root.Len() {
+	root := l.rootValue()
+	otherRoot := other.rootValue()
+	if root.Len() != otherRoot.Len() {
 		return false
 	}
-	for i, v := range l.root.All() {
-		if !eq.Equal(v, other.root.At(i)) {
+	for i, v := range root.All() {
+		if !eq.Equal(v, otherRoot.At(i)) {
 			return false
 		}
 	}
@@ -148,11 +179,13 @@ func (l List[T]) Equal(other List[T]) bool {
 // equal returns true for every pair of elements at the same index, in index
 // order. Comparison stops at the first false result from equal.
 func (l List[T]) EqualFunc(other List[T], equal func(T, T) bool) bool {
-	if l.root.Len() != other.root.Len() {
+	root := l.rootValue()
+	otherRoot := other.rootValue()
+	if root.Len() != otherRoot.Len() {
 		return false
 	}
-	for i, v := range l.root.All() {
-		if !equal(v, other.root.At(i)) {
+	for i, v := range root.All() {
+		if !equal(v, otherRoot.At(i)) {
 			return false
 		}
 	}
@@ -164,7 +197,7 @@ func (l List[T]) EqualFunc(other List[T], equal func(T, T) bool) bool {
 // on the builder.
 func (l List[T]) Builder() *ListBuilder[T] {
 	return &ListBuilder[T]{
-		root: l.root,
+		root: l.rootValue(),
 		win:  transient.Open(),
 	}
 }
@@ -246,5 +279,5 @@ func (b *ListBuilder[T]) Build() List[T] {
 	freezeBuilderWindow(&b.win)
 	root := b.root
 	b.root = vector.Root[T]{}
-	return List[T]{root: root}
+	return listFromRoot(root)
 }
