@@ -28,7 +28,6 @@ func TestProvideAppliesOnceAndDefersEffectsUntilRun(t *testing.T) {
 		t.Fatalf("after Provide: applied=%d effects=%d, want 1 0", applied, effects)
 	}
 
-	//nolint:staticcheck // private typed key verifies exact context propagation.
 	ctx := context.WithValue(t.Context(), inputContextKey{}, 2)
 	value, err := action.Run(ctx, program)
 	if err != nil || value != 42 || effects != 1 {

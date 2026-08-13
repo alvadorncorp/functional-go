@@ -48,8 +48,7 @@ func removeUser(id string) state.Mutation[Store] {
 	}
 }
 
-//nolint:gocritic // Store is a test fixture; pointer forces awkward temps for Materialize().
-func assertStoreEqual(t *testing.T, got Store, wantUsers map[string]string, wantTags, wantLog []string) {
+func assertStoreEqual(t *testing.T, got *Store, wantUsers map[string]string, wantTags, wantLog []string) {
 	t.Helper()
 
 	if got.Users.Len() != len(wantUsers) {
@@ -90,7 +89,7 @@ func TestImmutableStoreMaterializeAfterSeveralApplies(t *testing.T) {
 		Apply(removeUser("u1"))
 
 	got := s.Materialize()
-	assertStoreEqual(t, got,
+	assertStoreEqual(t, &got,
 		map[string]string{"u2": "bob"},
 		[]string{"admin", "beta"},
 		[]string{"user:u1", "user:u2", "tag:admin", "tag:beta", "del:u1"},
@@ -109,29 +108,34 @@ func TestImmutableStoreOldVersionsRemainIntact(t *testing.T) {
 	s3 := s2.Apply(putUser("u2", "bob"))
 
 	// Materialize newest first, then prove older snapshots are unchanged.
-	assertStoreEqual(t, s3.Materialize(),
+	got := s3.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u1": "alice", "u2": "bob"},
 		[]string{"vip"},
 		[]string{"user:u1", "tag:vip", "user:u2"},
 	)
-	assertStoreEqual(t, s2.Materialize(),
+	got = s2.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u1": "alice"},
 		[]string{"vip"},
 		[]string{"user:u1", "tag:vip"},
 	)
-	assertStoreEqual(t, s1.Materialize(),
+	got = s1.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u1": "alice"},
 		nil,
 		[]string{"user:u1"},
 	)
-	assertStoreEqual(t, s0.Materialize(),
+	got = s0.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{},
 		nil,
 		nil,
 	)
 
 	// Re-materialize s1 after s3 to prove structural sharing did not corrupt it.
-	assertStoreEqual(t, s1.Materialize(),
+	got = s1.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u1": "alice"},
 		nil,
 		[]string{"user:u1"},
@@ -190,17 +194,20 @@ func TestImmutableStoreBranchingStatesIndependent(t *testing.T) {
 		Apply(putUser("u3", "right")).
 		Apply(removeUser("u1"))
 
-	assertStoreEqual(t, parent.Materialize(),
+	got := parent.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u1": "alice"},
 		[]string{"base"},
 		[]string{"user:u1", "tag:base"},
 	)
-	assertStoreEqual(t, left.Materialize(),
+	got = left.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u1": "alice", "u2": "left"},
 		[]string{"base", "left-only"},
 		[]string{"user:u1", "tag:base", "user:u2", "tag:left-only"},
 	)
-	assertStoreEqual(t, right.Materialize(),
+	got = right.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u3": "right"},
 		[]string{"base"},
 		[]string{"user:u1", "tag:base", "user:u3", "del:u1"},
@@ -208,22 +215,26 @@ func TestImmutableStoreBranchingStatesIndependent(t *testing.T) {
 
 	// Further left evolution must not affect right or parent.
 	left2 := left.Apply(removeUser("u1"))
-	assertStoreEqual(t, left2.Materialize(),
+	got = left2.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u2": "left"},
 		[]string{"base", "left-only"},
 		[]string{"user:u1", "tag:base", "user:u2", "tag:left-only", "del:u1"},
 	)
-	assertStoreEqual(t, left.Materialize(),
+	got = left.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u1": "alice", "u2": "left"},
 		[]string{"base", "left-only"},
 		[]string{"user:u1", "tag:base", "user:u2", "tag:left-only"},
 	)
-	assertStoreEqual(t, right.Materialize(),
+	got = right.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u3": "right"},
 		[]string{"base"},
 		[]string{"user:u1", "tag:base", "user:u3", "del:u1"},
 	)
-	assertStoreEqual(t, parent.Materialize(),
+	got = parent.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u1": "alice"},
 		[]string{"base"},
 		[]string{"user:u1", "tag:base"},
@@ -249,12 +260,14 @@ func TestImmutableStoreTransactionCommit(t *testing.T) {
 	committed := tx.Commit()
 
 	// Parent frozen through Commit (lazy plan only).
-	assertStoreEqual(t, parent.Materialize(), wantParentUsers, wantParentTags, wantParentLog)
+	got := parent.Materialize()
+	assertStoreEqual(t, &got, wantParentUsers, wantParentTags, wantParentLog)
 	if got := parent.Version(); got != wantParentVer {
 		t.Fatalf("parent.Version() after Commit = %d, want %d", got, wantParentVer)
 	}
 
-	assertStoreEqual(t, committed.Materialize(),
+	got = committed.Materialize()
+	assertStoreEqual(t, &got,
 		map[string]string{"u2": "bob"},
 		[]string{"seed", "tx"},
 		[]string{"user:u1", "tag:seed", "user:u2", "tag:tx", "del:u1"},
@@ -264,5 +277,6 @@ func TestImmutableStoreTransactionCommit(t *testing.T) {
 	}
 
 	// Parent still intact after materializing the committed branch.
-	assertStoreEqual(t, parent.Materialize(), wantParentUsers, wantParentTags, wantParentLog)
+	got = parent.Materialize()
+	assertStoreEqual(t, &got, wantParentUsers, wantParentTags, wantParentLog)
 }

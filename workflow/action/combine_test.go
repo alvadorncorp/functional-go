@@ -29,7 +29,6 @@ func TestZipRunsSequentiallyAndPreservesValuesAndContext(t *testing.T) {
 	if len(events) != 0 {
 		t.Fatalf("construction events = %v, want none", events)
 	}
-	//nolint:staticcheck // private typed key verifies exact context propagation.
 	ctx := context.WithValue(t.Context(), combineContextKey{}, "two")
 	pair, err := action.Run(ctx, program)
 	if err != nil || pair.First != 40 || pair.Second != "two" {

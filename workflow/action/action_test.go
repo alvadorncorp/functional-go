@@ -71,7 +71,6 @@ func TestActionReceivesTheContextGivenToRun(t *testing.T) {
 		return marker, nil
 	})
 
-	//nolint:staticcheck // the key is a private struct type, not a bare string.
 	ctx := context.WithValue(t.Context(), contextKey{}, "outer")
 
 	value, err := action.Run(ctx, subject)

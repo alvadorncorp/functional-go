@@ -32,9 +32,7 @@ func TestWorkflowExecutionIsolation(t *testing.T) {
 	programA := subject(firstID)
 	programB := subject(secondID)
 
-	//nolint:staticcheck // the key is a private struct type, not a bare string.
 	ctxA := context.WithValue(t.Context(), contextKey{}, markerA)
-	//nolint:staticcheck // the key is a private struct type, not a bare string.
 	ctxB := context.WithValue(t.Context(), contextKey{}, markerB)
 
 	var wait sync.WaitGroup
@@ -79,9 +77,7 @@ func TestWorkflowContextIndependence(t *testing.T) {
 	// memoized future, so each Run observes only the context it was given.
 	program := subject(firstID)
 
-	//nolint:staticcheck // the key is a private struct type, not a bare string.
 	ctxA := context.WithValue(t.Context(), contextKey{}, "A")
-	//nolint:staticcheck // the key is a private struct type, not a bare string.
 	ctxB := context.WithValue(t.Context(), contextKey{}, "B")
 
 	valueA, errA := action.Run(ctxA, program)
