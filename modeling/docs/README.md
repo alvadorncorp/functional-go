@@ -11,6 +11,7 @@ permanece um catálogo de módulos e não deve adquirir uma árvore `docs/`.
 - [Specification package](packages/specification.md)
 - [Reducer package](packages/reducer.md)
 - [Projection package](packages/projection.md)
+- Application patterns that use this module live in [workflow hexagonal patterns](../../workflow/docs/patterns/README.md) (sibling module).
 
 ## Architecture decisions
 

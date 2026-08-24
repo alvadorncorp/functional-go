@@ -217,6 +217,8 @@ container de DI, dispatch mágico, command bus, event bus, event store, worker
 ou runtime de projection, repositório, ORM, database, HTTP, broker,
 filesystem nem tipo concreto de domínio de aplicação.
 
+Tipos Entity/Aggregate/Handle de biblioteca permanecem fora; ver adr:workflow:012 e functional/docs/patterns/cow-handles.md para o padrão de handle na aplicação.
+
 Change não é Patch, Diff, state manager, implementação de Reducer, engine de
 Replay, substituto de Transition, produtor de eventos, validador, guard,
 runtime, builder nem API fluente.

@@ -62,6 +62,8 @@ workflow para que ele execute uma operação externa.
 **Adaptador** — uma implementação concreta de capacidade usando uma tecnologia
 externa.
 
+Receitas de aplicação (handle COW, load-decide-confirm, outbox, DAG, ACL) estão em [patterns/](patterns/README.md). Um módulo DDD de runtime está fora de escopo ([ADR-012](adr/workflow/adr-012-no-ddd-runtime-module.md)).
+
 ## Dados de negócio e contexto de execução
 
 Se uma informação pode alterar uma decisão de domínio — CustomerID, TenantID,

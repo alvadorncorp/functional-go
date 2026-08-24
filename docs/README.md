@@ -24,6 +24,7 @@ The module root [README](../README.md) is a short **index**. Content lives here.
 | [packages/values-nonempty.md](packages/values-nonempty.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/nonempty` |
 | [packages/values-validated.md](packages/values-validated.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/validated` |
 | [patterns/value-objects.md](patterns/value-objects.md) | What a value object needs from this module vs. what plain Go already covers |
+| [patterns/cow-handles.md](patterns/cow-handles.md) | Small value handles over private payloads when hugeParam bites |
 | [adr/functional/](adr/functional/) | Architecture decisions (`adr:functional:NNN`) |
 
 ADRs use AKB YAML frontmatter (`type`, `id`, `context`, `title`, `status`,
