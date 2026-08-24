@@ -12,6 +12,7 @@
 - [Transações](transactions.md) — fronteiras, escopos e as quatro coisas chamadas "transação"
 - [Integração com modeling](modeling.md) — carregar, decidir, confirmar
 - [Exemplos](examples.md) — withdraw, crosscontext e CreateOrder, de ponta a ponta
+- [Padrões hexagonais](patterns/README.md) — receitas de aplicação (não tipos de biblioteca)
 
 ## Decisões de arquitetura
 
