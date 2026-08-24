@@ -211,14 +211,14 @@ func TestDocumentationADRIndexAndSupersession(t *testing.T) {
 	indexText := string(index)
 	adrLink := regexp.MustCompile(`adr/workflow/adr-(\d{3})-[a-z0-9-]+\.md`)
 	matches := adrLink.FindAllStringSubmatch(indexText, -1)
-	if len(matches) != 11 {
-		t.Fatalf("docs index ADR links = %d, want 11", len(matches))
+	if len(matches) != 12 {
+		t.Fatalf("docs index ADR links = %d, want 12", len(matches))
 	}
 	seen := make(map[string]int, len(matches))
 	for _, match := range matches {
 		seen[match[1]]++
 	}
-	for i := 1; i <= 11; i++ {
+	for i := 1; i <= 12; i++ {
 		key := formatADRNumber(i)
 		if count := seen[key]; count != 1 {
 			t.Errorf("ADR-%s link count = %d, want 1", key, count)
