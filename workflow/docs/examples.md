@@ -5,6 +5,8 @@ Os exemplos vivem em um módulo separado, `examples/workflow`, porque consomem
 apenas stdlib. São testes de aceitação de arquitetura: se uma mudança de API os
 torna desajeitados, a API é o que deve ser reconsiderada.
 
+O checkout documenta a forma hexagonal rica; as receitas extraídas vivem em [patterns/](patterns/README.md).
+
 ## withdraw
 
 `POST /accounts/{id}/withdraw` de ponta a ponta.

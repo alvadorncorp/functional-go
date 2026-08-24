@@ -12,6 +12,7 @@
 - [Transações](transactions.md) — fronteiras, escopos e as quatro coisas chamadas "transação"
 - [Integração com modeling](modeling.md) — carregar, decidir, confirmar
 - [Exemplos](examples.md) — withdraw, crosscontext e CreateOrder, de ponta a ponta
+- [Padrões hexagonais](patterns/README.md) — receitas de aplicação (não tipos de biblioteca)
 
 ## Decisões de arquitetura
 
@@ -26,6 +27,7 @@
 - [ADR-009 — Composição avançada e resource safety em retornos normais](adr/workflow/adr-009-composition-and-resource-safety.md)
 - [ADR-010 — Plan como descrição explícita e não executável de workflow](adr/workflow/adr-010-plan-as-explicit-non-executable-workflow-description.md)
 - [ADR-011 — Resiliência explícita como transformação de Action](adr/workflow/adr-011-explicit-resilience-as-action-transformation.md)
+- [ADR-012 — Sem módulo DDD/hexagonal de runtime](adr/workflow/adr-012-no-ddd-runtime-module.md)
 
 ## Desenhos técnicos
 
