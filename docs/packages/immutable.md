@@ -84,7 +84,7 @@ slice/map; that is no longer the engine.
 4. **None of the three types are `==`-comparable.** Use `Equal` or
    `EqualFunc`. Comparing by `==` would compare identity of the underlying
    representation.
-5. **Calling `Append`/`Set`/`Delete`/`Add`/`Remove` `n` times in a loop still
+5. **Calling `Append`/`Set`/`Delete`/`Update`/`Add`/`Remove` `n` times in a loop still
    allocates `n` intermediate collections.** `Builder()` exists for bulk
    construction: exclusive ownership + O(1) `Freeze`. Builders open a
    `transient.Window` and `Freeze` on `Build`; public panics remain
@@ -103,7 +103,7 @@ slice/map; that is no longer the engine.
 |---|---|---|
 | `Len`, `IsEmpty` | `O(1)` | |
 | `At`, `Get`, `Has` | `O(log n)` | |
-| `Set`, `Delete` (Map), `Add`/`Remove` (Set) | `O(log n)` | Path-copy HAMT |
+| `Set`, `Delete`, `Update` (Map), `Add`/`Remove` (Set) | `O(log n)` | Path-copy HAMT; `Update` is one `Get` plus one `Set` |
 | `Union`, `Intersection`, `Difference` (Set) | `O(min(m,n)·log max(m,n))` | Walks the smaller operand (size `m` or `n`), probes the larger |
 | `Append`, `Set` (List) | `O(log n)` amortized / path | Path-copy vector |
 | `Delete` (List) | `O(log n)` headroom | **Today O(n)** rebuild |
@@ -161,6 +161,7 @@ repeated `Build`, panics `"immutable: builder used after Build"`.
 | `(m Map[K,V]) IsEmpty() bool` | `Len() == 0`. Zero `Map` is empty. |
 | `(m Map[K,V]) Get(k K) (V, bool)` / `Has(k K) bool` | Read access. |
 | `(m Map[K,V]) Set(k K, v V) Map[K,V]` | New `Map` with `k` mapped to `v`. `m` unchanged. Path-copy HAMT. Zero `Map` materializes seed first. |
+| `(m Map[K,V]) Update(k K, fn func(old V, present bool) V) Map[K,V]` | New `Map` with `k` mapped to `fn(old, present)` (`old` is the zero value when `k` is absent). `fn` runs exactly once, before any write; its result is always stored. `m` unchanged. Nil `fn` is not special-cased. Zero `Map` materializes seed first. |
 | `(m Map[K,V]) Delete(k K) Map[K,V]` | New `Map` without `k`. `m` unchanged. Zero `Map` materializes seed first. |
 | `(m Map[K,V]) All/Keys/Values() iter.Seq(2)[...]` | Unspecified iteration order. |
 | `(m Map[K,V]) Items() map[K]V` | Fresh, non-nil copy. |
@@ -212,7 +213,7 @@ comparison.
 
 ```sh
 cd functional
-go test ./immutable/ -run '^$' -bench 'BenchmarkMapSet|BenchmarkSetAdd|BenchmarkListAppend|BenchmarkListBuilder|BenchmarkMapBuilder|BenchmarkMapGet|BenchmarkNativeMap|BenchmarkSet(Union|Intersection|Difference)' -benchmem
+go test ./immutable/ -run '^$' -bench 'BenchmarkMapSet|BenchmarkMapUpdate|BenchmarkSetAdd|BenchmarkListAppend|BenchmarkListBuilder|BenchmarkMapBuilder|BenchmarkMapGet|BenchmarkNativeMap|BenchmarkSet(Union|Intersection|Difference)' -benchmem
 ```
 
 For the Set algebra benches, the no-change cases (`Union` and
@@ -221,7 +222,7 @@ with disjoint operands) report the same allocs/op for every size: they open
 no builder and return an operand untouched.
 
 Always route loop-building through `<Type>.Builder()`; never call
-`Append`/`Set`/`Delete`/`Add`/`Remove` in a loop against the immutable type
+`Append`/`Set`/`Delete`/`Update`/`Add`/`Remove` in a loop against the immutable type
 itself when linear bulk construction is the goal.
 
 ---

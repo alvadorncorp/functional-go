@@ -90,6 +90,16 @@ func (m Map[K, V]) Set(k K, v V) Map[K, V] {
 	return Map[K, V]{root: m.materialize().Set(k, v)}
 }
 
+// Update returns a new Map with k mapped to fn(old, present), where old and
+// present are what Get(k) returns: the stored value and true, or the zero
+// value of V and false. fn is called exactly once, before anything is
+// written, and its result is always stored. m is unchanged. A nil fn is not
+// special-cased; calling Update with it panics like any nil function call.
+func (m Map[K, V]) Update(k K, fn func(old V, present bool) V) Map[K, V] {
+	old, ok := m.root.Get(k)
+	return m.Set(k, fn(old, ok))
+}
+
 // Delete returns a new Map without k. m is unchanged.
 func (m Map[K, V]) Delete(k K) Map[K, V] {
 	return Map[K, V]{root: m.materialize().Delete(k)}

@@ -84,7 +84,7 @@
 //
 //     Len, IsEmpty           O(1)
 //     At, Get, Has           O(log n)
-//     Set, Delete            O(log n)
+//     Set, Delete, Update    O(log n)
 //     Append                 O(log n) amortized
 //     Union, Intersection,
 //     Difference             O(min(m,n)·log max(m,n))
@@ -102,7 +102,7 @@
 //     EqualFunc. Comparing by == would mean comparing identity of the
 //     underlying representation.
 //
-//  5. Calling Append/Set/Delete n times in a loop still allocates n
+//  5. Calling Append/Set/Delete/Update n times in a loop still allocates n
 //     intermediate collections. Builder exists to give a real linear path for
 //     that case: <Type>.Builder() seeds a mutable builder from a snapshot
 //     (and opens a transient window), batch writes go through it, and Build()

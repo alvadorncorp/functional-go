@@ -87,17 +87,19 @@ func FuzzListOps(f *testing.F) {
 
 // mapOpWidth is how many bytes each Map instruction consumes from the fuzz
 // input: one opcode byte plus two operand bytes (key, value — value unused
-// by delete).
+// by delete; update adds it to the old value).
 const mapOpWidth = 3
 
-// FuzzMapOps is FuzzListOps' Map analogue: a small program of set/delete
-// operations run in lockstep against a immutable.Map[int, int] and a
-// native map[int]int model, keeping every intermediate Map alongside the
-// model snapshot from the step that produced it.
+// FuzzMapOps is FuzzListOps' Map analogue: a small program of
+// set/delete/update operations run in lockstep against a
+// immutable.Map[int, int] and a native map[int]int model, keeping every
+// intermediate Map alongside the model snapshot from the step that produced
+// it.
 func FuzzMapOps(f *testing.F) {
 	f.Add([]byte{0x00, 1, 10, 0x00, 2, 20, 0x01, 1, 0})
 	f.Add([]byte{})
 	f.Add([]byte{0x01, 5, 0, 0x00, 5, 99})
+	f.Add([]byte{0x02, 3, 4, 0x02, 3, 5, 0x01, 3, 0, 0x02, 3, 6})
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		type version struct {
@@ -112,7 +114,7 @@ func FuzzMapOps(f *testing.F) {
 		ops := 0
 		for cur := 0; cur+mapOpWidth <= len(data) && ops < maxFuzzOps; cur += mapOpWidth {
 			ops++
-			op, k, v := data[cur]%2, int(data[cur+1]), int(data[cur+2])
+			op, k, v := data[cur]%3, int(data[cur+1]), int(data[cur+2])
 
 			switch op {
 			case 0: // set
@@ -121,6 +123,8 @@ func FuzzMapOps(f *testing.F) {
 			case 1: // delete
 				current = current.Delete(k)
 				delete(model, k)
+			case 2: // update
+				current = fuzzMapUpdate(t, current, model, k, v)
 			}
 
 			versions = append(versions, version{m: current, model: maps.Clone(model)})
@@ -139,6 +143,27 @@ func FuzzMapOps(f *testing.F) {
 			}
 		}
 	})
+}
+
+// fuzzMapUpdate applies Update(k) to m and to model: the stored value gains
+// v, and an absent key is stored as v. It fails t unless fn is called exactly
+// once with model's (value, present) pair for k.
+func fuzzMapUpdate(t *testing.T, m immutable.Map[int, int], model map[int]int, k, v int) immutable.Map[int, int] {
+	t.Helper()
+	wantOld, wantPresent := model[k]
+	calls := 0
+	next := m.Update(k, func(old int, present bool) int {
+		calls++
+		if old != wantOld || present != wantPresent {
+			t.Fatalf("Update(%d) fn got (%d, %v), want (%d, %v)", k, old, present, wantOld, wantPresent)
+		}
+		return old + v
+	})
+	if calls != 1 {
+		t.Fatalf("Update(%d) called fn %d times, want 1", k, calls)
+	}
+	model[k] = wantOld + v
+	return next
 }
 
 // Membership bits of the FuzzSetAlgebra model: which operands hold an element.

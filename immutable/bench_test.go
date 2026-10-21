@@ -163,6 +163,23 @@ func BenchmarkMapSet(b *testing.B) {
 	}
 }
 
+// BenchmarkMapUpdate measures a single Update of a present key against a Map
+// of size n: one Get plus one Set, so allocs/op follows BenchmarkMapSet's
+// depth curve, not n.
+func BenchmarkMapUpdate(b *testing.B) {
+	inc := func(old int, _ bool) int { return old + 1 }
+	for _, n := range benchSizesSingleOp {
+		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			m := makeBenchMap(n)
+			key := n / 2
+			for b.Loop() {
+				_ = m.Update(key, inc)
+			}
+		})
+	}
+}
+
 // BenchmarkMapBuilderSet is BenchmarkMapSet's loop-building counterpart via
 // Builder: n Sets under exclusive ownership, then O(1) Freeze.
 func BenchmarkMapBuilderSet(b *testing.B) {

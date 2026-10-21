@@ -68,6 +68,22 @@ func ExampleMap_Set() {
 	// 1 2
 }
 
+// ExampleMap_Update shows Update deriving a value from the old one, or from
+// the zero value when the key is absent, while the original Map stays
+// unchanged.
+func ExampleMap_Update() {
+	inc := func(old int, _ bool) int { return old + 1 }
+	counts := immutable.MapOf(map[string]int{"a": 1})
+	updated := counts.Update("a", inc).Update("b", inc)
+
+	a, _ := updated.Get("a")
+	b, _ := updated.Get("b")
+	before, _ := counts.Get("a")
+	fmt.Println(a, b, before)
+	// Output:
+	// 2 1 1
+}
+
 // ExampleMap_Builder shows bulk construction under exclusive ownership,
 // then O(1) Build.
 func ExampleMap_Builder() {
