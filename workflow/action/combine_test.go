@@ -3,6 +3,7 @@ package action_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/alvadorncorp/gopackages/workflow/action"
@@ -139,5 +140,135 @@ func TestCombinationRejectsNilArguments(t *testing.T) {
 	})
 	assertPanics(t, "workflow/action: nil combiner", func() {
 		action.Both(action.Pure(1), action.Pure(2), nilCombiner)
+	})
+	assertPanics(t, "workflow/action: nil binder", func() { action.Traverse[int, int]([]int{1}, nil) })
+	assertPanics(t, "workflow/action: nil binder", func() { action.Traverse[int, int](nil, nil) })
+}
+
+func TestTraverseRunsInIndexOrderInterleavedWithTheRunContext(t *testing.T) {
+	var events []string
+	var seen []context.Context
+	program := action.Traverse([]string{"a", "b", "c"}, func(item string) action.Action[string] {
+		events = append(events, "bind "+item)
+		return action.Do(func(ctx context.Context) (string, error) {
+			events = append(events, "run "+item)
+			seen = append(seen, ctx)
+			return item + item, nil
+		})
+	})
+	if len(events) != 0 {
+		t.Fatalf("construction events = %v, want none", events)
+	}
+
+	ctx := context.WithValue(t.Context(), combineContextKey{}, "traverse")
+	values, err := action.Run(ctx, program)
+	if err != nil || !slices.Equal(values, []string{"aa", "bb", "cc"}) {
+		t.Fatalf("Run() = (%v, %v), want ([aa bb cc], nil)", values, err)
+	}
+	want := []string{"bind a", "run a", "bind b", "run b", "bind c", "run c"}
+	if !slices.Equal(events, want) {
+		t.Fatalf("events = %v, want %v", events, want)
+	}
+	if len(seen) != 3 || seen[0] != ctx || seen[1] != ctx || seen[2] != ctx {
+		t.Fatalf("contexts = %v, want identical Run context three times", seen)
+	}
+}
+
+func TestTraverseStopsAtTheFirstFailure(t *testing.T) {
+	wantErr := errors.New("second failed")
+	var bound []int
+	program := action.Traverse([]int{1, 2, 3}, func(item int) action.Action[int] {
+		bound = append(bound, item)
+		if item == 2 {
+			return action.Fail[int](wantErr)
+		}
+		return action.Pure(item)
+	})
+
+	values, err := action.Run(t.Context(), program)
+	if err != wantErr || values != nil {
+		t.Fatalf("Run() = (%v, %v), want (nil, identical %v)", values, err, wantErr)
+	}
+	if !slices.Equal(bound, []int{1, 2}) {
+		t.Fatalf("bound items = %v, want [1 2]", bound)
+	}
+}
+
+func TestTraverseOfNoItemsReturnsAnEmptyNonNilSlice(t *testing.T) {
+	binds := 0
+	binder := func(item int) action.Action[int] { binds++; return action.Pure(item) }
+
+	for _, items := range [][]int{nil, {}} {
+		values, err := action.Run(t.Context(), action.Traverse(items, binder))
+		if err != nil || values == nil || len(values) != 0 {
+			t.Fatalf("Run(%#v) = (%#v, %v), want (non-nil empty slice, nil)", items, values, err)
+		}
+	}
+	if binds != 0 {
+		t.Fatalf("binder calls = %d, want 0", binds)
+	}
+}
+
+func TestTraverseIsLazyAndReExecutableWithoutAliasing(t *testing.T) {
+	runs := 0
+	program := action.Traverse([]int{1, 2}, func(item int) action.Action[int] {
+		return action.Do(func(context.Context) (int, error) { runs++; return item * 10, nil })
+	})
+	if runs != 0 {
+		t.Fatalf("construction runs = %d, want 0", runs)
+	}
+
+	first, err := action.Run(t.Context(), program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first[0] = -1
+	second, err := action.Run(t.Context(), program)
+	if err != nil || !slices.Equal(second, []int{10, 20}) {
+		t.Fatalf("second Run() = (%v, %v), want ([10 20], nil)", second, err)
+	}
+	if !slices.Equal(first, []int{-1, 20}) {
+		t.Fatalf("first result after second Run = %v, want [-1 20] (no shared backing array)", first)
+	}
+	if runs != 4 {
+		t.Fatalf("runs = %d, want 4", runs)
+	}
+}
+
+func TestTraverseCopiesItemsAtConstruction(t *testing.T) {
+	items := []int{1, 2}
+	program := action.Traverse(items, action.Pure[int])
+	items[0] = 99
+
+	values, err := action.Run(t.Context(), program)
+	if err != nil || !slices.Equal(values, []int{1, 2}) {
+		t.Fatalf("Run() = (%v, %v), want ([1 2], nil)", values, err)
+	}
+}
+
+func TestTraverseForwardsACancelledContextUnchanged(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	var seen []context.Context
+	program := action.Traverse([]int{1, 2}, func(item int) action.Action[int] {
+		return action.Do(func(ctx context.Context) (int, error) {
+			seen = append(seen, ctx)
+			return item, nil
+		})
+	})
+
+	values, err := action.Run(ctx, program)
+	if err != nil || !slices.Equal(values, []int{1, 2}) {
+		t.Fatalf("Run() = (%v, %v), want ([1 2], nil): Traverse must not check the context", values, err)
+	}
+	if len(seen) != 2 || seen[0] != ctx || seen[1] != ctx {
+		t.Fatalf("contexts = %v, want the cancelled Run context twice", seen)
+	}
+}
+
+func TestTraverseRejectsANilActionAtRun(t *testing.T) {
+	program := action.Traverse([]int{1}, func(int) action.Action[int] { return nil })
+	assertPanics(t, "workflow/action: nil action", func() {
+		_, _ = action.Run(t.Context(), program)
 	})
 }
