@@ -38,6 +38,10 @@ var (
 		action.Action[int],
 		func(int) action.Action[struct{}],
 	) action.Action[int] = action.Tap[int]
+	_ func(
+		[]int,
+		func(int) action.Action[string],
+	) action.Action[[]string] = action.Traverse[int, string]
 	_ func(action.Action[int]) action.Action[action.AttemptResult[int]] = action.Attempt[int]
 	_ func(
 		action.Action[int],

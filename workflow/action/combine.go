@@ -54,3 +54,45 @@ func Both[A, B, C any](first Action[A], second Action[B], combine func(A, B) C) 
 		return combine(firstValue, secondValue), nil
 	}
 }
+
+// Traverse binds each item to an Action and runs those Actions one after
+// another in index order, collecting their values in the same order.
+//
+// Effects interleave per item: binder is called for an item only after the
+// previous item's Action has succeeded, and that item's Action runs before the
+// next item is bound. Every Action observes the context Run received. Nothing
+// runs until Run, and each Run traverses the items again from the start.
+//
+// Traverse copies items at construction, so later writes to the caller's slice
+// do not change what runs; the copy is shallow, so pointer elements still share
+// what they point to. Success returns a fresh, non-nil slice of len(items), which
+// is empty when items is nil or empty; it is never shared between runs. The
+// first failure stops the traversal: binder is not called for the remaining
+// items, and Traverse returns a nil slice with the error unchanged. Traverse does
+// not check the context between items; cancellation is observed only by the
+// bound Actions.
+//
+// Traverse panics with "workflow/action: nil binder" at construction when
+// binder is nil, and with "workflow/action: nil action" at execution when
+// binder returns nil.
+func Traverse[A, B any](items []A, binder func(A) Action[B]) Action[[]B] {
+	if binder == nil {
+		panic(panicNilBinder)
+	}
+	snapshot := append([]A(nil), items...)
+	return func(ctx context.Context) ([]B, error) {
+		values := make([]B, 0, len(snapshot))
+		for _, item := range snapshot {
+			next := binder(item)
+			if next == nil {
+				panic(panicNilAction)
+			}
+			value, err := next(ctx)
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, value)
+		}
+		return values, nil
+	}
+}

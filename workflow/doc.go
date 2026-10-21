@@ -16,9 +16,10 @@
 //
 // Contramap adapts Workflow inputs and Provide fixes an input without executing
 // the resulting Action. Independent Actions combine sequentially through Zip or
-// Both; Tap observes success, Attempt exposes normal errors as data, and Ensure
-// finalizes normal returns. Bracket and AcquireUseRelease delimit a generic
-// resource lifecycle without owning the concrete resource or transaction.
+// Both, and Traverse runs one Action per slice item in index order; Tap observes
+// success, Attempt exposes normal errors as data, and Ensure finalizes normal
+// returns. Bracket and AcquireUseRelease delimit a generic resource lifecycle
+// without owning the concrete resource or transaction.
 // Dual primary/finalizer failures use errors.Join; single errors and panics keep
 // their existing channels. No combinator creates goroutines, shields context
 // cancellation, or recovers panics.

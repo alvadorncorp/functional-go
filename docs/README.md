@@ -14,7 +14,7 @@ The module root [README](../README.md) is a short **index**. Content lives here.
 | [packages/lazy.md](packages/lazy.md) | `structural/lazy` — concurrent deferred memoization; stdlib-only |
 | [packages/iterator.md](packages/iterator.md) | `structural/iterator` — `iter.Seq` adapters; imports only `structural/tuple` |
 | [packages/optics.md](packages/optics.md) | `structural/optics` — typed Lens; stdlib-only |
-| [packages/immutable.md](packages/immutable.md) | Public API of `github.com/alvadorncorp/gopackages/functional/immutable`, including measured Append-loop vs. Builder benchmarks |
+| [packages/immutable.md](packages/immutable.md) | Public API of `github.com/alvadorncorp/gopackages/functional/immutable` (`List`, `Map`, `Set`, `SortedMap`), including measured Append-loop vs. Builder benchmarks |
 | [packages/state.md](packages/state.md) | Public API of `github.com/alvadorncorp/gopackages/functional/state` (pure `State[T]`, lineage, Tx, Diff) |
 | [packages/core.md](packages/core.md) | Maintainer guide for `internal/core` (ownership, cow, sharing, transient) |
 | [packages/values.md](packages/values.md) | Family guide: choice by semantics, zero values, dependency boundary, and cost model |
@@ -45,3 +45,5 @@ Current decisions:
 - [ADR-009 — Tuplas, lazy, iteradores e optics sobre contratos nativos de Go](adr/functional/adr-009-structural-primitives-and-iterator-boundary.md)
 - [ADR-010 — Retire top-level optional and valueobject](adr/functional/adr-010-retire-optional-and-valueobject.md)
 - [ADR-011 — primitives and structural path groups](adr/functional/adr-011-primitives-and-structural-path-groups.md)
+- [ADR-012 — Result interop with (T, error) and the Match order rule](adr/functional/adr-012-values-error-pair-interop-and-match.md)
+- [ADR-013 — SortedMap on a weight-balanced engine (wbtree)](adr/functional/adr-013-sorted-map-weight-balanced-engine.md)

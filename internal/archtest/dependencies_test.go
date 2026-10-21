@@ -10,7 +10,8 @@
 // and state production code import neither reflect nor unsafe, and
 // internal/engine packages obey their own import allow-lists (keyhash: stdlib
 // only; hamt: ownership/cow/sharing/keyhash only among functional packages;
-// vector: ownership/cow/sharing only among functional packages).
+// vector: ownership/cow/sharing only among functional packages; wbtree:
+// ownership/cow only among functional packages).
 package archtest
 
 import (
@@ -39,6 +40,7 @@ const (
 	pkgKeyhash         = "github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
 	pkgHamt            = "github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
 	pkgVector          = "github.com/alvadorncorp/gopackages/functional/internal/engine/vector"
+	pkgWbtree          = "github.com/alvadorncorp/gopackages/functional/internal/engine/wbtree"
 	pkgTuple           = "github.com/alvadorncorp/gopackages/functional/structural/tuple"
 	pkgLazy            = "github.com/alvadorncorp/gopackages/functional/structural/lazy"
 	pkgIterator        = "github.com/alvadorncorp/gopackages/functional/structural/iterator"
@@ -121,6 +123,7 @@ var enginePackages = []string{
 	pkgKeyhash,
 	pkgHamt,
 	pkgVector,
+	pkgWbtree,
 }
 
 // allPackages is every production package whose non-stdlib dependency set
@@ -150,6 +153,7 @@ var allPackages = []string{
 	pkgKeyhash,
 	pkgHamt,
 	pkgVector,
+	pkgWbtree,
 }
 
 // coreAllowedEdges is the only permitted non-self edge set among core
@@ -168,6 +172,7 @@ var coreForbiddenTargets = []string{
 	pkgKeyhash,
 	pkgHamt,
 	pkgVector,
+	pkgWbtree,
 	"github.com/alvadorncorp/gopackages/functional/immutable",
 	"github.com/alvadorncorp/gopackages/functional/state",
 }
@@ -189,6 +194,14 @@ var vectorAllowedFunctional = []string{
 	pkgOwnership,
 	pkgCow,
 	pkgSharing,
+}
+
+// wbtreeAllowedFunctional is the only permitted set of functional-module
+// imports for the wbtree engine (among non-self deps). wbtree must not import
+// sharing, keyhash, hamt, vector, or transient.
+var wbtreeAllowedFunctional = []string{
+	pkgOwnership,
+	pkgCow,
 }
 
 // engineForbiddenTargets are functional packages no engine may import,
@@ -360,8 +373,11 @@ func TestEngineNoReflect(t *testing.T) {
 //   - keyhash: standard library only (no functional packages)
 //   - hamt: among functional packages, only ownership, cow, sharing, keyhash
 //   - vector: among functional packages, only ownership, cow, sharing
+//   - wbtree: among functional packages, only ownership, cow
 //   - no engine may import transient, eq, immutable, or state
-//   - hamt ↛ vector and vector ↛ hamt (peer engines stay disconnected)
+//   - hamt ↛ vector and vector ↛ hamt (peer engines stay disconnected);
+//     wbtree's allow-list excludes every peer, and wbtree is outside the
+//     hamt and vector allow-lists
 //
 // Core packages already cannot import engines via TestCoreDependencyDAG
 // (any non-allowed functional edge fails); engines are also listed in
@@ -406,6 +422,10 @@ func TestEngineDependencies(t *testing.T) {
 				case pkgVector:
 					if !slices.Contains(vectorAllowedFunctional, dep) {
 						t.Errorf("%s must not depend on %s (allowed functional: %v)", pkg, dep, vectorAllowedFunctional)
+					}
+				case pkgWbtree:
+					if !slices.Contains(wbtreeAllowedFunctional, dep) {
+						t.Errorf("%s must not depend on %s (allowed functional: %v)", pkg, dep, wbtreeAllowedFunctional)
 					}
 				default:
 					t.Errorf("unhandled engine package %s depending on %s", pkg, dep)

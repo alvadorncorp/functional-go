@@ -1,6 +1,8 @@
 package immutable_test
 
 import (
+	"cmp"
+	"slices"
 	"sync"
 	"testing"
 
@@ -168,5 +170,142 @@ func TestSetConcurrentReadDuringDerive(t *testing.T) {
 
 	if base.Len() != 3 {
 		t.Fatalf("base changed after concurrent derivation: Len() = %d, want 3", base.Len())
+	}
+}
+
+// TestSortedMapConcurrentReadDuringDerive is the SortedMap analogue of
+// TestMapConcurrentReadDuringDerive: readers also check that Keys keeps
+// yielding the base's keys in ascending order while writers derive with Set,
+// Delete, and Builder.
+func TestSortedMapConcurrentReadDuringDerive(t *testing.T) {
+	t.Parallel()
+
+	base := immutable.EmptySortedMap[string, int](cmp.Compare[string]).Set("c", 3).Set("a", 1).Set("b", 2)
+	wantKeys := []string{"a", "b", "c"}
+
+	var wg sync.WaitGroup
+	stop := make(chan struct{})
+
+	for range numReaders {
+		wg.Go(func() {
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				if got, ok := base.Get("a"); got != 1 || !ok {
+					t.Errorf("Get(a) = (%d,%v) during concurrent derive, want (1,true)", got, ok)
+					return
+				}
+				if got := slices.Collect(base.Keys()); !slices.Equal(got, wantKeys) {
+					t.Errorf("Keys() = %v during concurrent derive, want %v", got, wantKeys)
+					return
+				}
+			}
+		})
+	}
+
+	go func() {
+		v := base
+		for i := range numDerivations {
+			v = v.Set("dynamic", i).Delete("a")
+		}
+	}()
+
+	for i := range numDerivations {
+		_ = base.Builder().Set("other", i).Delete("b").Build()
+	}
+	close(stop)
+	wg.Wait()
+
+	if got := slices.Collect(base.Keys()); !slices.Equal(got, wantKeys) {
+		t.Fatalf("base changed after concurrent derivation: Keys() = %v, want %v", got, wantKeys)
+	}
+}
+
+// TestSetAlgebraConcurrentReadDuringDerive proves that reading shared Set
+// operands is unaffected by writer goroutines computing Union, Intersection,
+// and Difference from them, for operands with independent seeds and for
+// operands derived from one lineage. Under -race none of this may report a
+// data race, and every reader and writer must keep seeing the operands'
+// original contents.
+func TestSetAlgebraConcurrentReadDuringDerive(t *testing.T) {
+	t.Parallel()
+
+	shared := immutable.SetOf(1, 2, 3, 4)
+	lineages := []struct {
+		name string
+		a, b immutable.Set[int]
+	}{
+		{"independent", shared, immutable.SetOf(3, 4, 5, 6)},
+		{"derived", shared, shared.Remove(1, 2).Add(5, 6)},
+	}
+	for _, lin := range lineages {
+		t.Run(lin.name, func(t *testing.T) {
+			t.Parallel()
+			a, b := lin.a, lin.b
+			wantA, wantB := sortedItems(a), sortedItems(b)
+
+			var wg sync.WaitGroup
+			stop := make(chan struct{})
+			for range numReaders {
+				wg.Go(func() {
+					for {
+						select {
+						case <-stop:
+							return
+						default:
+						}
+						if a.Len() != 4 || !a.Has(1) || b.Len() != 4 || !b.Has(6) {
+							t.Errorf("operands changed during concurrent derive: a=%v b=%v", a.Items(), b.Items())
+							return
+						}
+					}
+				})
+			}
+
+			var writers sync.WaitGroup
+			for range 2 {
+				writers.Go(func() {
+					for range numDerivations {
+						checkSetAlgebraLens(t, a, b)
+					}
+				})
+			}
+			writers.Wait()
+			close(stop)
+			wg.Wait()
+
+			if got := sortedItems(a); !slices.Equal(got, wantA) {
+				t.Fatalf("operand a changed after concurrent derivation: got %v, want %v", got, wantA)
+			}
+			if got := sortedItems(b); !slices.Equal(got, wantB) {
+				t.Fatalf("operand b changed after concurrent derivation: got %v, want %v", got, wantB)
+			}
+		})
+	}
+}
+
+// checkSetAlgebraLens computes every set-algebra operation over a and b, whose
+// four elements overlap in exactly two, and checks each result's size.
+func checkSetAlgebraLens(t *testing.T, a, b immutable.Set[int]) {
+	t.Helper()
+
+	lens := []struct {
+		op        string
+		got, want int
+	}{
+		{"a.Union(b)", a.Union(b).Len(), 6},
+		{"b.Union(a)", b.Union(a).Len(), 6},
+		{"a.Intersection(b)", a.Intersection(b).Len(), 2},
+		{"b.Intersection(a)", b.Intersection(a).Len(), 2},
+		{"a.Difference(b)", a.Difference(b).Len(), 2},
+		{"b.Difference(a)", b.Difference(a).Len(), 2},
+	}
+	for _, l := range lens {
+		if l.got != l.want {
+			t.Errorf("%s.Len() = %d during concurrent derive, want %d", l.op, l.got, l.want)
+		}
 	}
 }

@@ -113,6 +113,12 @@ state := reducer.Replay(previous, decision.Events(), reduce)
 Não é necessário `immutable.CollectList`. Quem precisar de multi-pass
 materializa explicitamente antes de chamar Replay.
 
+Se esse Replay deve reproduzir `decision.State()` é lei da aplicação,
+verificada nos testes dela: ver [Lei decide/evolve](patterns/decide-evolve-law.md).
+A biblioteca não faz essa comparação. O padrão
+[Decider](patterns/decider.md) mostra como a aplicação compõe Transition,
+Decision e Reducer em `decide`/`evolve` sem tipo de biblioteca.
+
 Produção de `modeling/reducer` depende somente do stdlib (`iter`). Replay é um
 fold puro, não um runtime de Event Sourcing: não carrega streams, não
 persiste, não serializa versões, não cria snapshots, não registra handlers e

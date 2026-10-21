@@ -1,6 +1,7 @@
 package validated_test
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/alvadorncorp/gopackages/functional/values/nonempty"
@@ -97,6 +98,54 @@ func TestMap2Cases(t *testing.T) {
 			}
 			if calls != test.wantCalls {
 				t.Fatalf("combine calls = %d, want %d", calls, test.wantCalls)
+			}
+		})
+	}
+}
+
+func TestMatch(t *testing.T) {
+	t.Parallel()
+	var zero validated.Validated[int, string]
+	tests := map[string]struct {
+		input                    validated.Validated[int, string]
+		want                     string
+		wantErrors               []string
+		invalidCalls, validCalls int
+	}{
+		"Valid": {input: validated.Valid[int, string](4), want: "valid:4", validCalls: 1},
+		"Invalid": {
+			input: validated.Invalid[int]("a", "b"), want: "invalid", wantErrors: []string{"a", "b"}, invalidCalls: 1,
+		},
+		"zero Validated": {input: zero, want: "invalid", wantErrors: []string{""}, invalidCalls: 1},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			invalidCalls, validCalls := 0, 0
+			var gotErrors []string
+			got := validated.Match(tt.input,
+				func(errors nonempty.NonEmpty[string]) string {
+					invalidCalls++
+					gotErrors = errors.Items()
+					return "invalid"
+				},
+				func(v int) string { validCalls++; return "valid:" + strconv.Itoa(v) },
+			)
+			if got != tt.want || invalidCalls != tt.invalidCalls || validCalls != tt.validCalls {
+				t.Fatalf("Match = %q, invalidCalls=%d, validCalls=%d", got, invalidCalls, validCalls)
+			}
+			if !equalStrings(gotErrors, tt.wantErrors) {
+				t.Fatalf("invalidFn errors = %q, want %q", gotErrors, tt.wantErrors)
+			}
+
+			identity := validated.Match(tt.input, validated.InvalidNonEmpty[int, string], validated.Valid[int, string])
+			gotValue, gotValid := identity.Get()
+			wantValue, wantValid := tt.input.Get()
+			gotErrs, _ := identity.Errors()
+			wantErrs, _ := tt.input.Errors()
+			if gotValue != wantValue || gotValid != wantValid || !equalStrings(gotErrs.Items(), wantErrs.Items()) {
+				t.Fatalf("Match(v, InvalidNonEmpty, Valid) = (%d, %v, %q), want (%d, %v, %q)",
+					gotValue, gotValid, gotErrs.Items(), wantValue, wantValid, wantErrs.Items())
 			}
 		})
 	}

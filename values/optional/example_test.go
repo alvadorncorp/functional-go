@@ -20,3 +20,18 @@ func ExampleNone() {
 	// Output:
 	// true fallback
 }
+
+func ExampleMatch() {
+	greet := func(name optional.Optional[string]) string {
+		return optional.Match(
+			name,
+			func() string { return "hello, stranger" },
+			func(name string) string { return "hello, " + name },
+		)
+	}
+	fmt.Println(greet(optional.Some("ada")))
+	fmt.Println(greet(optional.None[string]()))
+	// Output:
+	// hello, ada
+	// hello, stranger
+}

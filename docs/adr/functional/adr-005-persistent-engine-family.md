@@ -13,6 +13,8 @@ date: 2026-08-07
 
 > **Public package name:** the collections API lives at `functional/immutable` (formerly `functional/persistent`). This ADR still uses *persistent* for the structure-sharing engine family (HAMT + 32-way vector); that is the representation term, not the import path.
 
+> **Forward note:** ordered maps add a third engine, `internal/engine/wbtree` (a weight-balanced tree behind `immutable.SortedMap`), recorded in [ADR-013](adr-013-sorted-map-weight-balanced-engine.md) (`adr:functional:013`). The HAMT and vector decisions and the O(1) Freeze below are unchanged.
+
 ## Context and problem
 
 `immutable` List/Map/Set already expose functional updates, Builders, and

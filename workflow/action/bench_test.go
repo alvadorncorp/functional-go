@@ -18,6 +18,7 @@ var (
 	actionErrorBenchSink   error
 	actionPairBenchSink    action.Pair[int, int]
 	actionAttemptBenchSink action.AttemptResult[int]
+	actionSliceBenchSink   []int
 )
 
 func BenchmarkActionPure(b *testing.B) {
@@ -135,6 +136,43 @@ func BenchmarkActionTapManual(b *testing.B) {
 	for b.Loop() {
 		actionValueBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
 	}
+}
+
+func BenchmarkActionTraverse(b *testing.B) {
+	items := benchmarkTraverseItems()
+	subject := action.Traverse(items, func(item int) action.Action[int] { return action.Pure(item + 1) })
+	b.ReportAllocs()
+	for b.Loop() {
+		actionSliceBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func BenchmarkActionTraverseManual(b *testing.B) {
+	items := benchmarkTraverseItems()
+	binder := func(item int) action.Action[int] { return action.Pure(item + 1) }
+	subject := action.Do(func(ctx context.Context) ([]int, error) {
+		values := make([]int, 0, len(items))
+		for _, item := range items {
+			value, err := binder(item)(ctx)
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, value)
+		}
+		return values, nil
+	})
+	b.ReportAllocs()
+	for b.Loop() {
+		actionSliceBenchSink, actionErrorBenchSink = action.Run(context.Background(), subject)
+	}
+}
+
+func benchmarkTraverseItems() []int {
+	items := make([]int, chainDepth10)
+	for i := range items {
+		items[i] = i
+	}
+	return items
 }
 
 func BenchmarkActionAttempt(b *testing.B) {

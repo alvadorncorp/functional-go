@@ -1,6 +1,9 @@
 package result
 
-const panicMessage = "functional/values/result: Result is Err"
+const (
+	panicMessage      = "functional/values/result: Result is Err"
+	toPairNilErrPanic = "functional/values/result: ToPair on Err with nil error"
+)
 
 // Result is an explicit success-or-failure value whose zero value is Err(zero(E)).
 type Result[T any, E any] struct {
@@ -68,6 +71,37 @@ func FlatMap[T, U, E any](r Result[T, E], transform func(T) Result[U, E]) Result
 		return Err[U](r.err)
 	}
 	return transform(r.value)
+}
+
+// Match calls errFn for Err, including the zero Result, or okFn for Ok and returns its result.
+func Match[T, E, R any](r Result[T, E], errFn func(E) R, okFn func(T) R) R {
+	if r.ok {
+		return okFn(r.value)
+	}
+	return errFn(r.err)
+}
+
+// FromPair returns Err(err) when err != nil, dropping value, and Ok(value) otherwise.
+// A nil pointer of a concrete error type stored in err is a non-nil error and yields Err.
+func FromPair[T any](value T, err error) Result[T, error] {
+	if err != nil {
+		return Err[T](err)
+	}
+	return Ok[T, error](value)
+}
+
+// ToPair returns (value, nil) for Ok and (zero, err) for Err.
+// It panics when r is Err with a nil error, including the zero Result,
+// because returning (zero, nil) would report a failure as a success.
+func ToPair[T any](r Result[T, error]) (T, error) {
+	if r.ok {
+		return r.value, nil
+	}
+	if r.err == nil {
+		panic(toPairNilErrPanic)
+	}
+	var zero T
+	return zero, r.err
 }
 
 // Equal reports whether a and b have equal discriminators and values.

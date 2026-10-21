@@ -20,8 +20,9 @@ import path down, grouped by role (no Go package at the group directory):
   [`lazy`](structural/lazy/), [`iterator`](structural/iterator/),
   [`optics`](structural/optics/)
 - **[`values/`](values/)** — optional, result, either, nonempty, validated
-- **[`immutable/`](immutable/)**, **[`state/`](state/)** — collections and
-  pure plan evolution (kept at the module root)
+- **[`immutable/`](immutable/)**, **[`state/`](state/)** — collections
+  (including the ordered `SortedMap`) and pure plan evolution (kept at the
+  module root)
 
 This README is the **documentation index**. Guides live under
 [`docs/`](docs/) — start at [`docs/README.md`](docs/README.md).
@@ -79,6 +80,8 @@ This README is the **documentation index**. Guides live under
 | [docs/adr/functional/adr-009-structural-primitives-and-iterator-boundary.md](docs/adr/functional/adr-009-structural-primitives-and-iterator-boundary.md) | `adr:functional:009` |
 | [docs/adr/functional/adr-010-retire-optional-and-valueobject.md](docs/adr/functional/adr-010-retire-optional-and-valueobject.md) | `adr:functional:010` |
 | [docs/adr/functional/adr-011-primitives-and-structural-path-groups.md](docs/adr/functional/adr-011-primitives-and-structural-path-groups.md) | `adr:functional:011` |
+| [docs/adr/functional/adr-012-values-error-pair-interop-and-match.md](docs/adr/functional/adr-012-values-error-pair-interop-and-match.md) | `adr:functional:012` |
+| [docs/adr/functional/adr-013-sorted-map-weight-balanced-engine.md](docs/adr/functional/adr-013-sorted-map-weight-balanced-engine.md) | `adr:functional:013` |
 
 ---
 
@@ -107,7 +110,7 @@ This README is the **documentation index**. Guides live under
 | Package | Role | Core types |
 |---|---|---|
 | [`values/optional`](values/optional/), [`values/result`](values/result/), [`values/either`](values/either/), [`values/nonempty`](values/nonempty/), [`values/validated`](values/validated/) | Independent algebraic value types; see the [family guide](docs/packages/values.md) | `Optional[T]`, `Result[T,E]`, `Either[L,R]`, `NonEmpty[T]`, `Validated[T,E]` |
-| [`immutable`](immutable/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List) | `List[T]`, `Map[K,V]`, `Set[T]`, `Builder()` |
+| [`immutable`](immutable/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List, weight-balanced-tree SortedMap) | `List[T]`, `Map[K,V]`, `Set[T]`, `SortedMap[K,V]`, `Builder()` |
 | [`state`](state/) | Pure semantic evolution over `T` | `State[T]`, `Transaction[T]`, `Diff[T]`, `Snapshot[T]` |
 
 ---
@@ -179,10 +182,12 @@ cd functional && go test ./... -count=1
   `immutable.List[[]byte]` still shares each element's backing array;
   nothing in this module makes an element type immutable on your behalf.
 - **`immutable` engines are path-copy structure sharing, not full-copy
-  COW.** Map/Set use a HAMT; List uses a 32-way vector. Documented log-n
-  complexity bounds are public-API upper bounds. `List.Delete` is currently
-  O(n). Builders publish with O(1) owner invalidation. See
+  COW.** Map/Set use a HAMT; List uses a 32-way vector; SortedMap uses a
+  weight-balanced tree (`wbtree`). Documented log-n complexity bounds are
+  public-API upper bounds. `List.Delete` is currently O(n). Builders publish
+  with O(1) owner invalidation. See
   [ADR-005](docs/adr/functional/adr-005-persistent-engine-family.md),
+  [ADR-013](docs/adr/functional/adr-013-sorted-map-weight-balanced-engine.md),
   [ADR-004](docs/adr/functional/adr-004-thin-immutability-core.md), and
   [docs/packages/core.md](docs/packages/core.md). Core remains laws only —
   not a generic engine library.

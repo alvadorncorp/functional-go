@@ -139,3 +139,35 @@ func TestOptionalTransformsAreLazy(t *testing.T) {
 		t.Fatalf("selected callbacks contributed %d, want 6", calls)
 	}
 }
+
+func TestMatch(t *testing.T) {
+	t.Parallel()
+	var zero optional.Optional[int]
+	tests := map[string]struct {
+		input                optional.Optional[int]
+		want                 string
+		noneCalls, someCalls int
+	}{
+		"Some":          {optional.Some(4), "some:4", 0, 1},
+		"Some zero":     {optional.Some(0), "some:0", 0, 1},
+		"None":          {optional.None[int](), "none", 1, 0},
+		"zero Optional": {zero, "none", 1, 0},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			noneCalls, someCalls := 0, 0
+			got := optional.Match(tt.input,
+				func() string { noneCalls++; return "none" },
+				func(v int) string { someCalls++; return "some:" + strconv.Itoa(v) },
+			)
+			if got != tt.want || noneCalls != tt.noneCalls || someCalls != tt.someCalls {
+				t.Fatalf("Match = %q, noneCalls=%d, someCalls=%d", got, noneCalls, someCalls)
+			}
+			identity := optional.Match(tt.input, optional.None[int], optional.Some[int])
+			if !optional.Equal(identity, tt.input) {
+				t.Fatalf("Match(o, None, Some) = %v, want %v", identity, tt.input)
+			}
+		})
+	}
+}

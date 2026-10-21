@@ -75,11 +75,11 @@ execução com efeitos é candidato a `workflow`.
 ## Lifecycle sem runtime
 
 `Bracket` conhece somente `Action[R]`, `R → Action[T]` e
-`R → Action[struct{}]`. Não conhece pool, lock, lease, tracing ou banco. `Zip` e
-`Both` não criam goroutines; `Ensure` e `Bracket` não recuperam panic nem blindam
-cancelamento. O DAG permanece `workflow -> action <- transaction`, com
-`plan` como folha stdlib e `resilience -> action`. O fecho do core permanece
-stdlib-only.
+`R → Action[struct{}]`. Não conhece pool, lock, lease, tracing ou banco. `Zip`,
+`Both` e `Traverse` não criam goroutines; `Ensure` e `Bracket` não recuperam
+panic nem blindam cancelamento. O DAG permanece
+`workflow -> action <- transaction`, com `plan` como folha stdlib e
+`resilience -> action`. O fecho do core permanece stdlib-only.
 
 ## Resilience sem preempção
 

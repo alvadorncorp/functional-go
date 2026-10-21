@@ -28,7 +28,7 @@ func exactSurface() map[string][]string {
 		},
 		actionPackage: {
 			"AcquireUseRelease", "Action", "Attempt", "AttemptResult", "Both", "Bracket", "Do", "Ensure",
-			"Fail", "FlatMap", "Map", "MapFallible", "Pair", "Pure", "Recover", "Run", "Tap", "Zip",
+			"Fail", "FlatMap", "Map", "MapFallible", "Pair", "Pure", "Recover", "Run", "Tap", "Traverse", "Zip",
 		},
 		planPackage: {
 			"Kind", "KindEmpty", "KindSequence", "KindStep", "KindTransaction",

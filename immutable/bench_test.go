@@ -1,7 +1,9 @@
 package immutable_test
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/alvadorncorp/gopackages/functional/immutable"
@@ -44,6 +46,14 @@ func makeBenchMap(n int) immutable.Map[int, int] {
 		m[i] = i
 	}
 	return immutable.MapOf(m)
+}
+
+func makeBenchSortedMap(n int) immutable.SortedMap[int, int] {
+	b := immutable.EmptySortedMap[int, int](cmp.Compare[int]).Builder()
+	for i := range n {
+		b.Set(i, i)
+	}
+	return b.Build()
 }
 
 func makeBenchSet(n int) immutable.Set[int] {
@@ -162,6 +172,23 @@ func BenchmarkMapSet(b *testing.B) {
 	}
 }
 
+// BenchmarkMapUpdate measures a single Update of a present key against a Map
+// of size n: one Get plus one Set, so allocs/op follows BenchmarkMapSet's
+// depth curve, not n.
+func BenchmarkMapUpdate(b *testing.B) {
+	inc := func(old int, _ bool) int { return old + 1 }
+	for _, n := range benchSizesSingleOp {
+		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			m := makeBenchMap(n)
+			key := n / 2
+			for b.Loop() {
+				_ = m.Update(key, inc)
+			}
+		})
+	}
+}
+
 // BenchmarkMapBuilderSet is BenchmarkMapSet's loop-building counterpart via
 // Builder: n Sets under exclusive ownership, then O(1) Freeze.
 func BenchmarkMapBuilderSet(b *testing.B) {
@@ -170,6 +197,54 @@ func BenchmarkMapBuilderSet(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
 				builder := immutable.MapOf[int, int](nil).Builder()
+				for i := range n {
+					builder.Set(i, i)
+				}
+				_ = builder.Build()
+			}
+		})
+	}
+}
+
+// BenchmarkSortedMapGet is BenchmarkMapGet's SortedMap counterpart: key
+// lookup on a SortedMap of size n, comparable against Map at the same n.
+func BenchmarkSortedMapGet(b *testing.B) {
+	for _, n := range benchSizes {
+		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			m := makeBenchSortedMap(n)
+			key := n / 2
+			for b.Loop() {
+				_, _ = m.Get(key)
+			}
+		})
+	}
+}
+
+// BenchmarkSortedMapSet measures a single Set against a SortedMap already
+// holding n entries. Watch allocs/op: weight-balanced path-copy follows
+// log2(n), not n.
+func BenchmarkSortedMapSet(b *testing.B) {
+	for _, n := range benchSizesSingleOp {
+		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			m := makeBenchSortedMap(n)
+			for b.Loop() {
+				_ = m.Set(n, n)
+			}
+		})
+	}
+}
+
+// BenchmarkSortedMapBuilderSet is BenchmarkSortedMapSet's loop-building
+// counterpart via Builder: n Sets under exclusive ownership, then O(1)
+// Freeze.
+func BenchmarkSortedMapBuilderSet(b *testing.B) {
+	for _, n := range benchSizes {
+		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				builder := immutable.EmptySortedMap[int, int](cmp.Compare[int]).Builder()
 				for i := range n {
 					builder.Set(i, i)
 				}
@@ -222,6 +297,72 @@ func BenchmarkSetRemove(b *testing.B) {
 			}
 		})
 	}
+}
+
+// makeBenchSetRange returns a Set holding the n consecutive ints from start.
+func makeBenchSetRange(start, n int) immutable.Set[int] {
+	b := immutable.SetOf[int]().Builder()
+	for i := range n {
+		b.Add(start + i)
+	}
+	return b.Build()
+}
+
+// benchSetAlgebra runs op over a large Set of n elements and a small Set of m
+// elements, for every n in benchSizes and m in {benchSizeSmall, n}. The two
+// Sets hold independent seeds. With overlap, small holds the first m elements
+// of large (small ⊆ large); without it, the two are disjoint.
+func benchSetAlgebra(b *testing.B, overlap bool, op func(small, large immutable.Set[int]) immutable.Set[int]) {
+	for _, n := range benchSizes {
+		for _, m := range slices.Compact([]int{benchSizeSmall, n}) {
+			b.Run(fmt.Sprintf("n=%d/m=%d", n, m), func(b *testing.B) {
+				b.ReportAllocs()
+				large := makeBenchSetRange(0, n)
+				start := n
+				if overlap {
+					start = 0
+				}
+				small := makeBenchSetRange(start, m)
+				for b.Loop() {
+					_ = op(small, large)
+				}
+			})
+		}
+	}
+}
+
+// BenchmarkSetUnion measures Union. The nochange case (small ⊆ large) must
+// report the same allocs/op for every n and m: it walks small, probes large,
+// and returns large without opening a builder. The disjoint case opens one
+// builder and adds all of small.
+func BenchmarkSetUnion(b *testing.B) {
+	union := func(small, large immutable.Set[int]) immutable.Set[int] { return small.Union(large) }
+	b.Run("nochange", func(b *testing.B) { benchSetAlgebra(b, true, union) })
+	b.Run("disjoint", func(b *testing.B) { benchSetAlgebra(b, false, union) })
+}
+
+// BenchmarkSetIntersection measures Intersection. The nochange case
+// (small ⊆ large) must report the same allocs/op for every n and m: it walks
+// small, probes large, and returns small without opening a builder. The
+// disjoint case opens one builder and removes all of small.
+func BenchmarkSetIntersection(b *testing.B) {
+	inter := func(small, large immutable.Set[int]) immutable.Set[int] { return small.Intersection(large) }
+	b.Run("nochange", func(b *testing.B) { benchSetAlgebra(b, true, inter) })
+	b.Run("disjoint", func(b *testing.B) { benchSetAlgebra(b, false, inter) })
+}
+
+// BenchmarkSetDifference measures Difference with the small and with the
+// large operand as receiver. The nochange cases (disjoint operands) must
+// report the same allocs/op for every n and m: they walk the smaller operand,
+// probe the larger, and return the receiver without opening a builder. The
+// subset cases open one builder and remove the m shared elements.
+func BenchmarkSetDifference(b *testing.B) {
+	smallRecv := func(small, large immutable.Set[int]) immutable.Set[int] { return small.Difference(large) }
+	largeRecv := func(small, large immutable.Set[int]) immutable.Set[int] { return large.Difference(small) }
+	b.Run("nochange/receiver-small", func(b *testing.B) { benchSetAlgebra(b, false, smallRecv) })
+	b.Run("nochange/receiver-large", func(b *testing.B) { benchSetAlgebra(b, false, largeRecv) })
+	b.Run("subset/receiver-small", func(b *testing.B) { benchSetAlgebra(b, true, smallRecv) })
+	b.Run("subset/receiver-large", func(b *testing.B) { benchSetAlgebra(b, true, largeRecv) })
 }
 
 // BenchmarkNativeSliceAppendLoop is the native, mutable-slice baseline for

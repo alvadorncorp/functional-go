@@ -62,6 +62,21 @@ func ExampleBoth() {
 	// Output: 42 <nil>
 }
 
+func ExampleTraverse() {
+	program := action.Traverse([]string{"created", "paid"}, func(event string) action.Action[string] {
+		return action.Do(func(context.Context) (string, error) {
+			fmt.Println("append", event)
+			return "outbox:" + event, nil
+		})
+	})
+	messages, err := action.Run(context.Background(), program)
+	fmt.Println(messages, err)
+	// Output:
+	// append created
+	// append paid
+	// [outbox:created outbox:paid] <nil>
+}
+
 func ExampleTap() {
 	program := action.Tap(action.Pure(42), func(value int) action.Action[struct{}] {
 		fmt.Println("observed", value)
