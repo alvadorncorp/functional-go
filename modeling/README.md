@@ -37,13 +37,13 @@ compose classifications without validation, errors, effects, sibling imports,
 or root reexports.
 
 The additive [`modeling/reducer`](reducer/) capability defines
-`Reducer[S,E] func(S,E) S` and ordered `Replay` over `immutable.List[E]`.
+`Reducer[S,E] func(S,E) S` and ordered `Replay` over `iter.Seq[E]`.
 Reducer materializes facts into state; Replay is a synchronous left fold, not an
 Event Sourcing runtime. Every existing root-package, change, and policy contract
 remains unchanged.
 
 The orthogonal [`modeling/projection`](projection/) capability defines
-`Projection[P,E] func(P,E) P` and ordered `Project` over `immutable.List[E]`.
+`Projection[P,E] func(P,E) P` and ordered `Project` over `iter.Seq[E]`.
 Projection derives read models and summaries; it is not a Reducer alias,
 persistence adapter, broker consumer, or CQRS runtime. No Projection symbol is
 reexported from the root package.
@@ -55,6 +55,9 @@ reexported from the root package.
 - [Change package guide](docs/packages/change.md)
 - [Policy package guide](docs/packages/policy.md)
 - [Specification package guide](docs/packages/specification.md)
+- [Reducer package guide](docs/packages/reducer.md)
+- [Pattern: decide/evolve law](docs/patterns/decide-evolve-law.md)
+- [Pattern: Decider](docs/patterns/decider.md)
 - [ADR-001: minimal type-safe domain modeling](docs/adr/modeling/adr-001-minimal-type-safe-domain-modeling.md)
 - [ADR-002: root facade over an internal Decision package](docs/adr/modeling/adr-002-root-facade-internal-decision.md)
 - [ADR-003: nominal rules and operation requirements](docs/adr/modeling/adr-003-rules-and-requirements.md)
@@ -73,6 +76,7 @@ reexported from the root package.
 - [Projection package guide](docs/packages/projection.md)
 - [ADR-007: additive projection capability boundary](docs/adr/modeling/adr-007-projection-capability-boundary.md)
 - [TDD: Projection and Project](docs/tdd/modeling/projection.md)
+- [ADR-010: Replay/Project over iter.Seq (stdlib only)](docs/adr/modeling/adr-010-streaming-replay-project-seq.md)
 
 ## Development
 

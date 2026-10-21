@@ -13,4 +13,4 @@ tipos de biblioteca. O exemplo canônico é `examples/workflow/checkout`.
 8. [Optics e Change](optics-and-change.md)
 9. [eventbus/outbox vs outbox da application](eventbus-vs-application-outbox.md)
 
-Ver também [ADR-012](../adr/workflow/adr-012-no-ddd-runtime-module.md).
+Ver também [ADR-012](../adr/workflow/adr-012-no-ddd-runtime-module.md) e o padrão [Decider](../../../modeling/docs/patterns/decider.md) do modeling.

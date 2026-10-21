@@ -16,6 +16,7 @@ permanece um catálogo de módulos e não deve adquirir uma árvore `docs/`.
 ## Patterns
 
 - [Lei decide/evolve](patterns/decide-evolve-law.md)
+- [Decider](patterns/decider.md)
 
 ## Architecture decisions
 

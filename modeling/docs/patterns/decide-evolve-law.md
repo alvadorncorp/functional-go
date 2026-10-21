@@ -110,7 +110,9 @@ passo seguinte.
 ## Receita de tabela
 
 Um caso por comando relevante. Cada caso decide a partir de `before` e
-confronta a Decision com o Replay dos próprios eventos:
+confronta a Decision com o Replay dos próprios eventos. A função tem uma
+tabela por decider; a segunda cobre a carteira, o produto descrito em
+[Decider](decider.md):
 
 ```go
 func TestDecideEvolveLawTable(t *testing.T) {
@@ -135,6 +137,35 @@ func TestDecideEvolveLawTable(t *testing.T) {
 			}
 		})
 	}
+
+	walletTests := []struct {
+		name    string
+		before  wallet
+		command topUp
+	}{
+		{
+			name:    "first top-up",
+			before:  deciderWalletInitial,
+			command: topUp{deposit: deposit{amount: 10}, earn: earnPoints{amount: 1}},
+		},
+		{
+			name:    "later top-up",
+			before:  wallet{account: account{balance: 10, deposits: 1}, points: points{total: 1}},
+			command: topUp{deposit: deposit{amount: 5}, earn: earnPoints{amount: 3}},
+		},
+	}
+	for _, tt := range walletTests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, err := decideWallet(tt.before, tt.command)
+			if err != nil {
+				t.Fatalf("decideWallet(%+v, %+v) error = %v", tt.before, tt.command, err)
+			}
+			if !decideEvolveConsistent(tt.before, d, evolveWallet, sameWallet) {
+				replayed := reducer.Replay(tt.before, d.Events(), evolveWallet)
+				t.Fatalf("Replay = %+v, State() = %+v", replayed, d.State())
+			}
+		})
+	}
 }
 ```
 
@@ -144,7 +175,9 @@ arredondamento e valor zero.
 ## Receita de fuzz
 
 O fuzz gera uma sequência de comandos, verifica a lei em cada passo e, no fim,
-o corolário de histórico:
+o corolário de histórico. A mesma entrada dirige a conta e a carteira; na
+carteira, o valor 1 rende zero pontos e exercita a rejeição depois que o
+depósito já decidiu:
 
 ```go
 func FuzzDecideEvolveLaw(f *testing.F) {
@@ -169,6 +202,27 @@ func FuzzDecideEvolveLaw(f *testing.F) {
 		replayed := reducer.Replay(deciderAccountInitial, slices.Values(history), evolveAccount)
 		if !sameAccount(replayed, state) {
 			t.Fatalf("history corollary: Replay = %+v, final State() = %+v", replayed, state)
+		}
+
+		walletState := deciderWalletInitial
+		var walletHistory []walletEvent
+		for _, amount := range amounts {
+			// amount 1 earns 0 points: the deposit decides, then decidePoints rejects the top-up
+			command := topUp{deposit: deposit{amount: int(amount)}, earn: earnPoints{amount: int(amount) / 2}}
+			d, err := decideWallet(walletState, command)
+			if err != nil {
+				continue
+			}
+			if !decideEvolveConsistent(walletState, d, evolveWallet, sameWallet) {
+				t.Fatalf("wallet step law: before = %+v, State() = %+v", walletState, d.State())
+			}
+			walletState = d.State()
+			walletHistory = slices.AppendSeq(walletHistory, d.Events())
+		}
+
+		walletReplayed := reducer.Replay(deciderWalletInitial, slices.Values(walletHistory), evolveWallet)
+		if !sameWallet(walletReplayed, walletState) {
+			t.Fatalf("wallet history corollary: Replay = %+v, final State() = %+v", walletReplayed, walletState)
 		}
 	})
 }
