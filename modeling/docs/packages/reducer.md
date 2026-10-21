@@ -87,6 +87,11 @@ state := reducer.Replay(previous, decision.Events(), ReduceAccount)
 Não é necessário `immutable.CollectList`. Quem precisar varrer a sequência
 mais de uma vez materializa explicitamente antes de chamar Replay.
 
+A consistência entre `decision.State()` e esse Replay é lei da aplicação, não
+do pacote: Replay não compara os dois estados e não há `VerifyDecision` nem
+`ReplayDecision`. As receitas de teste (tabela e fuzz) estão em
+[Lei decide/evolve](../patterns/decide-evolve-law.md).
+
 ## Reducer versus Projection
 
 Ambos têm forma `valor x evento -> valor`, com ownership distinto:
