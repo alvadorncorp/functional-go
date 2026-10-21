@@ -242,22 +242,26 @@ em linha da tabela ou em semente `f.Add` e não versione o corpus.
 `examples/workflow/checkout` mostra por que a lei é enunciada sobre `obs`.
 `ReduceOrder` (`internal/ordering/domain/checkout/reducer.go`) reaplica
 `OrderCheckedOut` e `DiscountApplied`, mas não reconstrói o pedido inteiro.
-Hoje há duas lacunas:
+O exemplo tinha duas lacunas:
 
-- **Cupom sem evento.** `Decide` grava o cupom no estado (`ApplyCoupon`), e
-  nenhum evento o carrega, então Replay nunca o restaura. Aqui a observação
-  parcial é a resposta honesta: `obs` exclui `Coupon`, e o teste documenta a
-  exclusão.
-- **Promoção premium-loyalty sem `DiscountApplied`.** `Decide` registra a
-  promoção (`AddPromotionChange`) sempre que o motivo do desconto é
-  `premium-loyalty`, mas só emite `DiscountApplied`, o evento que carrega
-  `Promotion`, quando o valor do desconto não é zero. `Money.Percentage`
-  trunca (`cents * percent / 100`), então um subtotal pequeno produz desconto
-  zero com motivo `premium-loyalty`. O estado ganha a promoção e nenhum evento
-  a carrega. Isso viola o corolário 1. Tirar `Promotions` da observação
+- **Cupom sem evento: limite declarado.** `Decide` grava o cupom no estado
+  (`ApplyCoupon`), e nenhum evento o carrega, então Replay nunca o restaura.
+  Aqui a observação parcial é a resposta honesta: `obs` exclui `Coupon`, e o
+  teste documenta a exclusão. Levar o cupom nos eventos mudaria o esquema de
+  eventos do checkout e fica fora do exemplo.
+- **Promoção premium-loyalty sem `DiscountApplied`: corrigida.**
+  `Money.Percentage` trunca (`cents * percent / 100`), então um subtotal
+  pequeno produz desconto zero com motivo `premium-loyalty`. `DiscountApplied`,
+  o evento que carrega `Promotion`, só é emitido quando o desconto não é zero,
+  mas `Decide` registrava a promoção (`AddPromotionChange`) mesmo assim. O
+  estado ganhava uma promoção que nenhum evento carregava, o que viola o
+  corolário 1. Agora `Decide` só registra a promoção quando emite
+  `DiscountApplied` com ela. `Promotions` continua na observação: tirá-la
   esconderia o defeito em vez de declarar um limite.
 
 `TestReplayOrderReconstructsCheckoutState`
-(`internal/ordering/domain/checkout/reducer_projection_test.go`) já compara
-uma observação parcial (status, subtotal, desconto, total, promoções e versão,
-sem cupom), mas cobre só o caso premium-loyalty com desconto diferente de zero.
+(`internal/ordering/domain/checkout/reducer_projection_test.go`) é a tabela da
+lei no checkout. A observação `sameReplayedOrder` compara status, quantidade de
+itens, subtotal, desconto, total, promoções e versão, sem cupom. Os casos são
+cliente padrão sem desconto, premium-loyalty, cupom `SAVE20` e premium-loyalty
+com subtotal de 10 centavos, cujo desconto trunca para zero.
