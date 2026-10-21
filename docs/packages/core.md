@@ -12,8 +12,9 @@
 Maintainer guide for the thin immutability substrate. Callers outside
 `functional` cannot import these packages (`internal/`). For the decision
 record see [ADR-004](../adr/functional/adr-004-thin-immutability-core.md).
-Engines (HAMT, vector) are separate — see
-[ADR-005](../adr/functional/adr-005-persistent-engine-family.md) and
+Engines (HAMT, vector, wbtree) are separate — see
+[ADR-005](../adr/functional/adr-005-persistent-engine-family.md),
+[ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md), and
 [immutable.md](immutable.md).
 
 ---
@@ -138,9 +139,10 @@ public packages and is deliberately **not** part of core so the mutation
 substrate stays a pure ownership/COW/sharing layer.
 
 Engines live under `functional/internal/engine/` (`hamt`, `vector`,
-`keyhash`) — representation, not laws. See
-[immutable.md](immutable.md) and
-[ADR-005](../adr/functional/adr-005-persistent-engine-family.md).
+`wbtree`, `keyhash`) — representation, not laws. See
+[immutable.md](immutable.md),
+[ADR-005](../adr/functional/adr-005-persistent-engine-family.md), and
+[ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md).
 
 ---
 

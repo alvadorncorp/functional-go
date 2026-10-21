@@ -2,13 +2,13 @@
 
 **Import path:** `github.com/alvadorncorp/gopackages/functional/immutable`
 
-Immutable collections — `List[T]`, `Map[K,V]`, `Set[T]` — that write
-functionally: every update method returns a new collection and leaves the
-receiver unchanged. There is no in-place mutation anywhere in this API;
-"write" always means "derive a new value from an old one."
+Immutable collections — `List[T]`, `Map[K,V]`, `Set[T]`, `SortedMap[K,V]` —
+that write functionally: every update method returns a new collection and
+leaves the receiver unchanged. There is no in-place mutation anywhere in this
+API; "write" always means "derive a new value from an old one."
 
-Constructors are **`ListOf` / `MapOf` / `SetOf`** (not `New*`). See the
-[name glossary](#name-glossary) for historical renames.
+Constructors are **`ListOf` / `MapOf` / `SetOf` / `EmptySortedMap`** (not
+`New*`). See the [name glossary](#name-glossary) for historical renames.
 
 ## Engines (Baseline B)
 
@@ -16,6 +16,7 @@ Constructors are **`ListOf` / `MapOf` / `SetOf`** (not `New*`). See the
 |---|---|---|
 | `Map[K,V]`, `Set[T]` | `internal/engine/hamt` | 32-way HAMT; path-copy structural sharing |
 | `List[T]` | `internal/engine/vector` | 32-way persistent vector (trie + tail); path-copy on Set/Append/Pop |
+| `SortedMap[K,V]` | `internal/engine/wbtree` | Weight-balanced binary search tree (Adams; Straka's `delta = 3`, `gamma = 2` on weight `size+1`); path-copy structural sharing; subtree size per node; see [ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md) |
 
 - **HAMT seed policy:** each independent empty `hamt.Root` holds its own
   `maphash.Seed`; derived versions preserve that seed. Key hashing uses
@@ -27,6 +28,13 @@ Constructors are **`ListOf` / `MapOf` / `SetOf`** (not `New*`). See the
   `Set.Union`, `Set.Intersection`, and `Set.Difference` accept operands of
   any lineage (independent seeds or one derived lineage); which operand's
   structure and seed lineage the result continues is **UNSPECIFIED**.
+- **wbtree comparator policy:** each `wbtree.Root` carries the comparator it
+  was constructed with, and every derived version keeps it, including one
+  emptied by `Delete`. Rotations look only at subtree sizes; every comparator
+  call on a path runs while descending, before any node is edited, so a
+  comparator panic leaves a builder's prior contents intact. `immutable`
+  checks for a comparator before calling the engine, so `"wbtree: ..."`
+  panics never reach callers.
 - **Builders:** open an internal `transient.Window`, edit under the window's
   exclusive `*ownership.Owner` (engine transient paths mutate owned nodes in
   place), and `Freeze` on `Build` — **O(1)** owner invalidation, no tree
@@ -46,15 +54,17 @@ Constructors are **`ListOf` / `MapOf` / `SetOf`** (not `New*`). See the
   read, including while another goroutine derives new versions from the same
   base.
 - **Engine micro-benches:** optional alloc/path-copy probes live in
-  `internal/engine/hamt/benchmark_test.go` and
-  `internal/engine/vector/benchmark_test.go` (not part of the public API).
+  `internal/engine/hamt/benchmark_test.go`,
+  `internal/engine/vector/benchmark_test.go`, and
+  `internal/engine/wbtree/benchmark_test.go` (not part of the public API).
 
 Documented log-n complexity bounds below are **upper-bound public-API
 headroom**. Decision records:
 [ADR-004](../adr/functional/adr-004-thin-immutability-core.md) (thin core),
 [ADR-005](../adr/functional/adr-005-persistent-engine-family.md) (engine
-family). Historical note: early milestones used full-copy COW over a stdlib
-slice/map; that is no longer the engine.
+family), [ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md)
+(SortedMap on wbtree). Historical note: early milestones used full-copy COW
+over a stdlib slice/map; that is no longer the engine.
 
 ---
 
@@ -65,7 +75,8 @@ slice/map; that is no longer the engine.
 | Ordered collection | `List[T]`, `ListOf`, `CollectList`, `ListBuilder[T]` |
 | Key-value collection | `Map[K,V]`, `MapOf`, `CollectMap`, `MapBuilder[K,V]` |
 | Set collection | `Set[T]`, `SetOf`, `CollectSet`, `SetBuilder[T]` |
-| Engines | `internal/engine/hamt` (Map/Set), `internal/engine/vector` (List) |
+| Sorted key-value collection | `SortedMap[K,V]`, `EmptySortedMap`, `CollectSortedMap`, `SortedMapBuilder[K,V]` |
+| Engines | `internal/engine/hamt` (Map/Set), `internal/engine/vector` (List), `internal/engine/wbtree` (SortedMap) |
 | Mutation substrate | Builders use `internal/core/transient` + engine exclusive-owner paths |
 
 ---
@@ -76,21 +87,28 @@ slice/map; that is no longer the engine.
    always copies rather than handing out the backing engine storage.
 2. **`Map`/`Set` iteration order is UNSPECIFIED** and may change between
    releases, or even between two calls on the same value. `List` iterates
-   in index order — that order is specified and part of the contract.
+   in index order and `SortedMap` in ascending comparator order — those
+   orders are specified and part of the contract.
 3. **Documented complexity is an upper bound** the public API reserves room
    for (see the table below). Path-copy updates allocate along a tree path
    (depth curve), not a full collection copy — but callers must still use
    the documented bounds, not today's constants.
-4. **None of the three types are `==`-comparable.** Use `Equal` or
-   `EqualFunc`. Comparing by `==` would compare identity of the underlying
-   representation.
+4. **None of the four types (`List`, `Map`, `Set`, `SortedMap`) are
+   `==`-comparable.** Use `Equal` or `EqualFunc`. Comparing by `==` would
+   compare identity of the underlying representation.
 5. **Calling `Append`/`Set`/`Delete`/`Update`/`Add`/`Remove` `n` times in a loop still
    allocates `n` intermediate collections.** `Builder()` exists for bulk
    construction: exclusive ownership + O(1) `Freeze`. Builders open a
    `transient.Window` and `Freeze` on `Build`; public panics remain
    `"immutable: ..."`.
 6. **Zero values are valid empty collections.** Map/Set first write or
-   `Builder()` materializes an `hamt.Empty` seed.
+   `Builder()` materializes an `hamt.Empty` seed. **`SortedMap` is the
+   deliberate exception:** `K` has no default order, so the zero `SortedMap`
+   has no comparator. It reads as empty and `Delete` on it is a no-op, but
+   `Set` and `Builder()` panic with `"immutable: zero SortedMap has no
+   comparator; construct with EmptySortedMap or CollectSortedMap"`. A
+   zero-safe getter for a `SortedMap` field must return
+   `EmptySortedMap(cmp)`, never the zero `SortedMap`.
 7. **Every test in this package is `package immutable_test`** (external),
    asserting only publicly observable behavior — the acceptance criterion
    for any future engine change is this suite passing unchanged.
@@ -104,6 +122,7 @@ slice/map; that is no longer the engine.
 | `Len`, `IsEmpty` | `O(1)` | |
 | `At`, `Get`, `Has` | `O(log n)` | |
 | `Set`, `Delete`, `Update` (Map), `Add`/`Remove` (Set) | `O(log n)` | Path-copy HAMT; `Update` is one `Get` plus one `Set` |
+| `Set`, `Delete` (SortedMap) | `O(log n)` | Path-copy weight-balanced tree; `O(log n)` comparator calls, at most one single or double rotation per level |
 | `Union`, `Intersection`, `Difference` (Set) | `O(min(m,n)·log max(m,n))` | Walks the smaller operand (size `m` or `n`), probes the larger |
 | `Append`, `Set` (List) | `O(log n)` amortized / path | Path-copy vector |
 | `Delete` (List) | `O(log n)` headroom | **Today O(n)** rebuild |
@@ -120,6 +139,7 @@ and [core.md](core.md).
 | Prefer | Avoid / historical |
 |---|---|
 | `ListOf` / `MapOf` / `SetOf` | `NewList` / `NewMap` / `NewSet` |
+| `EmptySortedMap` / `CollectSortedMap` | `NewSortedMap` / `SortedMapOf` (`Of` builds from contents; a `SortedMap` starts from a comparator) |
 | `Has` | `Contains` |
 | `Build` (public builder publish) | `Freeze` (internal `transient.Window` op) |
 
@@ -196,6 +216,45 @@ publish-and-disable contract as `ListBuilder`.
 (chainable), `Len`, `Has`, and `Build() Set[T]` with the same freeze,
 publish-and-disable contract.
 
+## `SortedMap[K,V]`
+
+The comparator `cmp(a, b)` returns a negative, zero, or positive result and
+must be a strict weak order that stays deterministic for the map's lifetime.
+Keys for which `cmp` returns 0 are the same key. A nil comparator panics
+`"immutable: nil comparator"`; a comparator panic propagates to the caller.
+
+| Function / method | Behaviour |
+|---|---|
+| `EmptySortedMap[K,V](cmp func(a, b K) int) SortedMap[K,V]` | Empty `SortedMap` ordered by `cmp`. |
+| `CollectSortedMap[K,V](cmp func(a, b K) int, seq iter.Seq2[K,V]) SortedMap[K,V]` | Drains `seq` through a builder; for equivalent keys the last key and the last value win. |
+| `(m SortedMap[K,V]) Len() int` | Entry count. |
+| `(m SortedMap[K,V]) IsEmpty() bool` | `Len() == 0`. Zero `SortedMap` is empty. |
+| `(m SortedMap[K,V]) Get(k K) (V, bool)` / `Has(k K) bool` | Read access by an equivalent key. |
+| `(m SortedMap[K,V]) Set(k K, v V) SortedMap[K,V]` | New `SortedMap` with `k` mapped to `v`; an equivalent stored key is replaced by `k`, and its value by `v`. `m` unchanged. Panics on the zero `SortedMap`. |
+| `(m SortedMap[K,V]) Delete(k K) SortedMap[K,V]` | New `SortedMap` without `k`. `m` unchanged. The result keeps `m`'s comparator, even when emptied. No-op on the zero `SortedMap`. |
+| `(m SortedMap[K,V]) All/Keys/Values() iter.Seq(2)[...]` | Ascending comparator order (`Values` in the order of their keys). |
+| `(m SortedMap[K,V]) Equal(other SortedMap[K,V]) bool` | Same entry count, every key found (by `other`'s comparator) with a value equal via `functional/internal/eq.Equal`. |
+| `(m SortedMap[K,V]) EqualFunc(other SortedMap[K,V], eq func(V, V) bool) bool` | Same keys; values compared with `eq`. |
+| `(m SortedMap[K,V]) Builder() *SortedMapBuilder[K,V]` | Seeds a `SortedMapBuilder[K,V]` with `m`'s root and comparator (opens a `transient.Window`). Panics on the zero `SortedMap`. |
+
+[ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md)
+keeps `Update`, `First`/`Last`/`Floor`/`Ceiling`, range queries, and reverse
+iteration out until a consumer needs them.
+
+`SortedMapBuilder[K,V]` — mutable, not concurrency-safe — offers `Set` (same
+key-replacement rule) and `Delete` (both chainable), `Len`, `Get`, `Has`, and
+`Build() SortedMap[K,V]` with the same freeze, publish-and-disable contract.
+A comparator panic during a builder `Set` or `Delete` leaves the builder's
+prior contents intact.
+
+### Lighter recipe: sort on read
+
+`SortedMap` pays off when a map stays ordered across many versions. For a
+one-off deterministic emission of a `Map` or `Set`, sort the iterator
+instead: `slices.Sorted(s.Values())` when the element type is
+`cmp.Ordered`, or `slices.SortedFunc(m.Keys(), cmp)` with any comparator.
+That costs `O(n log n)` per read and needs no new collection.
+
 ---
 
 ## Measured: single update vs. Builder loop
@@ -203,7 +262,9 @@ publish-and-disable contract.
 Path-copy engines allocate along a **depth curve** (roughly O(log₃₂ n)
 nodes), not a full `O(n)` collection copy. The property to watch in
 `go test -bench` is **allocs/op** (and B/op) **not scaling linearly with n**
-for a single `Map.Set` / `Set.Add` / `List.Append` against a pre-built base.
+for a single `Map.Set` / `Set.Add` / `List.Append` / `SortedMap.Set`
+against a pre-built base (the weight-balanced tree follows `log₂ n` rather
+than `log₃₂ n`).
 
 Looping `Append`/`Set`/`Add` on the immutable type still creates **n
 intermediate roots**. `Builder` is the bulk path: exclusive ownership,
@@ -213,13 +274,17 @@ comparison.
 
 ```sh
 cd functional
-go test ./immutable/ -run '^$' -bench 'BenchmarkMapSet|BenchmarkMapUpdate|BenchmarkSetAdd|BenchmarkListAppend|BenchmarkListBuilder|BenchmarkMapBuilder|BenchmarkMapGet|BenchmarkNativeMap|BenchmarkSet(Union|Intersection|Difference)' -benchmem
+go test ./immutable/ -run '^$' -bench 'BenchmarkMapSet|BenchmarkMapUpdate|BenchmarkSetAdd|BenchmarkListAppend|BenchmarkListBuilder|BenchmarkMapBuilder|BenchmarkMapGet|BenchmarkSortedMap|BenchmarkNativeMap|BenchmarkSet(Union|Intersection|Difference)' -benchmem
 ```
 
 For the Set algebra benches, the no-change cases (`Union` and
 `Intersection` with the smaller operand a subset of the larger, `Difference`
 with disjoint operands) report the same allocs/op for every size: they open
 no builder and return an operand untouched.
+
+`BenchmarkSortedMapGet`, `BenchmarkSortedMapSet`, and
+`BenchmarkSortedMapBuilderSet` mirror the `Map` benches at the same sizes, so
+the two engines compare directly.
 
 Always route loop-building through `<Type>.Builder()`; never call
 `Append`/`Set`/`Delete`/`Update`/`Add`/`Remove` in a loop against the immutable type
@@ -234,3 +299,4 @@ itself when linear bulk construction is the goal.
 - [Internal: core](core.md)
 - [ADR-004 — Thin immutability core](../adr/functional/adr-004-thin-immutability-core.md)
 - [ADR-005 — Persistent engine family](../adr/functional/adr-005-persistent-engine-family.md)
+- [ADR-013 — SortedMap on a weight-balanced engine (wbtree)](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md)

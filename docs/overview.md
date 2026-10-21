@@ -46,10 +46,11 @@ group directory itself; ADR-011):
   values for presence, fail-fast outcomes, neutral alternatives, minimum
   cardinality, and accumulating validation. See the
   [functional values family guide](packages/values.md).
-- **`immutable`** — `List[T]`, `Map[K,V]`, `Set[T]`: immutable collections
-  that write functionally (every update returns a new value). Engines use
-  path-copy structural sharing: Map/Set are a HAMT; List is a 32-way
-  persistent vector. `immutable` may produce `iter.Seq` values for consumers,
+- **`immutable`** — `List[T]`, `Map[K,V]`, `Set[T]`, `SortedMap[K,V]`:
+  immutable collections that write functionally (every update returns a new
+  value). Engines use path-copy structural sharing: Map/Set are a HAMT; List
+  is a 32-way persistent vector; SortedMap is a weight-balanced tree ordered
+  by a caller-supplied comparator. `immutable` may produce `iter.Seq` values for consumers,
   but `structural/iterator` never imports `immutable`.
 - **`state`** — `State[T]`: pure semantic evolution over an opaque `T`.
   Mesh-isolated from `immutable` in production code.
@@ -111,6 +112,7 @@ Engines live under `functional/internal/engine/` (also internal):
 |---|---|---|
 | `hamt` | `immutable.Map`, `immutable.Set` | 32-way HAMT; path-copy structural sharing; per-`Root` `maphash.Seed` via `maphash.Comparable` |
 | `vector` | `immutable.List` | 32-way persistent vector (trie + tail); path-copy on Set/Append/Pop (Pop O(1)/O(log n) internal); mid-index `Delete` O(n) |
+| `wbtree` | `immutable.SortedMap` | Weight-balanced binary search tree (`delta = 3`, `gamma = 2` on weight `size+1`); path-copy structural sharing; comparator fixed per `Root`; imports only `ownership` and `cow` ([ADR-013](adr/functional/adr-013-sorted-map-weight-balanced-engine.md)) |
 
 `immutable` Builders open a `transient.Window`, edit under the window's
 exclusive owner (engine transient paths mutate owned nodes in place), and
@@ -213,6 +215,7 @@ flowchart TB
   transient["internal/core/transient"]
   hamt["internal/engine/hamt"]
   vector["internal/engine/vector"]
+  wbtree["internal/engine/wbtree"]
   keyhash["internal/engine/keyhash"]
 
   fold --> valuesOptional
@@ -223,12 +226,15 @@ flowchart TB
   immutable --> transient
   immutable --> hamt
   immutable --> vector
+  immutable --> wbtree
   hamt --> ownership
   hamt --> cow
   hamt --> sharing
   hamt --> keyhash
   vector --> ownership
   vector --> cow
+  wbtree --> ownership
+  wbtree --> cow
   cow --> ownership
   sharing --> ownership
   transient --> ownership
@@ -254,7 +260,7 @@ There is exactly **one** shared exception for equality: `functional/internal/eq`
 a small package that resolves value equality without `reflect` (an `Equal(T) bool`
 method on the dynamic value, then `==` when the dynamic values are
 comparable; non-comparable types without `Equal` return false — never
-deep-compare). `immutable.List[T].Equal` (and its `Map`/`Set` counterparts)
+deep-compare). `immutable.List[T].Equal` (and its `Map`/`SortedMap` counterparts)
 delegates to it, so every generic `Equal` that uses `eq` in this module agrees
 on the answer for the same pair of values. Callers that need structural equality
 for slices or maps should use an `Equal` method on the element type or an
