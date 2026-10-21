@@ -69,3 +69,12 @@ func Map2[A, B, R, E any](a Validated[A, E], b Validated[B, E], combine func(A, 
 		return InvalidNonEmpty[R](b.errors)
 	}
 }
+
+// Match calls invalidFn with the errors of an invalid value, including the zero
+// Validated, or validFn with a valid value and returns its result.
+func Match[T, E, R any](v Validated[T, E], invalidFn func(nonempty.NonEmpty[E]) R, validFn func(T) R) R {
+	if v.valid {
+		return validFn(v.value)
+	}
+	return invalidFn(v.errors)
+}

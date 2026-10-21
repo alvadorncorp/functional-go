@@ -3,6 +3,7 @@ package validated_test
 import (
 	"fmt"
 
+	"github.com/alvadorncorp/gopackages/functional/values/nonempty"
 	"github.com/alvadorncorp/gopackages/functional/values/validated"
 )
 
@@ -16,4 +17,21 @@ func ExampleMap2() {
 	fmt.Println(errors.Items())
 	// Output:
 	// [name is required age must be positive]
+}
+
+func ExampleMatch() {
+	report := func(age validated.Validated[int, string]) string {
+		return validated.Match(
+			age,
+			func(errors nonempty.NonEmpty[string]) string {
+				return fmt.Sprintf("%d errors: %v", errors.Len(), errors.Items())
+			},
+			func(age int) string { return fmt.Sprintf("age %d", age) },
+		)
+	}
+	fmt.Println(report(validated.Valid[int, string](42)))
+	fmt.Println(report(validated.Invalid[int]("age is required", "age must be a number")))
+	// Output:
+	// age 42
+	// 2 errors: [age is required age must be a number]
 }

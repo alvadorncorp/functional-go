@@ -37,11 +37,17 @@ Thus a zero value is a usable invalid validation result, not a valid value.
 | `Map(value, transform)` | Transforms only a valid value. |
 | `MapErrors(value, transform)` | Transforms errors only for an invalid value. |
 | `Map2(a, b, combine)` | Combines two independent validations. |
+| `Match(value, invalidFn, validFn)` | Calls `invalidFn` with the errors or `validFn` with the valid value and returns its result. |
 
 ## Laziness and `Map2`
 
 `Map` does not call its value transform for an invalid value. `MapErrors` does
 not call its error transform for a valid value.
+
+`Match` is the eliminator: it calls exactly one handler, `invalidFn` with
+every error in order for an invalid value (the zero Validated passes
+`[zero(E)]`) and `validFn` for a valid value. The zero-value branch comes
+first, and handlers are called directly without a nil check.
 
 `Map2` calls `combine` only when both inputs are valid. Its four cases are:
 

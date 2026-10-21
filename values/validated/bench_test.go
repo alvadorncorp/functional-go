@@ -3,6 +3,7 @@ package validated_test
 import (
 	"testing"
 
+	"github.com/alvadorncorp/gopackages/functional/values/nonempty"
 	"github.com/alvadorncorp/gopackages/functional/values/validated"
 )
 
@@ -41,5 +42,16 @@ func BenchmarkValidatedMap2Invalid(b *testing.B) {
 	a, other := validated.Invalid[int]("a"), validated.Invalid[int]("b")
 	for b.Loop() {
 		_ = validated.Map2(a, other, func(x, y int) int { return x + y })
+	}
+}
+
+func BenchmarkValidatedMatch(b *testing.B) {
+	b.ReportAllocs()
+	v := validated.Valid[int, string](1)
+	for b.Loop() {
+		_ = validated.Match(v,
+			func(errors nonempty.NonEmpty[string]) int { return errors.Len() },
+			func(value int) int { return value },
+		)
 	}
 }

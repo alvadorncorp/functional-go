@@ -22,6 +22,7 @@ Illustrative sketches for common uses. For API contracts see
 13. [Deferred memoized computation](#13-deferred-memoized-computation)
 14. [Native iterator pipeline](#14-native-iterator-pipeline)
 15. [Immutable nested update](#15-immutable-nested-update)
+16. [Bridging `(T, error)` with Result](#16-bridging-t-error-with-result)
 
 ---
 
@@ -482,6 +483,49 @@ func move(person Person, city string) Person {
 
 Get-Set, Set-Get, and Set-Set are obligations of the getter/setter supplied by
 the caller and are not checked at runtime.
+
+---
+
+## 16. Bridging `(T, error)` with Result
+
+`result.FromPair` lifts Go's `(T, error)` pair into a `Result`, `Match`
+handles both branches, and `ToPair` hands the outcome back to code that
+expects `(T, error)`.
+
+```go
+package config
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/alvadorncorp/gopackages/functional/values/result"
+)
+
+func parsePort(raw string) (int, error) {
+	port := result.FlatMap(result.FromPair(strconv.Atoi(raw)), func(port int) result.Result[int, error] {
+		if port < 1 || port > 65535 {
+			return result.Err[int](fmt.Errorf("port %d out of range", port))
+		}
+		return result.Ok[int, error](port)
+	})
+	return result.ToPair(port)
+}
+
+func describePort(raw string) string {
+	return result.Match(
+		result.FromPair(strconv.Atoi(raw)),
+		func(err error) string { return "invalid port: " + err.Error() },
+		func(port int) string { return "port " + strconv.Itoa(port) },
+	)
+}
+```
+
+`FromPair` checks only `err != nil` and drops the value on failure. Avoid it
+for `(n, err)` APIs with partial values and for functions whose last result
+is a concrete pointer error type; see
+[values Result](packages/values-result.md#interop-with-t-error). `ToPair`
+panics on an `Err` with a nil error, including a zero `Result[T, error]`.
 
 ---
 

@@ -35,6 +35,7 @@ still distinct from `None`: `ok` records presence independently of `value`.
 | `Inspect(callback)` | Calls the callback for a present value and returns the original Optional. |
 | `Map(optional, transform)` | Transforms a present value, preserving absence. |
 | `FlatMap(optional, transform)` | Transforms a present value into another Optional, preserving absence. |
+| `Match(optional, noneFn, someFn)` | Calls `noneFn` for `None` or `someFn` for a present value and returns its result. |
 | `Equal(a, b)` | Compares two `Optional[T]` values when `T` is `comparable`. |
 
 ## Branch laziness
@@ -43,6 +44,11 @@ still distinct from `None`: `ok` records presence independently of `value`.
 `Filter` does not invoke its predicate and `Inspect` does not invoke its
 callback for `None`. This keeps inactive branches lazy and makes side effects
 explicitly conditional on presence.
+
+`Match` is the eliminator: it calls exactly one handler, `noneFn` for `None`
+(including the zero Optional) and `someFn` for `Some` (including
+`Some(zero)`). Like `either.Match`, the zero-value branch comes first.
+Handlers are called directly and are not nil-checked.
 
 ## Panic behaviour
 
@@ -63,8 +69,8 @@ value. The Optional wrapper itself is a shallow value: copied values such as
 slices, maps, pointers, and interfaces can still share mutable underlying
 state with their source.
 
-Constructing with `Some`, and wrapping paths through `Map` and `FlatMap`, are
-covered by a zero-allocation contract for the wrapper itself. A callback or
-payload may allocate independently; that allocation is not attributable to
-the Optional wrapper.
+Constructing with `Some`, wrapping paths through `Map` and `FlatMap`, and
+unwrapping through `Match` are covered by a zero-allocation contract for the
+wrapper itself. A callback or payload may allocate independently; that
+allocation is not attributable to the Optional wrapper.
 

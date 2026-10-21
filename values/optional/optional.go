@@ -82,5 +82,13 @@ func FlatMap[T, U any](o Optional[T], transform func(T) Optional[U]) Optional[U]
 	return transform(o.value)
 }
 
+// Match calls noneFn for None, including the zero Optional, or someFn for Some and returns its result.
+func Match[T, R any](o Optional[T], noneFn func() R, someFn func(T) R) R {
+	if o.ok {
+		return someFn(o.value)
+	}
+	return noneFn()
+}
+
 // Equal reports whether a and b have equal discriminators and values.
 func Equal[T comparable](a, b Optional[T]) bool { return a == b }

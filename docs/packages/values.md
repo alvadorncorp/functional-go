@@ -50,6 +50,24 @@ All five structural zero values are valid values with deliberate meanings:
 `Some(zero(T))` is still distinct from `None`, and a zero `NonEmpty` is one
 element rather than an empty collection.
 
+## Eliminating with Match
+
+`optional`, `result`, `either`, and `validated` each provide a `Match`
+eliminator that calls exactly one handler and returns its result:
+
+| Package | Eliminator |
+|---|---|
+| `values/optional` | `Match(o, noneFn, someFn)` |
+| `values/result` | `Match(r, errFn, okFn)` |
+| `values/either` | `Match(e, leftFn, rightFn)` |
+| `values/validated` | `Match(v, invalidFn, validFn)` |
+
+The handler for the zero-value branch always comes first: `None`, `Err`,
+`Left`, and `Invalid` are the zero values in the table above, so a zero value
+runs the first handler. Handlers are called directly and are not nil-checked.
+See [ADR-012](../adr/functional/adr-012-values-error-pair-interop-and-match.md)
+for the rule.
+
 ## Dependency matrix
 
 The family uses only the standard library except for its one intentional

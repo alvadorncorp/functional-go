@@ -14,6 +14,9 @@ func TestZeroAllocations(t *testing.T) {
 		"Some":    func() { _ = optional.Some(1) },
 		"Map":     func() { _ = optional.Map(some, func(v int) int { return v + 1 }) },
 		"FlatMap": func() { _ = optional.FlatMap(some, optional.Some[int]) },
+		"Match": func() {
+			_ = optional.Match(some, func() int { return 0 }, func(v int) int { return v })
+		},
 	}
 	for name, run := range tests {
 		t.Run(name, func(t *testing.T) {

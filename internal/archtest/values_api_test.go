@@ -14,7 +14,8 @@ import (
 var expectedValuesAPI = map[string][]string{
 	pkgValuesOptional: {
 		"Equal", "Filter", "FlatMap", "From", "Get", "Inspect", "IsNone",
-		"IsSome", "Map", "MustGet", "None", "Optional", "OrElse", "OrZero", "Some",
+		"IsSome", "Map", "Match", "MustGet", "None", "Optional", "OrElse", "OrZero",
+		"Some",
 	},
 	pkgValuesResult: {
 		"Equal", "Err", "ErrValue", "FlatMap", "FromPair", "Get", "IsErr", "IsOk",
@@ -31,7 +32,7 @@ var expectedValuesAPI = map[string][]string{
 	},
 	pkgValuesValidated: {
 		"Errors", "Get", "Invalid", "InvalidNonEmpty", "IsInvalid", "IsValid",
-		"Map", "Map2", "MapErrors", "Valid", "Validated",
+		"Map", "Map2", "MapErrors", "Match", "Valid", "Validated",
 	},
 }
 
