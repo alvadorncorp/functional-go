@@ -70,3 +70,13 @@ Rules:
   handle in your own package. This module provides no `edit` helper.
 
 Evidence: `examples/workflow/checkout` `Order`, `examples/workflow/withdraw` `Account`.
+
+## Generated option: cowgen
+
+[cowgen](../../../cowgen/docs/overview.md) writes this boilerplate for you.
+From the payload struct it generates `Valid`, the zero-safe getters,
+`clonePayload`, `edit` and opt-in `With` setters into a file such as
+`order_cow.go` for `Order`.
+The rules above still hold: constructors and fallible edits stay
+hand-written, and a reference-typed field needs `cow:"-"` and a hand-written
+getter that clones it.
