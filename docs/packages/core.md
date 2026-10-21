@@ -23,7 +23,7 @@ Engines (HAMT, vector, wbtree) are separate — see
 
 Core answers only: **may this value be mutated in place under the current
 owner, or must the caller copy first?** It does not deep-copy nodes, does
-not walk trees on freeze, and does not implement List/Map/Set.
+not walk trees on freeze, and does not implement List/Map/Set/SortedMap.
 
 | Package | Role |
 |---|---|

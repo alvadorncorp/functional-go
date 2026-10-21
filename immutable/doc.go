@@ -1,7 +1,8 @@
 // Package immutable provides immutable collections — List, Map, Set, and
 // SortedMap — that write functionally: every update method returns a new
-// collection and leaves the receiver unchanged. There is no in-place mutation anywhere in
-// this API; "write" always means "derive a new value from an old one."
+// collection and leaves the receiver unchanged. There is no in-place
+// mutation anywhere in this API; "write" always means "derive a new value
+// from an old one."
 //
 // # Constructors
 //
@@ -35,8 +36,9 @@
 // SortedMap is backed by an internal weight-balanced tree
 // (functional/internal/engine/wbtree) ordered by its comparator, which every
 // derived version keeps. Single updates allocate along a tree path (depth
-// curve), not a full collection copy. Core (ownership/cow/sharing/transient) is laws only;
-// engines own representation.
+// curve), not a full collection copy. Core
+// (ownership/cow/sharing/transient) is laws only; engines own
+// representation.
 //
 // # Builders
 //
@@ -45,14 +47,15 @@
 // owner, and Freeze on Build (O(1) Owner.Invalidate — no tree walk).
 // ListBuilder exposes At; MapBuilder and SortedMapBuilder expose Get/Has;
 // SetBuilder exposes Has. A comparator panic during a SortedMapBuilder write
-// leaves the builder's prior contents intact. Builders are mutable and not safe for concurrent use. After Build,
-// every builder method panics with "immutable: builder used after Build".
+// leaves the builder's prior contents intact. Builders are mutable and not
+// safe for concurrent use. After Build, every builder method panics with
+// "immutable: builder used after Build".
 //
 // # Zero values and seed materialization
 //
 // The zero List, Map, and Set are valid empty collections (Len 0, IsEmpty
 // true; reads miss / At panics on empty List). Map and Set first write
-// (Set/Delete/Add/Remove) or Builder() materializes a proper hamt.Empty
+// (Set/Update/Delete/Add/Remove) or Builder() materializes a proper hamt.Empty
 // seed so the lineage never freezes a zero maphash.Seed. Independent zero
 // Maps/Sets each get their own seed on first materialization.
 //
@@ -72,14 +75,14 @@
 // # Equality and reflection
 //
 // Production code in this package does not import reflect. List.Equal,
-// Map.Equal, and SortedMap.Equal delegate to functional/internal/eq.Equal, which never uses
-// reflect.DeepEqual: it prefers Equal(T) bool, then interface == for
-// comparable dynamic values, and returns false for non-comparable types
-// without Equal. Set.Equal uses membership alone (T is comparable).
-// SortedMap.Equal follows Map.Equal: same entry count, and every key found
-// (by the other map's comparator) with an equal value. List.EqualFunc,
-// Map.EqualFunc, and SortedMap.EqualFunc accept a caller-supplied value
-// comparator.
+// Map.Equal, and SortedMap.Equal delegate to functional/internal/eq.Equal,
+// which never uses reflect.DeepEqual: it prefers Equal(T) bool, then
+// interface == for comparable dynamic values, and returns false for
+// non-comparable types without Equal. Set.Equal uses membership alone (T is
+// comparable). SortedMap.Equal follows Map.Equal: same entry count, and
+// every key found (by the other map's comparator) with an equal value.
+// List.EqualFunc, Map.EqualFunc, and SortedMap.EqualFunc accept a
+// caller-supplied value comparator.
 //
 // Public panic strings remain "immutable: ..." — engine panics such as
 // "vector: index out of range" are never leaked to callers. Documented
