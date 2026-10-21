@@ -3,6 +3,7 @@
 package result_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/alvadorncorp/gopackages/functional/values/result"
@@ -10,6 +11,8 @@ import (
 
 func TestZeroAllocations(t *testing.T) {
 	r := result.Ok[int, string](1)
+	pair := result.Ok[int, error](1)
+	sentinel := errors.New("bad")
 	tests := map[string]func(){
 		"Ok":     func() { _ = result.Ok[int, string](1) },
 		"Err":    func() { _ = result.Err[int]("bad") },
@@ -19,6 +22,12 @@ func TestZeroAllocations(t *testing.T) {
 			_ = result.FlatMap(r, func(v int) result.Result[int, string] {
 				return result.Ok[int, string](v)
 			})
+		},
+		"FromPairNil":   func() { _ = result.FromPair(1, nil) },
+		"FromPairError": func() { _ = result.FromPair(1, sentinel) },
+		"ToPairOk":      func() { _, _ = result.ToPair(pair) },
+		"Match": func() {
+			_ = result.Match(r, func(err string) int { return len(err) }, func(v int) int { return v })
 		},
 	}
 	for name, run := range tests {

@@ -294,3 +294,4 @@ exception to. **`eq` is outside core** and, like core, must not use `reflect`.
 - [ADR-007 — Values family dependency boundary](adr/functional/adr-007-values-family-dependency-boundary.md)
 - [ADR-008 — Functional primitives and fold dependency boundary](adr/functional/adr-008-functional-primitives-and-fold-boundary.md)
 - [ADR-009 — Tuplas, lazy, iteradores e optics sobre contratos nativos de Go](adr/functional/adr-009-structural-primitives-and-iterator-boundary.md)
+- [ADR-012 — Result interop with (T, error) and the Match order rule](adr/functional/adr-012-values-error-pair-interop-and-match.md)

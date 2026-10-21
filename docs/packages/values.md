@@ -118,5 +118,7 @@ go test -bench=. -benchmem ./values/...
 
 Version 1 intentionally excludes conversions between values types, `Map3+`,
 `Filter` for `NonEmpty`, a typeclass or algebra hierarchy, serialization, and
-domain or runtime coupling. Compose the APIs that exist at the use site
-instead of assuming a future abstraction.
+domain or runtime coupling. Interop with Go's `(T, error)` pair is in scope:
+`result.FromPair` and `result.ToPair` bridge `Result[T, error]` with it.
+Compose the APIs that exist at the use site instead of assuming a future
+abstraction.

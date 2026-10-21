@@ -17,8 +17,9 @@ var expectedValuesAPI = map[string][]string{
 		"IsSome", "Map", "MustGet", "None", "Optional", "OrElse", "OrZero", "Some",
 	},
 	pkgValuesResult: {
-		"Equal", "Err", "ErrValue", "FlatMap", "Get", "IsErr", "IsOk", "Map",
-		"MapErr", "MustGet", "Ok", "OrElse", "OrZero", "Result",
+		"Equal", "Err", "ErrValue", "FlatMap", "FromPair", "Get", "IsErr", "IsOk",
+		"Map", "MapErr", "Match", "MustGet", "Ok", "OrElse", "OrZero", "Result",
+		"ToPair",
 	},
 	pkgValuesEither: {
 		"Bimap", "Either", "FlatMapRight", "IsLeft", "IsRight", "Left",
