@@ -46,3 +46,4 @@ Current decisions:
 - [ADR-010 — Retire top-level optional and valueobject](adr/functional/adr-010-retire-optional-and-valueobject.md)
 - [ADR-011 — primitives and structural path groups](adr/functional/adr-011-primitives-and-structural-path-groups.md)
 - [ADR-012 — Result interop with (T, error) and the Match order rule](adr/functional/adr-012-values-error-pair-interop-and-match.md)
+- [ADR-013 — SortedMap on a weight-balanced engine (wbtree)](adr/functional/adr-013-sorted-map-weight-balanced-engine.md)

@@ -80,6 +80,7 @@ This README is the **documentation index**. Guides live under
 | [docs/adr/functional/adr-010-retire-optional-and-valueobject.md](docs/adr/functional/adr-010-retire-optional-and-valueobject.md) | `adr:functional:010` |
 | [docs/adr/functional/adr-011-primitives-and-structural-path-groups.md](docs/adr/functional/adr-011-primitives-and-structural-path-groups.md) | `adr:functional:011` |
 | [docs/adr/functional/adr-012-values-error-pair-interop-and-match.md](docs/adr/functional/adr-012-values-error-pair-interop-and-match.md) | `adr:functional:012` |
+| [docs/adr/functional/adr-013-sorted-map-weight-balanced-engine.md](docs/adr/functional/adr-013-sorted-map-weight-balanced-engine.md) | `adr:functional:013` |
 
 ---
 
