@@ -23,6 +23,12 @@ Action dependente. `Zip` executa duas Actions independentes em ordem e preserva
 ambos os resultados; `Both` executa na mesma ordem e chama um combiner. Não há
 paralelismo implícito.
 
+`Traverse(items, binder)` vincula cada item de um slice a uma Action e as
+executa uma depois da outra, em ordem de índice, coletando um valor por item.
+A primeira falha interrompe o percurso e devolve o erro inalterado; os itens
+restantes não são vinculados. O slice é copiado na construção, e cada `Run`
+percorre os itens de novo.
+
 `Tap` executa um efeito apenas depois de sucesso e preserva o valor. `Attempt`
 entrega o par normal valor/erro como `AttemptResult`, sem recuperar panic.
 `Ensure` executa um finalizer depois de retorno normal. `Bracket` associa

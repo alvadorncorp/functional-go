@@ -90,7 +90,7 @@ vocabulário `Pending`/`Running`/`Completed`.
 | Dimensão | Operações | Significado |
 |---|---|---|
 | input | `Contramap`, `Provide` | adaptar e depois fornecer a entrada |
-| computação | `FlatMap`, `Zip`, `Both` | dependência ou independência sequencial |
+| computação | `FlatMap`, `Zip`, `Both`, `Traverse` | dependência ou independência sequencial |
 | observação/finalização | `Tap`, `Attempt`, `Ensure` | sucesso, erro como dado e término normal |
 | resource lifecycle | `Bracket`, `AcquireUseRelease` | acquire/use/release explícito |
 | operacional | `resilience.Retry`, `resilience.Timeout` | orçamento e repetição seletiva, dono = camada que conhece o requisito operacional |

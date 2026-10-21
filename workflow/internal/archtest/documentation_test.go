@@ -115,7 +115,7 @@ func requiredDocumentationTokens() map[string][]string {
 		"docs/resilience.md": {
 			"Attempts", "1-based", "idempot", "cooperativo", "Timeout(Retry", "Retry(Timeout",
 		},
-		"docs/composition.md":          {"FlatMap", "Zip", "Both"},
+		"docs/composition.md":          {"FlatMap", "Zip", "Both", "Traverse"},
 		"docs/dependency-injection.md": {"fornece input", "Container"},
 		"docs/examples.md": {
 			"AttemptResult.Err", "action.Run", "transaction.Within",

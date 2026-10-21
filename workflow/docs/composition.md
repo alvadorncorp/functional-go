@@ -50,6 +50,7 @@ elimina a entrada e retorna `Action[O]`; não chama `Run`.
 | `FlatMap` | a segunda Action depende do primeiro valor | `Action[B]` |
 | `Zip` | resultados independentes, execução sequencial | `Action[Pair[A,B]]` |
 | `Both` | resultados independentes, execução sequencial | `Action[C]` |
+| `Traverse` | uma Action por item, em ordem de índice, para no primeiro erro | `Action[[]B]` |
 
 Independência descreve data flow, não concorrência. A ordem continua esquerda →
 direita, sem goroutines.

@@ -55,9 +55,10 @@ isso assim.
 
 `Contramap` adapta input e `Provide` fixa o input sem executar efeitos.
 `FlatMap` representa dependência; `Zip` preserva dois resultados independentes e
-`Both` os combina, sempre em ordem sequencial. `Tap` observa sucesso, `Attempt`
-transforma erro em dado, `Ensure` finaliza retornos normais e `Bracket` delimita
-acquire/use/release sem possuir o recurso concreto.
+`Both` os combina, e `Traverse` executa uma Action por item de um slice, sempre
+em ordem sequencial. `Tap` observa sucesso, `Attempt` transforma erro em dado,
+`Ensure` finaliza retornos normais e `Bracket` delimita acquire/use/release sem
+possuir o recurso concreto.
 
 ## O que não é
 
