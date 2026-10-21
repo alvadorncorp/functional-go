@@ -1,6 +1,7 @@
 package immutable_test
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 
@@ -98,6 +99,27 @@ func ExampleMap_Builder() {
 	// Output:
 	// 2
 	// 1
+}
+
+// Example_sortedMap shows a SortedMap ordered by cmp.Compare: iteration is
+// ascending by key regardless of insertion order, and every write derives a
+// new SortedMap.
+func Example_sortedMap() {
+	scores := immutable.EmptySortedMap[string, int](cmp.Compare[string]).
+		Set("carol", 7).
+		Set("alice", 9).
+		Set("bob", 4)
+	updated := scores.Set("alice", 10).Delete("bob")
+
+	for name, score := range scores.All() {
+		fmt.Println(name, score)
+	}
+	fmt.Println(slices.Collect(updated.Keys()), slices.Collect(updated.Values()))
+	// Output:
+	// alice 9
+	// bob 4
+	// carol 7
+	// [alice carol] [10 7]
 }
 
 // ExampleSetOf shows constructing a Set with SetOf (deduplicated).

@@ -1,6 +1,7 @@
 package immutable_test
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"testing"
@@ -45,6 +46,14 @@ func makeBenchMap(n int) immutable.Map[int, int] {
 		m[i] = i
 	}
 	return immutable.MapOf(m)
+}
+
+func makeBenchSortedMap(n int) immutable.SortedMap[int, int] {
+	b := immutable.EmptySortedMap[int, int](cmp.Compare[int]).Builder()
+	for i := range n {
+		b.Set(i, i)
+	}
+	return b.Build()
 }
 
 func makeBenchSet(n int) immutable.Set[int] {
@@ -188,6 +197,54 @@ func BenchmarkMapBuilderSet(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
 				builder := immutable.MapOf[int, int](nil).Builder()
+				for i := range n {
+					builder.Set(i, i)
+				}
+				_ = builder.Build()
+			}
+		})
+	}
+}
+
+// BenchmarkSortedMapGet is BenchmarkMapGet's SortedMap counterpart: key
+// lookup on a SortedMap of size n, comparable against Map at the same n.
+func BenchmarkSortedMapGet(b *testing.B) {
+	for _, n := range benchSizes {
+		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			m := makeBenchSortedMap(n)
+			key := n / 2
+			for b.Loop() {
+				_, _ = m.Get(key)
+			}
+		})
+	}
+}
+
+// BenchmarkSortedMapSet measures a single Set against a SortedMap already
+// holding n entries. Watch allocs/op: weight-balanced path-copy follows
+// log2(n), not n.
+func BenchmarkSortedMapSet(b *testing.B) {
+	for _, n := range benchSizesSingleOp {
+		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			m := makeBenchSortedMap(n)
+			for b.Loop() {
+				_ = m.Set(n, n)
+			}
+		})
+	}
+}
+
+// BenchmarkSortedMapBuilderSet is BenchmarkSortedMapSet's loop-building
+// counterpart via Builder: n Sets under exclusive ownership, then O(1)
+// Freeze.
+func BenchmarkSortedMapBuilderSet(b *testing.B) {
+	for _, n := range benchSizes {
+		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				builder := immutable.EmptySortedMap[int, int](cmp.Compare[int]).Builder()
 				for i := range n {
 					builder.Set(i, i)
 				}

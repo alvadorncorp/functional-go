@@ -1,6 +1,6 @@
-// Package immutable provides immutable collections — List, Map, and Set —
-// that write functionally: every update method returns a new collection and
-// leaves the receiver unchanged. There is no in-place mutation anywhere in
+// Package immutable provides immutable collections — List, Map, Set, and
+// SortedMap — that write functionally: every update method returns a new
+// collection and leaves the receiver unchanged. There is no in-place mutation anywhere in
 // this API; "write" always means "derive a new value from an old one."
 //
 // # Constructors
@@ -8,9 +8,12 @@
 //   - ListOf[T](items ...T) List[T]
 //   - MapOf[K,V](m map[K]V) Map[K,V]
 //   - SetOf[T](items ...T) Set[T]
+//   - EmptySortedMap[K,V](cmp func(a, b K) int) SortedMap[K,V]
 //
 // CollectList / CollectMap / CollectSet drain an iter.Seq into a new
-// collection. There are no NewList / NewMap / NewSet constructors.
+// collection; CollectSortedMap(cmp, seq) does the same for SortedMap. There
+// are no NewList / NewMap / NewSet / NewSortedMap constructors. A nil
+// comparator panics with "immutable: nil comparator".
 //
 // # Semantic immutability
 //
@@ -29,8 +32,10 @@
 // Map and Set are backed by an internal HAMT
 // (functional/internal/engine/hamt); each empty Root carries a maphash.Seed
 // (hashing via maphash.Comparable) preserved across derived versions.
-// Single updates allocate along a tree path (depth curve), not a full
-// collection copy. Core (ownership/cow/sharing/transient) is laws only;
+// SortedMap is backed by an internal weight-balanced tree
+// (functional/internal/engine/wbtree) ordered by its comparator, which every
+// derived version keeps. Single updates allocate along a tree path (depth
+// curve), not a full collection copy. Core (ownership/cow/sharing/transient) is laws only;
 // engines own representation.
 //
 // # Builders
@@ -38,8 +43,9 @@
 // Builders open an internal transient.Window (see
 // functional/internal/core/transient), edit under the window's exclusive
 // owner, and Freeze on Build (O(1) Owner.Invalidate — no tree walk).
-// ListBuilder exposes At; MapBuilder exposes Get/Has; SetBuilder exposes
-// Has. Builders are mutable and not safe for concurrent use. After Build,
+// ListBuilder exposes At; MapBuilder and SortedMapBuilder expose Get/Has;
+// SetBuilder exposes Has. A comparator panic during a SortedMapBuilder write
+// leaves the builder's prior contents intact. Builders are mutable and not safe for concurrent use. After Build,
 // every builder method panics with "immutable: builder used after Build".
 //
 // # Zero values and seed materialization
@@ -50,6 +56,13 @@
 // seed so the lineage never freezes a zero maphash.Seed. Independent zero
 // Maps/Sets each get their own seed on first materialization.
 //
+// SortedMap is the deliberate exception: K has no default order, so the zero
+// SortedMap has no comparator. It reads as empty and Delete on it is a no-op,
+// but Set and Builder() panic with "immutable: zero SortedMap has no
+// comparator; construct with EmptySortedMap or CollectSortedMap". A zero-safe
+// getter for a SortedMap field must return EmptySortedMap(cmp), never the
+// zero SortedMap.
+//
 // # Concurrency
 //
 // Published (immutable) collections are safe for concurrent read, including
@@ -58,12 +71,15 @@
 //
 // # Equality and reflection
 //
-// Production code in this package does not import reflect. List.Equal and
-// Map.Equal delegate to functional/internal/eq.Equal, which never uses
+// Production code in this package does not import reflect. List.Equal,
+// Map.Equal, and SortedMap.Equal delegate to functional/internal/eq.Equal, which never uses
 // reflect.DeepEqual: it prefers Equal(T) bool, then interface == for
 // comparable dynamic values, and returns false for non-comparable types
 // without Equal. Set.Equal uses membership alone (T is comparable).
-// List.EqualFunc and Map.EqualFunc accept a caller-supplied comparator.
+// SortedMap.Equal follows Map.Equal: same entry count, and every key found
+// (by the other map's comparator) with an equal value. List.EqualFunc,
+// Map.EqualFunc, and SortedMap.EqualFunc accept a caller-supplied value
+// comparator.
 //
 // Public panic strings remain "immutable: ..." — engine panics such as
 // "vector: index out of range" are never leaked to callers. Documented
@@ -76,8 +92,9 @@
 //
 //  2. Map and Set iteration order is UNSPECIFIED and may change between
 //     releases, or even between two calls on the same value — do not depend
-//     on it. List iterates in index order; that order is specified and part
-//     of the contract.
+//     on it. List iterates in index order, and SortedMap iterates in
+//     ascending comparator order; those orders are specified and part of the
+//     contract.
 //
 //  3. Documented complexity is an upper bound the public API reserves room
 //     for, not a description of today's constants:
@@ -98,8 +115,8 @@
 //     as API headroom for the methods that meet it, and only the bound is
 //     ever documented on a method — never today's actual constant.
 //
-//  4. List, Map, and Set are deliberately NOT ==-comparable. Use Equal or
-//     EqualFunc. Comparing by == would mean comparing identity of the
+//  4. List, Map, Set, and SortedMap are deliberately NOT ==-comparable. Use
+//     Equal or EqualFunc. Comparing by == would mean comparing identity of the
 //     underlying representation.
 //
 //  5. Calling Append/Set/Delete/Update n times in a loop still allocates n

@@ -1,6 +1,7 @@
 package immutable_test
 
 import (
+	"cmp"
 	"slices"
 	"sync"
 	"testing"
@@ -169,6 +170,57 @@ func TestSetConcurrentReadDuringDerive(t *testing.T) {
 
 	if base.Len() != 3 {
 		t.Fatalf("base changed after concurrent derivation: Len() = %d, want 3", base.Len())
+	}
+}
+
+// TestSortedMapConcurrentReadDuringDerive is the SortedMap analogue of
+// TestMapConcurrentReadDuringDerive: readers also check that Keys keeps
+// yielding the base's keys in ascending order while writers derive with Set,
+// Delete, and Builder.
+func TestSortedMapConcurrentReadDuringDerive(t *testing.T) {
+	t.Parallel()
+
+	base := immutable.EmptySortedMap[string, int](cmp.Compare[string]).Set("c", 3).Set("a", 1).Set("b", 2)
+	wantKeys := []string{"a", "b", "c"}
+
+	var wg sync.WaitGroup
+	stop := make(chan struct{})
+
+	for range numReaders {
+		wg.Go(func() {
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				if got, ok := base.Get("a"); got != 1 || !ok {
+					t.Errorf("Get(a) = (%d,%v) during concurrent derive, want (1,true)", got, ok)
+					return
+				}
+				if got := slices.Collect(base.Keys()); !slices.Equal(got, wantKeys) {
+					t.Errorf("Keys() = %v during concurrent derive, want %v", got, wantKeys)
+					return
+				}
+			}
+		})
+	}
+
+	go func() {
+		v := base
+		for i := range numDerivations {
+			v = v.Set("dynamic", i).Delete("a")
+		}
+	}()
+
+	for i := range numDerivations {
+		_ = base.Builder().Set("other", i).Delete("b").Build()
+	}
+	close(stop)
+	wg.Wait()
+
+	if got := slices.Collect(base.Keys()); !slices.Equal(got, wantKeys) {
+		t.Fatalf("base changed after concurrent derivation: Keys() = %v, want %v", got, wantKeys)
 	}
 }
 

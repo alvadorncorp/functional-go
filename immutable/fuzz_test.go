@@ -1,6 +1,7 @@
 package immutable_test
 
 import (
+	"cmp"
 	"maps"
 	"slices"
 	"testing"
@@ -164,6 +165,66 @@ func fuzzMapUpdate(t *testing.T, m immutable.Map[int, int], model map[int]int, k
 	}
 	model[k] = wantOld + v
 	return next
+}
+
+// FuzzSortedMapOps is FuzzMapOps' SortedMap analogue, run once with an
+// ascending and once with a descending comparator: a small program of
+// set/delete operations runs in lockstep against an
+// immutable.SortedMap[int, int] and a native map[int]int model. Every
+// retained version must still iterate exactly its model snapshot's entries,
+// in that comparator's order, after later operations derived new versions.
+func FuzzSortedMapOps(f *testing.F) {
+	f.Add([]byte{0x00, 1, 10, 0x00, 2, 20, 0x01, 1, 0})
+	f.Add([]byte{})
+	f.Add([]byte{0x01, 5, 0, 0x00, 5, 99})
+	f.Add([]byte{0x00, 3, 4, 0x00, 1, 5, 0x00, 2, 6, 0x01, 3, 0, 0x00, 3, 7})
+
+	comparators := map[string]func(a, b int) int{"forward": cmp.Compare[int], "reversed": reversed}
+
+	f.Fuzz(func(t *testing.T, data []byte) {
+		for name, order := range comparators {
+			type version struct {
+				m     immutable.SortedMap[int, int]
+				model map[int]int
+			}
+
+			model := map[int]int{}
+			current := immutable.EmptySortedMap[int, int](order)
+			versions := []version{{m: current, model: maps.Clone(model)}}
+
+			ops := 0
+			for cur := 0; cur+mapOpWidth <= len(data) && ops < maxFuzzOps; cur += mapOpWidth {
+				ops++
+				k, v := int(data[cur+1]), int(data[cur+2])
+				if data[cur]%2 == 0 {
+					current = current.Set(k, v)
+					model[k] = v
+				} else {
+					current = current.Delete(k)
+					delete(model, k)
+				}
+				versions = append(versions, version{m: current, model: maps.Clone(model)})
+			}
+
+			for i, v := range versions {
+				wantKeys := slices.SortedFunc(maps.Keys(v.model), order)
+				var gotKeys []int
+				for k, val := range v.m.All() {
+					if val != v.model[k] {
+						t.Fatalf("%s: version[%d] maps %d to %d, want %d", name, i, k, val, v.model[k])
+					}
+					gotKeys = append(gotKeys, k)
+				}
+				if !slices.Equal(gotKeys, wantKeys) || v.m.Len() != len(wantKeys) {
+					t.Fatalf(
+						"%s: version[%d] keys = %v (Len %d), want %v (model snapshot from the step that produced it); "+
+							"a later operation must not have reached back into an earlier version",
+						name, i, gotKeys, v.m.Len(), wantKeys,
+					)
+				}
+			}
+		}
+	})
 }
 
 // Membership bits of the FuzzSetAlgebra model: which operands hold an element.

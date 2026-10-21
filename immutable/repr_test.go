@@ -40,3 +40,12 @@ func TestSetIsNotComparable(t *testing.T) {
 		t.Error("Set[int] must not be ==-comparable: identity of the internal representation must never be observable")
 	}
 }
+
+func TestSortedMapIsNotComparable(t *testing.T) {
+	t.Parallel()
+
+	if reflect.TypeFor[immutable.SortedMap[string, int]]().Comparable() {
+		t.Error("SortedMap[string, int] must not be ==-comparable: " +
+			"identity of the internal representation must never be observable")
+	}
+}
