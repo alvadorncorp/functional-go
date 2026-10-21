@@ -22,8 +22,9 @@ Constructors are **`ListOf` / `MapOf` / `SetOf` / `EmptySortedMap`** (not
   `maphash.Seed`; derived versions preserve that seed. Key hashing uses
   `maphash.Comparable` via `internal/engine/keyhash`. The zero `Map`/`Set`
   is a valid empty collection for reads; the **first write**
-  (`Set`/`Delete`/`Add`/`Remove`) or `Builder()` **materializes** a proper
-  `hamt.Empty` seed so the lineage never freezes a zero `maphash.Seed`.
+  (`Set`/`Update`/`Delete`/`Add`/`Remove`) or `Builder()` **materializes**
+  a proper `hamt.Empty` seed so the lineage never freezes a zero
+  `maphash.Seed`.
   Independent zero receivers each get their own seed on first materialization.
   `Set.Union`, `Set.Intersection`, and `Set.Difference` accept operands of
   any lineage (independent seeds or one derived lineage); which operand's
@@ -96,19 +97,19 @@ over a stdlib slice/map; that is no longer the engine.
 4. **None of the four types (`List`, `Map`, `Set`, `SortedMap`) are
    `==`-comparable.** Use `Equal` or `EqualFunc`. Comparing by `==` would
    compare identity of the underlying representation.
-5. **Calling `Append`/`Set`/`Delete`/`Update`/`Add`/`Remove` `n` times in a loop still
-   allocates `n` intermediate collections.** `Builder()` exists for bulk
-   construction: exclusive ownership + O(1) `Freeze`. Builders open a
+5. **Calling `Append`/`Set`/`Delete`/`Update`/`Add`/`Remove` `n` times in a
+   loop still allocates `n` intermediate collections.** `Builder()` exists
+   for bulk construction: exclusive ownership + O(1) `Freeze`. Builders open a
    `transient.Window` and `Freeze` on `Build`; public panics remain
    `"immutable: ..."`.
-6. **Zero values are valid empty collections.** Map/Set first write or
-   `Builder()` materializes an `hamt.Empty` seed. **`SortedMap` is the
-   deliberate exception:** `K` has no default order, so the zero `SortedMap`
-   has no comparator. It reads as empty and `Delete` on it is a no-op, but
-   `Set` and `Builder()` panic with `"immutable: zero SortedMap has no
-   comparator; construct with EmptySortedMap or CollectSortedMap"`. A
-   zero-safe getter for a `SortedMap` field must return
-   `EmptySortedMap(cmp)`, never the zero `SortedMap`.
+6. **Zero `List`, `Map`, and `Set` values are valid empty collections.**
+   Map/Set first write or `Builder()` materializes an `hamt.Empty` seed.
+   **`SortedMap` is the deliberate exception:** `K` has no default order, so
+   the zero `SortedMap` has no comparator. It reads as empty and `Delete` on
+   it is a no-op, but `Set` and `Builder()` panic with `"immutable: zero
+   SortedMap has no comparator; construct with EmptySortedMap or
+   CollectSortedMap"`. A zero-safe getter for a `SortedMap` field must
+   return `EmptySortedMap(cmp)`, never the zero `SortedMap`.
 7. **Every test in this package is `package immutable_test`** (external),
    asserting only publicly observable behavior — the acceptance criterion
    for any future engine change is this suite passing unchanged.
@@ -238,8 +239,9 @@ Keys for which `cmp` returns 0 are the same key. A nil comparator panics
 | `(m SortedMap[K,V]) Builder() *SortedMapBuilder[K,V]` | Seeds a `SortedMapBuilder[K,V]` with `m`'s root and comparator (opens a `transient.Window`). Panics on the zero `SortedMap`. |
 
 [ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md)
-keeps `Update`, `First`/`Last`/`Floor`/`Ceiling`, range queries, and reverse
-iteration out until a consumer needs them.
+keeps `First`/`Last`/`Floor`/`Ceiling`, range queries and reverse iteration,
+`SortedSet`, `SortedMap.Update`, and the engine's rank, split and join
+operations out until a consumer needs them.
 
 `SortedMapBuilder[K,V]` — mutable, not concurrency-safe — offers `Set` (same
 key-replacement rule) and `Delete` (both chainable), `Len`, `Get`, `Has`, and
@@ -287,8 +289,8 @@ no builder and return an operand untouched.
 the two engines compare directly.
 
 Always route loop-building through `<Type>.Builder()`; never call
-`Append`/`Set`/`Delete`/`Update`/`Add`/`Remove` in a loop against the immutable type
-itself when linear bulk construction is the goal.
+`Append`/`Set`/`Delete`/`Update`/`Add`/`Remove` in a loop against the
+immutable type itself when linear bulk construction is the goal.
 
 ---
 
@@ -299,4 +301,4 @@ itself when linear bulk construction is the goal.
 - [Internal: core](core.md)
 - [ADR-004 — Thin immutability core](../adr/functional/adr-004-thin-immutability-core.md)
 - [ADR-005 — Persistent engine family](../adr/functional/adr-005-persistent-engine-family.md)
-- [ADR-013 — SortedMap on a weight-balanced engine (wbtree)](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md)
+- [ADR-013 — SortedMap sobre um motor de árvore balanceada por peso (wbtree)](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md)

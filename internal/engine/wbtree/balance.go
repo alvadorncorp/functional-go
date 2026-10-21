@@ -29,21 +29,23 @@ func isSingle[K, V any](a, b *node[K, V]) bool {
 
 // balance restores the weight invariant at m after one insert or delete in
 // one of its children and recomputes sizes. m must already be editable under
-// owner; its children need not be.
-func balance[K, V any](owner *ownership.Owner, m *node[K, V]) *node[K, V] {
+// owner; its children need not be. fresh is the child of m that the current
+// pure insert just built (nil for deletes and transient edits): rotating it
+// needs no further clone.
+func balance[K, V any](owner *ownership.Owner, m, fresh *node[K, V]) *node[K, V] {
 	switch {
 	case !isBalanced(m.left, m.right):
-		return rotateLeft(owner, m)
+		return rotateLeft(owner, m, fresh)
 	case !isBalanced(m.right, m.left):
-		return rotateRight(owner, m)
+		return rotateRight(owner, m, fresh)
 	}
 	resize(m)
 	return m
 }
 
 // rotateLeft lifts the heavy right child (single) or its left child (double).
-func rotateLeft[K, V any](owner *ownership.Owner, m *node[K, V]) *node[K, V] {
-	r := edit(m.right, owner)
+func rotateLeft[K, V any](owner *ownership.Owner, m, fresh *node[K, V]) *node[K, V] {
+	r := editUnlessFresh(m.right, owner, fresh)
 	if isSingle(r.left, r.right) {
 		m.right = r.left
 		resize(m)
@@ -61,8 +63,8 @@ func rotateLeft[K, V any](owner *ownership.Owner, m *node[K, V]) *node[K, V] {
 }
 
 // rotateRight lifts the heavy left child (single) or its right child (double).
-func rotateRight[K, V any](owner *ownership.Owner, m *node[K, V]) *node[K, V] {
-	l := edit(m.left, owner)
+func rotateRight[K, V any](owner *ownership.Owner, m, fresh *node[K, V]) *node[K, V] {
+	l := editUnlessFresh(m.left, owner, fresh)
 	if isSingle(l.right, l.left) {
 		m.left = l.right
 		resize(m)
@@ -81,4 +83,13 @@ func rotateRight[K, V any](owner *ownership.Owner, m *node[K, V]) *node[K, V] {
 
 func resize[K, V any](n *node[K, V]) {
 	n.size = size(n.left) + size(n.right) + 1
+}
+
+// editUnlessFresh is edit, except a node the current operation just built
+// (n == fresh) is already private to it and is returned as is.
+func editUnlessFresh[K, V any](n *node[K, V], owner *ownership.Owner, fresh *node[K, V]) *node[K, V] {
+	if n == fresh {
+		return n
+	}
+	return edit(n, owner)
 }

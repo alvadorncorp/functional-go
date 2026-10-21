@@ -50,8 +50,8 @@ group directory itself; ADR-011):
   immutable collections that write functionally (every update returns a new
   value). Engines use path-copy structural sharing: Map/Set are a HAMT; List
   is a 32-way persistent vector; SortedMap is a weight-balanced tree ordered
-  by a caller-supplied comparator. `immutable` may produce `iter.Seq` values for consumers,
-  but `structural/iterator` never imports `immutable`.
+  by a caller-supplied comparator. `immutable` may produce `iter.Seq` values
+  for consumers, but `structural/iterator` never imports `immutable`.
 - **`state`** — `State[T]`: pure semantic evolution over an opaque `T`.
   Mesh-isolated from `immutable` in production code.
 
@@ -260,14 +260,15 @@ There is exactly **one** shared exception for equality: `functional/internal/eq`
 a small package that resolves value equality without `reflect` (an `Equal(T) bool`
 method on the dynamic value, then `==` when the dynamic values are
 comparable; non-comparable types without `Equal` return false — never
-deep-compare). `immutable.List[T].Equal` (and its `Map`/`SortedMap` counterparts)
-delegates to it, so every generic `Equal` that uses `eq` in this module agrees
-on the answer for the same pair of values. Callers that need structural equality
-for slices or maps should use an `Equal` method on the element type or an
-`EqualFunc` at their package. It is safe as the one shared package specifically
-*because* it is `internal`: nothing outside `functional` can import it, so it
-can never become a second public surface competing with the rule it is the
-exception to. **`eq` is outside core** and, like core, must not use `reflect`.
+deep-compare). `immutable.List[T].Equal` (and its `Map`/`SortedMap`
+counterparts) delegates to it, so every generic `Equal` that uses `eq` in this
+module agrees on the answer for the same pair of values. Callers that need
+structural equality for slices or maps should use an `Equal` method on the
+element type or an `EqualFunc` at their package. It is safe as the one shared
+package specifically *because* it is `internal`: nothing outside `functional`
+can import it, so it can never become a second public surface competing with
+the rule it is the exception to. **`eq` is outside core** and, like core, must
+not use `reflect`.
 
 ## Related documents
 
@@ -300,5 +301,5 @@ exception to. **`eq` is outside core** and, like core, must not use `reflect`.
 - [ADR-007 — Values family dependency boundary](adr/functional/adr-007-values-family-dependency-boundary.md)
 - [ADR-008 — Functional primitives and fold dependency boundary](adr/functional/adr-008-functional-primitives-and-fold-boundary.md)
 - [ADR-009 — Tuplas, lazy, iteradores e optics sobre contratos nativos de Go](adr/functional/adr-009-structural-primitives-and-iterator-boundary.md)
-- [ADR-012 — Result interop with (T, error) and the Match order rule](adr/functional/adr-012-values-error-pair-interop-and-match.md)
-- [ADR-013 — SortedMap on a weight-balanced engine (wbtree)](adr/functional/adr-013-sorted-map-weight-balanced-engine.md)
+- [ADR-012 — Interop de Result com o par (T, error) e regra de ordem do Match](adr/functional/adr-012-values-error-pair-interop-and-match.md)
+- [ADR-013 — SortedMap sobre um motor de árvore balanceada por peso (wbtree)](adr/functional/adr-013-sorted-map-weight-balanced-engine.md)

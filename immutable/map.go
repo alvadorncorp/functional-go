@@ -17,10 +17,10 @@ import (
 //
 // Representation: Map holds an unexported hamt.Root. The zero Map is a
 // valid empty map for reads (Len is 0, Get misses). The first write
-// (Set/Delete) or Builder() call materializes a proper Empty-seeded root so
-// the lineage never freezes a zero maphash.Seed. Constructed Maps
-// (MapOf, CollectMap, Builder.Build, and every Set/Delete result) already
-// hold an Empty-seeded root when they first materialize entries.
+// (Set/Update/Delete) or Builder() call materializes a proper Empty-seeded
+// root so the lineage never freezes a zero maphash.Seed. Constructed Maps
+// (MapOf, CollectMap, Builder.Build, and every Set/Update/Delete result)
+// already hold an Empty-seeded root when they first materialize entries.
 //
 // The blank [0]func() field keeps Map deliberately not ==-comparable:
 // hamt.Root's fields are all comparable, so without this marker Map would
