@@ -2,6 +2,7 @@ package immutable_test
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/alvadorncorp/gopackages/functional/immutable"
 )
@@ -91,4 +92,22 @@ func ExampleSetOf() {
 	// Output:
 	// 3
 	// true
+}
+
+// ExampleSet_Union shows Union, Intersection, and Difference deriving new
+// Sets while both operands stay unchanged. Set iteration order is
+// unspecified, so the output is sorted.
+func ExampleSet_Union() {
+	a := immutable.SetOf(1, 2, 3)
+	b := immutable.SetOf(3, 4)
+
+	fmt.Println(slices.Sorted(a.Union(b).Values()))
+	fmt.Println(slices.Sorted(a.Intersection(b).Values()))
+	fmt.Println(slices.Sorted(a.Difference(b).Values()))
+	fmt.Println(slices.Sorted(a.Values()), slices.Sorted(b.Values()))
+	// Output:
+	// [1 2 3 4]
+	// [3]
+	// [1 2]
+	// [1 2 3] [3 4]
 }

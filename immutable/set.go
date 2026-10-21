@@ -131,6 +131,96 @@ func (s Set[T]) Equal(other Set[T]) bool {
 	return true
 }
 
+// Union returns a new Set holding every element of s or other. s and other
+// are unchanged. Cost is O(min(m,n)·log max(m,n)) for operand sizes m and n:
+// the smaller operand is walked and probed against the larger. Which
+// operand's structure the result shares, and which operand's hash-seed
+// lineage it continues, is UNSPECIFIED.
+func (s Set[T]) Union(other Set[T]) Set[T] {
+	if s.root == other.root {
+		return s
+	}
+	base, walk := s, other
+	if other.Len() > s.Len() {
+		base, walk = other, s
+	}
+	return addMissing(base, walk)
+}
+
+// Intersection returns a new Set holding every element of s that other also
+// holds. s and other are unchanged. Cost is O(min(m,n)·log max(m,n)) for
+// operand sizes m and n: the smaller operand is walked and probed against
+// the larger. Which operand's structure the result shares, and which
+// operand's hash-seed lineage it continues, is UNSPECIFIED.
+func (s Set[T]) Intersection(other Set[T]) Set[T] {
+	if s.root == other.root {
+		return s
+	}
+	base, probe := s, other
+	if other.Len() < s.Len() {
+		base, probe = other, s
+	}
+	return removeIf(base, base, func(v T) bool { return !probe.Has(v) })
+}
+
+// Difference returns a new Set holding every element of s that other does
+// not hold (s minus other). s and other are unchanged. Cost is
+// O(min(m,n)·log max(m,n)) for operand sizes m and n: the smaller operand is
+// walked and probed against the larger. Which operand's structure the result
+// shares, and which operand's hash-seed lineage it continues, is UNSPECIFIED.
+func (s Set[T]) Difference(other Set[T]) Set[T] {
+	if s.root == other.root {
+		return Set[T]{}
+	}
+	if s.Len() <= other.Len() {
+		return removeIf(s, s, other.Has)
+	}
+	return removeIf(s, other, s.Has)
+}
+
+// addMissing returns base plus every element of walk that base lacks. A
+// SetBuilder opens on base only at the first addition, so when walk adds
+// nothing (including an empty walk) base is returned untouched.
+func addMissing[T comparable](base, walk Set[T]) Set[T] {
+	var b *SetBuilder[T]
+	for v := range walk.root.All() {
+		if base.Has(v) {
+			continue
+		}
+		if b == nil {
+			b = base.Builder()
+		}
+		b.Add(v)
+	}
+	if b == nil {
+		return base
+	}
+	return b.Build()
+}
+
+// removeIf returns base minus every element v of walk for which drop(v)
+// holds; walk is base itself or a set whose matching elements are all in
+// base. A SetBuilder opens on base only at the first removal, so when
+// nothing is dropped (including an empty walk) base is returned untouched.
+// Walking base while the builder edits it is safe: the builder's fresh owner
+// copy-on-writes every node of base before changing it.
+func removeIf[T comparable](base, walk Set[T], drop func(T) bool) Set[T] {
+	var b *SetBuilder[T]
+	for v := range walk.root.All() {
+		if !drop(v) {
+			continue
+		}
+		if b == nil {
+			b = base.Builder()
+		}
+		b.Remove(v)
+	}
+	if b == nil {
+		return base
+	}
+	return b.Build()
+}
+
 // Builder returns a SetBuilder seeded from s's root (same node graph; later
 // exclusive edits copy-on-write). s is not affected by any later operation
 // on the builder. A zero Set materializes an Empty-seeded root first.

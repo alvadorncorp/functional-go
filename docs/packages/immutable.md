@@ -24,6 +24,9 @@ Constructors are **`ListOf` / `MapOf` / `SetOf`** (not `New*`). See the
   (`Set`/`Delete`/`Add`/`Remove`) or `Builder()` **materializes** a proper
   `hamt.Empty` seed so the lineage never freezes a zero `maphash.Seed`.
   Independent zero receivers each get their own seed on first materialization.
+  `Set.Union`, `Set.Intersection`, and `Set.Difference` accept operands of
+  any lineage (independent seeds or one derived lineage); which operand's
+  structure and seed lineage the result continues is **UNSPECIFIED**.
 - **Builders:** open an internal `transient.Window`, edit under the window's
   exclusive `*ownership.Owner` (engine transient paths mutate owned nodes in
   place), and `Freeze` on `Build` — **O(1)** owner invalidation, no tree
@@ -101,6 +104,7 @@ slice/map; that is no longer the engine.
 | `Len`, `IsEmpty` | `O(1)` | |
 | `At`, `Get`, `Has` | `O(log n)` | |
 | `Set`, `Delete` (Map), `Add`/`Remove` (Set) | `O(log n)` | Path-copy HAMT |
+| `Union`, `Intersection`, `Difference` (Set) | `O(min(m,n)·log max(m,n))` | Walks the smaller operand (size `m` or `n`), probes the larger |
 | `Append`, `Set` (List) | `O(log n)` amortized / path | Path-copy vector |
 | `Delete` (List) | `O(log n)` headroom | **Today O(n)** rebuild |
 
@@ -182,6 +186,9 @@ publish-and-disable contract as `ListBuilder`.
 | `(s Set[T]) Values() iter.Seq[T]` | Unspecified iteration order. |
 | `(s Set[T]) Items() []T` | Fresh slice, unspecified order. |
 | `(s Set[T]) Equal(other Set[T]) bool` | Same membership. `T` is `comparable`, so no `eq.Equal` call is needed. |
+| `(s Set[T]) Union(other Set[T]) Set[T]` | Every element of `s` or `other`. Both unchanged. Shared structure and seed lineage UNSPECIFIED. |
+| `(s Set[T]) Intersection(other Set[T]) Set[T]` | Every element of `s` that `other` also holds. Both unchanged. Shared structure and seed lineage UNSPECIFIED. |
+| `(s Set[T]) Difference(other Set[T]) Set[T]` | `s` minus `other`. Both unchanged. Shared structure and seed lineage UNSPECIFIED. |
 | `(s Set[T]) Builder() *SetBuilder[T]` | Seeds a `SetBuilder[T]` (opens a `transient.Window`). Zero `Set` materializes seed first. |
 
 `SetBuilder[T]` — mutable, not concurrency-safe — offers `Add`, `Remove`
@@ -205,8 +212,13 @@ comparison.
 
 ```sh
 cd functional
-go test ./immutable/ -run '^$' -bench 'BenchmarkMapSet|BenchmarkSetAdd|BenchmarkListAppend|BenchmarkListBuilder|BenchmarkMapBuilder|BenchmarkMapGet|BenchmarkNativeMap' -benchmem
+go test ./immutable/ -run '^$' -bench 'BenchmarkMapSet|BenchmarkSetAdd|BenchmarkListAppend|BenchmarkListBuilder|BenchmarkMapBuilder|BenchmarkMapGet|BenchmarkNativeMap|BenchmarkSet(Union|Intersection|Difference)' -benchmem
 ```
+
+For the Set algebra benches, the no-change cases (`Union` and
+`Intersection` with the smaller operand a subset of the larger, `Difference`
+with disjoint operands) report the same allocs/op for every size: they open
+no builder and return an operand untouched.
 
 Always route loop-building through `<Type>.Builder()`; never call
 `Append`/`Set`/`Delete`/`Add`/`Remove` in a loop against the immutable type

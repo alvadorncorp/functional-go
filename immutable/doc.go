@@ -86,6 +86,12 @@
 //     At, Get, Has           O(log n)
 //     Set, Delete            O(log n)
 //     Append                 O(log n) amortized
+//     Union, Intersection,
+//     Difference             O(min(m,n)·log max(m,n))
+//
+//     For Set.Union, Set.Intersection, and Set.Difference, m and n are the
+//     operand sizes. Both operands are unchanged; which operand's structure
+//     and hash-seed lineage the result shares is UNSPECIFIED.
 //
 //     List.Delete is currently O(n) (vector rebuild by iteration); a caller
 //     MUST NOT depend on a tighter bound. Only the table above is guaranteed

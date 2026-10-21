@@ -140,3 +140,86 @@ func FuzzMapOps(f *testing.F) {
 		}
 	})
 }
+
+// Membership bits of the FuzzSetAlgebra model: which operands hold an element.
+const (
+	inA    byte = 1
+	inB    byte = 2
+	inBoth      = inA | inB
+)
+
+// setPlacements maps a FuzzSetAlgebra input byte, modulo its length, to the
+// operands that hold the byte's element; the quotient is the element itself.
+var setPlacements = [...]byte{inA, inB, inBoth, inBoth}
+
+// FuzzSetAlgebra decodes the fuzz input into two Set[int] operands and checks
+// Union, Intersection, and Difference in both directions against a
+// map-backed model. The first byte selects the operands' lineage: even builds
+// a and b independently (distinct hash seeds), odd derives b from a (shared
+// seed). Each later byte places one element per setPlacements. Both operands
+// must still match their model afterwards.
+func FuzzSetAlgebra(f *testing.F) {
+	f.Add([]byte{0, 4, 9, 14, 19})
+	f.Add([]byte{1, 4, 9, 14, 19})
+	f.Add([]byte{})
+	f.Add([]byte{1, 2, 6, 10, 14})
+	f.Add([]byte{0, 0, 4, 8, 12, 1, 5})
+
+	f.Fuzz(func(t *testing.T, data []byte) {
+		derived := len(data) > 0 && data[0]%2 == 1
+		model := map[int]byte{}
+		for i, c := range data {
+			if i == 0 || i > maxFuzzOps {
+				continue
+			}
+			n := len(setPlacements)
+			model[int(c)/n] |= setPlacements[int(c)%n]
+		}
+		modelA := modelSetItems(model, func(m byte) bool { return m&inA != 0 })
+		modelB := modelSetItems(model, func(m byte) bool { return m&inB != 0 })
+
+		a, b := immutable.SetOf(modelA...), immutable.SetOf(modelB...)
+		if derived {
+			b = a.Remove(modelA...).Add(modelB...)
+		}
+
+		union := modelSetItems(model, func(m byte) bool { return m != 0 })
+		inter := modelSetItems(model, func(m byte) bool { return m == inBoth })
+		checks := []struct {
+			op   string
+			got  immutable.Set[int]
+			want []int
+		}{
+			{"a.Union(b)", a.Union(b), union},
+			{"b.Union(a)", b.Union(a), union},
+			{"a.Intersection(b)", a.Intersection(b), inter},
+			{"b.Intersection(a)", b.Intersection(a), inter},
+			{"a.Difference(b)", a.Difference(b), modelSetItems(model, func(m byte) bool { return m == inA })},
+			{"b.Difference(a)", b.Difference(a), modelSetItems(model, func(m byte) bool { return m == inB })},
+		}
+		for _, c := range checks {
+			if got := sortedItems(c.got); !slices.Equal(got, c.want) {
+				t.Fatalf("derived=%v: %s = %v, want %v", derived, c.op, got, c.want)
+			}
+		}
+		if got := sortedItems(a); !slices.Equal(got, modelA) {
+			t.Fatalf("derived=%v: operand a changed: got %v, want %v", derived, got, modelA)
+		}
+		if got := sortedItems(b); !slices.Equal(got, modelB) {
+			t.Fatalf("derived=%v: operand b changed: got %v, want %v", derived, got, modelB)
+		}
+	})
+}
+
+// modelSetItems returns, sorted, every element whose membership bits satisfy
+// keep.
+func modelSetItems(model map[int]byte, keep func(byte) bool) []int {
+	var out []int
+	for v, m := range model {
+		if keep(m) {
+			out = append(out, v)
+		}
+	}
+	slices.Sort(out)
+	return out
+}
