@@ -32,6 +32,18 @@ func edit[K, V any](n *node[K, V], owner *ownership.Owner) *node[K, V] {
 	})
 }
 
+// freshOf returns got, the child a pure insert just rebuilt, as the node
+// balance may rotate without cloning again; nil under an owner. A pure insert
+// always returns a new allocation (a path copy, a rebalanced root or a new
+// leaf), never a published node. A nil owner never marks nodes, hence the
+// explicit check; transient edits already skip owned nodes.
+func freshOf[K, V any](owner *ownership.Owner, got *node[K, V]) *node[K, V] {
+	if owner != nil {
+		return nil
+	}
+	return got
+}
+
 // insert returns the subtree n with key mapped to val. Comparisons run on the
 // way down; nodes are edited only on the way back up.
 func insert[K, V any](owner *ownership.Owner, cmp func(a, b K) int, n *node[K, V], key K, val V) *node[K, V] {
@@ -48,12 +60,12 @@ func insert[K, V any](owner *ownership.Owner, cmp func(a, b K) int, n *node[K, V
 		left := insert(owner, cmp, n.left, key, val)
 		m := edit(n, owner)
 		m.left = left
-		return balance(owner, m)
+		return balance(owner, m, freshOf(owner, left))
 	}
 	right := insert(owner, cmp, n.right, key, val)
 	m := edit(n, owner)
 	m.right = right
-	return balance(owner, m)
+	return balance(owner, m, freshOf(owner, right))
 }
 
 // remove returns the subtree n without key and whether key was present. When
@@ -71,7 +83,9 @@ func remove[K, V any](owner *ownership.Owner, cmp func(a, b K) int, n *node[K, V
 		}
 		m := edit(n, owner)
 		m.left = left
-		return balance(owner, m), true
+		// A delete only lightens the changed side, so balance rotates the
+		// published sibling, never the rebuilt child: nothing is fresh.
+		return balance(owner, m, nil), true
 	case c > 0:
 		right, removed := remove(owner, cmp, n.right, key)
 		if !removed {
@@ -79,7 +93,7 @@ func remove[K, V any](owner *ownership.Owner, cmp func(a, b K) int, n *node[K, V
 		}
 		m := edit(n, owner)
 		m.right = right
-		return balance(owner, m), true
+		return balance(owner, m, nil), true
 	}
 	if n.left == nil {
 		return n.right, true
@@ -91,7 +105,7 @@ func remove[K, V any](owner *ownership.Owner, cmp func(a, b K) int, n *node[K, V
 	right, successor := removeMin(owner, n.right)
 	m := edit(n, owner)
 	m.key, m.val, m.right = successor.key, successor.val, right
-	return balance(owner, m), true
+	return balance(owner, m, nil), true
 }
 
 // removeMin returns the non-empty subtree n without its minimum and that
@@ -103,7 +117,7 @@ func removeMin[K, V any](owner *ownership.Owner, n *node[K, V]) (rest, minimum *
 	left, minimum := removeMin(owner, n.left)
 	m := edit(n, owner)
 	m.left = left
-	return balance(owner, m), minimum
+	return balance(owner, m, nil), minimum
 }
 
 // forEach yields the subtree in ascending order and reports whether the

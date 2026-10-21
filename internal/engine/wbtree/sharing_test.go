@@ -63,3 +63,49 @@ func height[K, V any](n *node[K, V]) int {
 	}
 	return 1 + max(height(n.left), height(n.right))
 }
+
+// TestRotationsNeverMutatePublishedNodes snapshots every node of a published
+// tree, applies each possible pure Set and Delete, and requires the snapshot
+// to be unchanged. Over every size and key, inserts exercise rotations
+// of the just-copied (fresh) child, and light-side deletes exercise rotations
+// of a shared published sibling.
+func TestRotationsNeverMutatePublishedNodes(t *testing.T) {
+	t.Parallel()
+
+	for n := 1; n <= 150; n++ {
+		base := New[int, int](cmp.Compare[int])
+		for i := range n {
+			base = base.Set(2*i, i)
+		}
+		before := shapeOf(base.node)
+		for k := -1; k <= 2*n; k++ {
+			next := base.Set(k, -1)
+			checkInvariants(t, next)
+			assertUnchanged(t, before, base.node)
+			next = base.Delete(k)
+			checkInvariants(t, next)
+			assertUnchanged(t, before, base.node)
+		}
+	}
+}
+
+func shapeOf(root *node[int, int]) map[*node[int, int]]node[int, int] {
+	s := map[*node[int, int]]node[int, int]{}
+	for nd := range nodeSet(root) {
+		s[nd] = *nd
+	}
+	return s
+}
+
+func assertUnchanged(t *testing.T, before map[*node[int, int]]node[int, int], root *node[int, int]) {
+	t.Helper()
+	got := nodeSet(root)
+	if len(got) != len(before) {
+		t.Fatalf("published tree has %d nodes, want %d", len(got), len(before))
+	}
+	for nd, want := range before {
+		if !got[nd] || *nd != want {
+			t.Fatalf("published node %d mutated: %+v, want %+v", want.key, *nd, want)
+		}
+	}
+}

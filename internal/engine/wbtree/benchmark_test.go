@@ -41,6 +41,33 @@ func TestSetAllocsFollowDepth(t *testing.T) {
 	}
 }
 
+// insertAllocsPerKey pins the pure path: sequential Set calls in either key
+// order force single rotations whose heavy child was just path-copied, and
+// must not clone it again (that cost ~19.8 allocs per key at n=10000 against
+// ~18.8 now).
+const insertAllocsPerKey = 19.0
+
+// TestSequentialInsertDoesNotRecloneRotatedChild is deliberately not parallel
+// so AllocsPerRun stays deterministic.
+func TestSequentialInsertDoesNotRecloneRotatedChild(t *testing.T) {
+	const n = 10_000
+	orders := map[string]func(i int) int{
+		"ascending":  func(i int) int { return i },
+		"descending": func(i int) int { return n - i },
+	}
+	for name, key := range orders {
+		allocs := testing.AllocsPerRun(3, func() {
+			r := New[int, int](cmp.Compare[int])
+			for i := range n {
+				r = r.Set(key(i), i)
+			}
+		})
+		if perKey := allocs / n; perKey > insertAllocsPerKey {
+			t.Errorf("%s Set allocs/key = %.2f, want <= %v", name, perKey, insertAllocsPerKey)
+		}
+	}
+}
+
 // BenchmarkGet measures Get on a map of size n (mid-key hit).
 func BenchmarkGet(b *testing.B) {
 	for _, n := range engineBenchSizes {
