@@ -48,8 +48,9 @@ composição que importa ambos.
 - o domínio compila e é testado sem `context`, `workflow`, banco ou transporte;
 - uma decisão recusada retorna antes de qualquer transação ser aberta;
 - a ordem de eventos de `Decision.Events()` é preservada quando as mensagens são
-  persistidas, porque o `iter.Seq` é iterado diretamente e os appends são
-  sequenciais;
+  persistidas, porque os appends rodam em sequência na ordem de emissão (de
+  índice), seja o `iter.Seq` iterado diretamente, seja materializado para
+  `action.Traverse`;
 - uma decisão que emite zero eventos não produz linhas de outbox;
 - um ramo escolhido por um `policy.Policy` é executado pelo workflow, enquanto o
   limiar que o selecionou permanece no domínio;
