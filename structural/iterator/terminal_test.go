@@ -101,6 +101,27 @@ func TestTerminalsAndShortCircuit(t *testing.T) {
 	}
 }
 
+func TestFindNotFound(t *testing.T) {
+	t.Parallel()
+	yielded, checked := 0, 0
+	got, found := iterator.Find(counted([]int{1, 2, 3}, &yielded), func(v int) bool {
+		checked++
+		return v > 3
+	})
+	if got != 0 || found || yielded != 3 || checked != 3 {
+		t.Fatalf("Find = %d,%v yielded=%d checked=%d", got, found, yielded, checked)
+	}
+}
+
+func TestFirstEmpty(t *testing.T) {
+	t.Parallel()
+	yielded := 0
+	got, found := iterator.First(counted(nil, &yielded))
+	if got != 0 || found || yielded != 0 {
+		t.Fatalf("First(empty) = %d,%v yielded=%d", got, found, yielded)
+	}
+}
+
 func TestInfiniteSourcesAndUnfold(t *testing.T) {
 	t.Parallel()
 	if got := iterator.Collect(iterator.Take(iterator.Repeat("x"), 3)); !slices.Equal(got, []string{"x", "x", "x"}) {
