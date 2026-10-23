@@ -186,35 +186,51 @@ func TestSetAddPreservesOlderVersions(t *testing.T) {
 	t.Parallel()
 
 	v1 := immutable.SetOf(1)
-	v2 := v1.Add(2)
-	v3 := v2.Add(3, 4)
+	v2 := v1.Add(2, 3, 2)
+	sibling := v1.Add(8, 9)
+	v3 := v2.Add(3, 4, 5)
+	built := v3.Builder().Add(6, 7).Remove(1, 2).Build()
+	_ = built.Add(10, 11).Remove(3, 4)
 
-	if got, want := sortedItems(v1), []int{1}; !slices.Equal(got, want) {
-		t.Fatalf("v1 = %v, want %v", got, want)
-	}
-	if got, want := sortedItems(v2), []int{1, 2}; !slices.Equal(got, want) {
-		t.Fatalf("v2 = %v, want %v", got, want)
-	}
-	if got, want := sortedItems(v3), []int{1, 2, 3, 4}; !slices.Equal(got, want) {
-		t.Fatalf("v3 = %v, want %v", got, want)
+	for i, version := range []struct {
+		set  immutable.Set[int]
+		want []int
+	}{
+		{v1, []int{1}},
+		{v2, []int{1, 2, 3}},
+		{sibling, []int{1, 8, 9}},
+		{v3, []int{1, 2, 3, 4, 5}},
+		{built, []int{3, 4, 5, 6, 7}},
+	} {
+		if got := sortedItems(version.set); !slices.Equal(got, version.want) {
+			t.Fatalf("version %d = %v, want %v", i, got, version.want)
+		}
 	}
 }
 
 func TestSetRemovePreservesOlderVersions(t *testing.T) {
 	t.Parallel()
 
-	v1 := immutable.SetOf(1, 2, 3, 4)
-	v2 := v1.Remove(2)
-	v3 := v2.Remove(4).Add(5)
+	v1 := immutable.SetOf(1, 2, 3, 4, 5)
+	v2 := v1.Remove(2, 4, 2, 99)
+	sibling := v1.Remove(1, 3)
+	v3 := v2.Remove(1, 5).Add(6, 7)
+	built := v3.Builder().Remove(3, 6).Add(8, 9).Build()
+	_ = built.Add(10, 11).Remove(7, 8)
 
-	if got, want := sortedItems(v1), []int{1, 2, 3, 4}; !slices.Equal(got, want) {
-		t.Fatalf("v1 = %v, want %v", got, want)
-	}
-	if got, want := sortedItems(v2), []int{1, 3, 4}; !slices.Equal(got, want) {
-		t.Fatalf("v2 = %v, want %v", got, want)
-	}
-	if got, want := sortedItems(v3), []int{1, 3, 5}; !slices.Equal(got, want) {
-		t.Fatalf("v3 = %v, want %v", got, want)
+	for i, version := range []struct {
+		set  immutable.Set[int]
+		want []int
+	}{
+		{v1, []int{1, 2, 3, 4, 5}},
+		{v2, []int{1, 3, 5}},
+		{sibling, []int{2, 4, 5}},
+		{v3, []int{3, 6, 7}},
+		{built, []int{7, 8, 9}},
+	} {
+		if got := sortedItems(version.set); !slices.Equal(got, version.want) {
+			t.Fatalf("version %d = %v, want %v", i, got, version.want)
+		}
 	}
 }
 

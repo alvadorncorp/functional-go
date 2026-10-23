@@ -8,4 +8,8 @@
 // values, and returns false for non-comparable types that lack Equal (no
 // deep-compare fallback). EqualComparable[T comparable] exposes plain == for
 // callers that already constrain T.
+//
+// For[T] selects a reusable comparator once for concrete T. Interface type
+// parameters keep Equal's per-value dispatch, including nil and mixed dynamic
+// types. Concrete Equal methods may still require boxing their receiver.
 package eq

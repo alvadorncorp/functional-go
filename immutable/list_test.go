@@ -333,18 +333,39 @@ func TestListEqualFunc(t *testing.T) {
 func TestListAppendPreservesOlderVersions(t *testing.T) {
 	t.Parallel()
 
-	v1 := immutable.ListOf(1)
-	v2 := v1.Append(2)
-	v3 := v2.Append(3, 4)
+	items := make([]int, 31)
+	for i := range items {
+		items[i] = i
+	}
+	v1 := immutable.ListOf(items...)
+	v2 := v1.Append(31, 32, 33)
+	sibling := v1.Append(-3, -4, -5)
+	v3 := v2.Append(items...).Set(0, -1)
+	built := v3.Builder().Append(65, 66).Set(32, -2).Build()
+	_ = built.Append(67, 68)
 
-	if got := v1.Items(); !slices.Equal(got, []int{1}) {
-		t.Fatalf("v1.Items() = %v, want [1]", got)
-	}
-	if got := v2.Items(); !slices.Equal(got, []int{1, 2}) {
-		t.Fatalf("v2.Items() = %v, want [1 2]", got)
-	}
-	if got := v3.Items(); !slices.Equal(got, []int{1, 2, 3, 4}) {
-		t.Fatalf("v3.Items() = %v, want [1 2 3 4]", got)
+	wantV2 := append(slices.Clone(items), 31, 32, 33)
+	wantSibling := append(slices.Clone(items), -3, -4, -5)
+	wantV3 := append(slices.Clone(wantV2), items...)
+	wantV3[0] = -1
+	wantBuilt := append(slices.Clone(wantV3), 65, 66)
+	wantBuilt[32] = -2
+	wantV1 := slices.Clone(items)
+	items[0] = 999
+
+	for i, version := range []struct {
+		list immutable.List[int]
+		want []int
+	}{
+		{v1, wantV1},
+		{v2, wantV2},
+		{sibling, wantSibling},
+		{v3, wantV3},
+		{built, wantBuilt},
+	} {
+		if got := version.list.Items(); !slices.Equal(got, version.want) {
+			t.Fatalf("version %d = %v, want %v", i, got, version.want)
+		}
 	}
 }
 

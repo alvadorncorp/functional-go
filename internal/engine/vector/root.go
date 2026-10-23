@@ -152,15 +152,16 @@ func (r Root[T]) pushFullTail(v T) Root[T] {
 // Delete returns a new Root without the element at index i; subsequent
 // elements shift left by one. r is unchanged.
 //
-// Delete is O(n): this version rebuilds via a sequential walk (All) rather
-// than a path-aware shift. It panics with "vector: index out of range" when
-// i < 0 or i >= Len().
+// Deleting the last element uses Pop; other indices take O(n) to rebuild via
+// a sequential walk (All) rather than a path-aware shift. It panics with
+// "vector: index out of range" when i < 0 or i >= Len().
 func (r Root[T]) Delete(i int) Root[T] {
 	if i < 0 || i >= r.count {
 		panic("vector: index out of range")
 	}
-	if r.count == 1 {
-		return Empty[T]()
+	if i == r.count-1 {
+		next, _ := r.Pop()
+		return next
 	}
 	// O(n) rebuild from sequential walk: correct shift-left semantics without
 	// a specialized path, and without O(log n) At per index.
@@ -336,15 +337,16 @@ func (r Root[T]) transientPushFullTail(owner *ownership.Owner, v T) Root[T] {
 }
 
 // TransientDelete returns a Root without the element at index i, editing
-// under owner. Like Delete, this version rebuilds via sequential walk (O(n))
-// but uses TransientAppend so the result is exclusively owned for further
-// edits. It panics with "vector: index out of range" when i < 0 or i >= Len().
+// under owner. Deleting the last element uses TransientPop; other indices
+// rebuild via sequential walk (O(n)) using TransientAppend for further edits.
+// It panics with "vector: index out of range" when i < 0 or i >= Len().
 func (r Root[T]) TransientDelete(owner *ownership.Owner, i int) Root[T] {
 	if i < 0 || i >= r.count {
 		panic("vector: index out of range")
 	}
-	if r.count == 1 {
-		return Empty[T]()
+	if i == r.count-1 {
+		next, _ := r.TransientPop(owner)
+		return next
 	}
 	out := Empty[T]()
 	for j, v := range r.All() {

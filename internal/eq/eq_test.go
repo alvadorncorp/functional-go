@@ -115,3 +115,151 @@ func TestEqualComparable(t *testing.T) {
 		t.Fatal(`EqualComparable("x", "x") = false, want true`)
 	}
 }
+
+type pointerEqual struct{ n int }
+
+func (p *pointerEqual) Equal(other *pointerEqual) bool {
+	if p == nil {
+		return other != nil
+	}
+	return other != nil && p.n == other.n
+}
+
+type dynamicEqual struct{ match any }
+
+func (p *dynamicEqual) Equal(other any) bool {
+	if p == nil {
+		return other == nil
+	}
+	return p.match == other
+}
+
+func TestForConcrete(t *testing.T) {
+	t.Parallel()
+
+	if !eq.For[int]()(7, 7) {
+		t.Fatal("For[int] must retain comparable equality")
+	}
+	if eq.For[fixedEqual]()(fixedEqual{n: 7}, fixedEqual{n: 7}) {
+		t.Fatal("For[fixedEqual] must prefer Equal over ==")
+	}
+	if eq.For[[]int]()([]int(nil), []int(nil)) {
+		t.Fatal("For[[]int] must not deep-compare nil slices")
+	}
+	if !eq.For[*int]()(nil, nil) {
+		t.Fatal("For[*int] must compare typed nil pointers")
+	}
+}
+
+func TestForPointerEqualer(t *testing.T) {
+	t.Parallel()
+
+	equal := eq.For[*pointerEqual]()
+	for _, tc := range []struct {
+		name string
+		a, b *pointerEqual
+		want bool
+	}{
+		{"nil receiver method beats ==", nil, nil, false},
+		{"nil receiver receives operand", nil, &pointerEqual{n: 1}, true},
+		{"non-nil receiver is not the strategy probe", &pointerEqual{n: 1}, nil, false},
+		{"distinct pointers use value method", &pointerEqual{n: 1}, &pointerEqual{n: 1}, true},
+		{"different receiver values", &pointerEqual{n: 1}, &pointerEqual{n: 2}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := equal(tc.a, tc.b); got != tc.want {
+				t.Fatalf("For[*pointerEqual]() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestForInterface(t *testing.T) {
+	t.Parallel()
+
+	equal := eq.For[any]()
+	for _, tc := range []struct {
+		name string
+		a, b any
+		want bool
+	}{
+		{"nil interfaces", nil, nil, true},
+		{"nil versus typed nil", nil, (*int)(nil), false},
+		{"typed nil pointers", (*int)(nil), (*int)(nil), true},
+		{"different typed nils", (*int)(nil), (*string)(nil), false},
+		{"mixed comparable types", 1, int64(1), false},
+		{"comparable values", 7, 7, true},
+		{"non-comparable values", []int{1}, []int{1}, false},
+		{"typed nil map", map[int]int(nil), map[int]int(nil), false},
+		{"dynamic Equal method", &dynamicEqual{match: "match"}, "match", true},
+		{"receiver order matters", "match", &dynamicEqual{match: "match"}, false},
+		{"typed nil Equal receiver", (*dynamicEqual)(nil), nil, true},
+		{"nil has no Equal method", nil, (*dynamicEqual)(nil), false},
+		{"Equal signature must match T", fixedEqual{n: 7}, fixedEqual{n: 7}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := equal(tc.a, tc.b); got != tc.want {
+				t.Fatalf("For[any]() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+type namedValue interface{ value() int }
+
+type interfaceEqual int
+
+func (v interfaceEqual) value() int { return int(v) }
+
+func (interfaceEqual) Equal(namedValue) bool { return false }
+
+func TestForNonEmptyInterface(t *testing.T) {
+	t.Parallel()
+
+	equal := eq.For[namedValue]()
+	if !equal(nil, nil) {
+		t.Fatal("For[namedValue] must retain nil interface equality")
+	}
+	if equal(nil, interfaceEqual(1)) {
+		t.Fatal("For[namedValue] must distinguish nil from a value")
+	}
+	if equal(interfaceEqual(1), interfaceEqual(1)) {
+		t.Fatal("For[namedValue] must resolve Equal on each dynamic value")
+	}
+}
+
+type sliceEqual []int
+
+func (s sliceEqual) Equal(other sliceEqual) bool { return len(s) == len(other) }
+
+func TestForNilSliceEqualer(t *testing.T) {
+	t.Parallel()
+
+	equal := eq.For[sliceEqual]()
+	if !equal(nil, nil) {
+		t.Fatal("For[sliceEqual] must consult Equal even when the zero value is nil")
+	}
+	if equal(nil, sliceEqual{1}) {
+		t.Fatal("For[sliceEqual] must forward the operands to Equal")
+	}
+}
+
+type valueEqualer struct{}
+
+func (valueEqualer) Equal(*valueEqualer) bool { return true }
+
+func TestForNilValueReceiverPanicsAtComparison(t *testing.T) {
+	t.Parallel()
+
+	equal := eq.For[*valueEqualer]()
+	defer func() {
+		if recover() == nil {
+			t.Fatal("For[*valueEqualer] must preserve the nil value-receiver panic")
+		}
+	}()
+	equal(nil, nil)
+}

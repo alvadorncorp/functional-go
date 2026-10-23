@@ -13,6 +13,8 @@
 // carries a maphash.Seed; derived versions preserve that seed so structural
 // sharing remains valid.
 //
+// Equal keys replace both the stored key and value in pure and transient updates.
+//
 // Replacing an existing key is not required to be a structural no-op even when
 // the new value equals the old one (V is not comparable; no reflect equality).
 //

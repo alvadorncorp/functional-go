@@ -20,7 +20,7 @@ func (l *leaf[K, V]) get(hash uint64, _ uint, key K) (V, bool) {
 
 func (l *leaf[K, V]) set(hash uint64, shift uint, key K, val V) (node[K, V], bool) {
 	if l.hash == hash && l.key == key {
-		// Replace value; still allocate so the old leaf stays immutable.
+		// Replace key and value; still allocate so the old leaf stays immutable.
 		return &leaf[K, V]{hash: hash, key: key, val: val}, false
 	}
 	if l.hash == hash {
@@ -46,7 +46,7 @@ func (l *leaf[K, V]) del(hash uint64, _ uint, key K) (node[K, V], bool) {
 func (l *leaf[K, V]) tset(owner *ownership.Owner, hash uint64, shift uint, key K, val V) (node[K, V], bool) {
 	if l.hash == hash && l.key == key {
 		n := ensureEditableLeaf(l, owner)
-		n.val = val
+		n.key, n.val = key, val
 		return n, false
 	}
 	if l.hash == hash {

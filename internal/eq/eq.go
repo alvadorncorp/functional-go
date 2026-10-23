@@ -21,6 +21,24 @@ func Equal[T any](a, b T) bool {
 	return equalAny(any(a), any(b))
 }
 
+// For returns a comparator with the same semantics as Equal, selecting the
+// strategy once for concrete T. Interface T retains per-value Equal dispatch.
+func For[T any]() func(T, T) bool {
+	var zero T
+	if any(zero) == nil {
+		return Equal[T]
+	}
+	type equaler interface{ Equal(T) bool }
+	if _, ok := any(zero).(equaler); ok {
+		return func(a, b T) bool {
+			return any(a).(equaler).Equal(b)
+		}
+	}
+	return func(a, b T) bool {
+		return equalAny(any(a), any(b))
+	}
+}
+
 // EqualComparable reports whether a and b are equal under ==.
 // Use this when T is known comparable and no Equal method should be consulted.
 func EqualComparable[T comparable](a, b T) bool {

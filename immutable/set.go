@@ -40,25 +40,27 @@ func (s Set[T]) materialize() hamt.Root[T, struct{}] {
 
 // SetOf returns a Set holding items, deduplicated.
 func SetOf[T comparable](items ...T) Set[T] {
-	return Set[T]{root: valuesToRoot(items)}
+	return (Set[T]{}).Add(items...)
 }
 
 // CollectSet drains seq into a new Set, deduplicated.
 func CollectSet[T comparable](seq iter.Seq[T]) Set[T] {
-	root := hamt.Empty[T, struct{}]()
+	var result Set[T]
+	var b *SetBuilder[T]
 	for v := range seq {
-		root = root.Set(v, struct{}{})
+		switch {
+		case b != nil:
+			b.Add(v)
+		case result.IsEmpty():
+			result = result.Add(v)
+		default:
+			b = result.Builder().Add(v)
+		}
 	}
-	return Set[T]{root: root}
-}
-
-// valuesToRoot inserts values into a fresh Empty-seeded hamt.Root.
-func valuesToRoot[T comparable](values []T) hamt.Root[T, struct{}] {
-	root := hamt.Empty[T, struct{}]()
-	for _, v := range values {
-		root = root.Set(v, struct{}{})
+	if b == nil {
+		return result
 	}
-	return root
+	return b.Build()
 }
 
 // Len returns the number of elements in s.
@@ -76,21 +78,27 @@ func (s Set[T]) Has(v T) bool {
 // Add returns a new Set with items added; items already present are a
 // no-op. s is unchanged.
 func (s Set[T]) Add(items ...T) Set[T] {
-	root := s.materialize()
-	for _, v := range items {
-		root = root.Set(v, struct{}{})
+	switch len(items) {
+	case 0:
+		return s
+	case 1:
+		return Set[T]{root: s.materialize().Set(items[0], struct{}{})}
+	default:
+		return s.Builder().Add(items...).Build()
 	}
-	return Set[T]{root: root}
 }
 
 // Remove returns a new Set without items; items not present are a no-op. s
 // is unchanged.
 func (s Set[T]) Remove(items ...T) Set[T] {
-	root := s.materialize()
-	for _, v := range items {
-		root = root.Delete(v)
+	switch len(items) {
+	case 0:
+		return s
+	case 1:
+		return Set[T]{root: s.materialize().Delete(items[0])}
+	default:
+		return s.Builder().Remove(items...).Build()
 	}
-	return Set[T]{root: root}
 }
 
 // Values returns an iterator over s's elements. Iteration order is
@@ -118,8 +126,12 @@ func (s Set[T]) Items() []T {
 
 // Equal reports whether s and other hold the same elements. Because T is
 // comparable, a value's membership alone decides equality; no per-element
-// eq.Equal comparison is needed.
+// eq.Equal comparison is needed. A shared root is always equal to itself,
+// even when an element is NaN.
 func (s Set[T]) Equal(other Set[T]) bool {
+	if s.root == other.root {
+		return true
+	}
 	if s.root.Len() != other.root.Len() {
 		return false
 	}

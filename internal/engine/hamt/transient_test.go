@@ -1,6 +1,7 @@
 package hamt
 
 import (
+	"math"
 	"testing"
 
 	"github.com/alvadorncorp/gopackages/functional/internal/core/cow"
@@ -223,14 +224,42 @@ func TestTransientInPlaceSecondEditSameOwner(t *testing.T) {
 	t.Parallel()
 
 	owner := ownership.New()
-	r := Empty[string, int]().TransientSet(owner, "a", 1)
+	r := Empty[float64, int]().TransientSet(owner, 0, 1)
 	n1 := r.node
-	r = r.TransientSet(owner, "a", 2)
+	r = r.TransientSet(owner, math.Copysign(0, -1), 2)
 	if r.node != n1 {
 		t.Fatal("second edit under same active owner should reuse root leaf pointer")
 	}
-	assertGet(t, r, "a", 2)
+	assertGet(t, r, 0, 2)
+	if r.Len() != 1 {
+		t.Fatalf("Len = %d, want 1", r.Len())
+	}
+	for key, val := range r.All() {
+		if !math.Signbit(key) || val != 2 {
+			t.Fatalf("replacement = (%v, %d), want (-0, 2)", key, val)
+		}
+	}
 	owner.Invalidate()
+
+	fresh := ownership.New()
+	defer fresh.Invalidate()
+	next := r.TransientSet(fresh, 0, 3)
+	if next.node == r.node {
+		t.Fatal("new owner must copy the frozen leaf")
+	}
+	if next.Len() != 1 {
+		t.Fatalf("next Len = %d, want 1", next.Len())
+	}
+	for key, val := range next.All() {
+		if math.Signbit(key) || val != 3 {
+			t.Fatalf("replacement = (%v, %d), want (+0, 3)", key, val)
+		}
+	}
+	for key, val := range r.All() {
+		if !math.Signbit(key) || val != 2 {
+			t.Fatalf("snapshot = (%v, %d), want (-0, 2)", key, val)
+		}
+	}
 }
 
 func TestTransientDeleteMissingNoOp(t *testing.T) {

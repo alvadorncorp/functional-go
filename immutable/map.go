@@ -44,26 +44,39 @@ func (m Map[K, V]) materialize() hamt.Root[K, V] {
 // retained: later mutation of m through the caller's own reference does not
 // reach the returned Map.
 func MapOf[K comparable, V any](m map[K]V) Map[K, V] {
-	return Map[K, V]{root: mapToRoot(m)}
-}
-
-// CollectMap drains seq into a new Map. When seq yields the same key more
-// than once, the last value for that key wins, matching maps.Collect.
-func CollectMap[K comparable, V any](seq iter.Seq2[K, V]) Map[K, V] {
-	root := hamt.Empty[K, V]()
-	for k, v := range seq {
-		root = root.Set(k, v)
+	if len(m) <= 1 {
+		var result Map[K, V]
+		for k, v := range m {
+			result = result.Set(k, v)
+		}
+		return result
 	}
-	return Map[K, V]{root: root}
-}
-
-// mapToRoot copies m into a fresh hamt.Root. m is never retained.
-func mapToRoot[K comparable, V any](m map[K]V) hamt.Root[K, V] {
-	root := hamt.Empty[K, V]()
+	b := (Map[K, V]{}).Builder()
 	for k, v := range m {
-		root = root.Set(k, v)
+		b.Set(k, v)
 	}
-	return root
+	return b.Build()
+}
+
+// CollectMap drains seq into a new Map. When seq yields equivalent keys more
+// than once, the last key and value win, matching maps.Collect.
+func CollectMap[K comparable, V any](seq iter.Seq2[K, V]) Map[K, V] {
+	var result Map[K, V]
+	var b *MapBuilder[K, V]
+	for k, v := range seq {
+		switch {
+		case b != nil:
+			b.Set(k, v)
+		case result.IsEmpty():
+			result = result.Set(k, v)
+		default:
+			b = result.Builder().Set(k, v)
+		}
+	}
+	if b == nil {
+		return result
+	}
+	return b.Build()
 }
 
 // Len returns the number of entries in m.
@@ -84,8 +97,8 @@ func (m Map[K, V]) Has(k K) bool {
 	return ok
 }
 
-// Set returns a new Map with k mapped to v, replacing any existing value for
-// k. m is unchanged.
+// Set returns a new Map with k mapped to v. An equivalent stored key is
+// replaced by k, and its value by v. m is unchanged.
 func (m Map[K, V]) Set(k K, v V) Map[K, V] {
 	return Map[K, V]{root: m.materialize().Set(k, v)}
 }
@@ -143,14 +156,19 @@ func (m Map[K, V]) Items() map[K]V {
 }
 
 // Equal reports whether m and other hold the same set of keys, each mapped
-// to an equal value under functional/internal/eq.Equal.
+// to an equal value under functional/internal/eq's value equality. A shared
+// root is always equal to itself, even with NaN or non-reflexive Equal methods.
 func (m Map[K, V]) Equal(other Map[K, V]) bool {
+	if m.root == other.root {
+		return true
+	}
 	if m.root.Len() != other.root.Len() {
 		return false
 	}
+	equal := eq.For[V]()
 	for k, v := range m.root.All() {
 		ov, ok := other.root.Get(k)
-		if !ok || !eq.Equal(v, ov) {
+		if !ok || !equal(v, ov) {
 			return false
 		}
 	}
@@ -203,8 +221,8 @@ func (b *MapBuilder[K, V]) checkNotBuilt() {
 	checkBuilderWindow(b.win)
 }
 
-// Set maps k to v under the builder's exclusive owner, replacing any
-// existing value for k, and returns b for chaining.
+// Set maps k to v under the builder's exclusive owner, replacing an equivalent
+// stored key by k and its value by v, and returns b for chaining.
 func (b *MapBuilder[K, V]) Set(k K, v V) *MapBuilder[K, V] {
 	b.checkNotBuilt()
 	b.root = b.root.TransientSet(b.win.Owner(), k, v)

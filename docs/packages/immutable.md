@@ -15,7 +15,7 @@ Constructors are **`ListOf` / `MapOf` / `SetOf` / `EmptySortedMap`** (not
 | Type | Engine | Sharing model |
 |---|---|---|
 | `Map[K,V]`, `Set[T]` | `internal/engine/hamt` | 32-way HAMT; path-copy structural sharing |
-| `List[T]` | `internal/engine/vector` | 32-way persistent vector (trie + tail); path-copy on Set/Append/Pop |
+| `List[T]` | `internal/engine/vector` | 32-way persistent vector (trie + tail); path-copy on Set/Append and tail removal on last-element Delete |
 | `SortedMap[K,V]` | `internal/engine/wbtree` | Weight-balanced binary search tree (Adams; Straka's `delta = 3`, `gamma = 2` on weight `size+1`); path-copy structural sharing; subtree size per node; see [ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md) |
 
 - **HAMT seed policy:** each independent empty `hamt.Root` holds its own
@@ -41,13 +41,18 @@ Constructors are **`ListOf` / `MapOf` / `SetOf` / `EmptySortedMap`** (not
   place), and `Freeze` on `Build` — **O(1)** owner invalidation, no tree
   walk. Residual inactive stamps fail `IsOwnedBy`, so no Detach walk is
   required. Builders are **not** safe for concurrent use.
-- **`List.Delete`:** currently **O(n)** (vector rebuild by iteration; mid-index
-  shift). A caller MUST NOT depend on a tighter bound for Delete. The vector
-  engine also exposes internal `Pop`/`TransientPop` (O(1) when the tail has
-  more than one element, else O(log₃₂ n)); there is no public `List.Pop`.
+  Constructors, collectors, and multi-item `Append`/`Add`/`Remove` use the same
+  transient edit path internally; their receivers remain immutable.
+- **`List.Delete`:** middle-index deletion rebuilds the vector in **O(n)**;
+  last-element deletion uses internal tail removal (O(1) with a non-singleton
+  tail, otherwise O(log₃₂ n)). The public O(n) upper bound remains unchanged;
+  there is no public `List.Pop`.
 - **No `reflect` in production:** `immutable` production code does not import
   `reflect`. Equality goes through `functional/internal/eq` (method, then
   `==`; never `reflect.DeepEqual`).
+  `List.Equal`, `Map.Equal`, and `Set.Equal` also recognize a shared root, so the
+  same version is reflexive even with NaN values or keys. `EqualFunc` still
+  evaluates the caller's comparison; `SortedMap.Equal` compares stored values.
 - **Semantic immutability:** the collection structure never mutates in place.
   Stored values are not deep-copied; mutable referents shared by the caller
   remain shared across versions.

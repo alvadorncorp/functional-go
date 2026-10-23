@@ -75,14 +75,17 @@
 // # Equality and reflection
 //
 // Production code in this package does not import reflect. List.Equal,
-// Map.Equal, and SortedMap.Equal delegate to functional/internal/eq.Equal,
-// which never uses reflect.DeepEqual: it prefers Equal(T) bool, then
-// interface == for comparable dynamic values, and returns false for
-// non-comparable types without Equal. Set.Equal uses membership alone (T is
-// comparable). SortedMap.Equal follows Map.Equal: same entry count, and
-// every key found (by the other map's comparator) with an equal value.
-// List.EqualFunc, Map.EqualFunc, and SortedMap.EqualFunc accept a
-// caller-supplied value comparator.
+// Map.Equal, and SortedMap.Equal select functional/internal/eq's value
+// comparison strategy once per call. It never uses reflect.DeepEqual: it
+// prefers Equal(T) bool, then == for comparable values, and returns false for
+// non-comparable types without Equal. Interface element types retain
+// per-value dynamic dispatch. Set.Equal uses membership alone (T is comparable).
+// List.Equal, Map.Equal, and Set.Equal return true for a shared root, even
+// with NaN or non-reflexive Equal methods. Distinct roots still compare values
+// or membership. SortedMap.Equal has no root-identity shortcut: it checks the
+// entry count and looks up every key by the other map's comparator with an
+// equal value. List.EqualFunc, Map.EqualFunc, and SortedMap.EqualFunc always
+// use the caller-supplied value comparator, including on a shared version.
 //
 // Public panic strings remain "immutable: ..." — engine panics such as
 // "vector: index out of range" are never leaked to callers. Documented
@@ -113,21 +116,23 @@
 //     operand sizes. Both operands are unchanged; which operand's structure
 //     and hash-seed lineage the result shares is UNSPECIFIED.
 //
-//     List.Delete is currently O(n) (vector rebuild by iteration); a caller
-//     MUST NOT depend on a tighter bound. Only the table above is guaranteed
-//     as API headroom for the methods that meet it, and only the bound is
-//     ever documented on a method — never today's actual constant.
+//     List.Delete has an O(n) upper bound: deleting the last element uses
+//     the vector's tail-pop path; other positions rebuild by iteration. A
+//     caller MUST NOT depend on a tighter bound. The table above reserves API
+//     headroom only for the methods that meet its bounds.
 //
 //  4. List, Map, Set, and SortedMap are deliberately NOT ==-comparable. Use
 //     Equal or EqualFunc. Comparing by == would mean comparing identity of the
 //     underlying representation.
 //
-//  5. Calling Append/Set/Delete/Update n times in a loop still allocates n
-//     intermediate collections. Builder exists to give a real linear path for
-//     that case: <Type>.Builder() seeds a mutable builder from a snapshot
-//     (and opens a transient window), batch writes go through it, and Build()
-//     freezes the window, hands back an immutable collection, and permanently
-//     disables the builder. Building in a loop MUST go through Builder.
+//  5. Constructors and collectors use transient builders internally for bulk
+//     input, retaining allocation-free empty and pure singleton paths.
+//     Multi-item List.Append and Set.Add/Remove likewise batch edits under one
+//     transient owner. Calling write methods n times in a loop still creates
+//     intermediate collections: use <Type>.Builder() for that case. It seeds
+//     a mutable builder from a snapshot, opens an exclusive transient window,
+//     and freezes that window on Build(), returning an immutable collection
+//     and permanently disabling the builder.
 //
 //  6. Every test in this package is package immutable_test (external) and
 //     asserts only publicly observable behavior, never the internal

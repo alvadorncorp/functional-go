@@ -123,9 +123,10 @@ func (m SortedMap[K, V]) Values() iter.Seq[V] {
 
 // Equal reports whether m and other hold the same number of entries and
 // every key in m is present in other with an equal value under
-// functional/internal/eq.Equal. Keys are looked up with other's comparator.
+// functional/internal/eq's value equality. Keys are looked up with other's
+// comparator; even a shared version compares its values.
 func (m SortedMap[K, V]) Equal(other SortedMap[K, V]) bool {
-	return m.EqualFunc(other, eq.Equal[V])
+	return m.EqualFunc(other, eq.For[V]())
 }
 
 // EqualFunc reports whether m and other hold the same number of entries and

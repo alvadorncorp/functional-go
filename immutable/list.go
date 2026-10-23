@@ -50,19 +50,27 @@ func listFromRoot[T any](root vector.Root[T]) List[T] {
 // slice is never retained: later mutation of items through the caller's own
 // reference does not reach the returned List.
 func ListOf[T any](items ...T) List[T] {
-	if len(items) == 0 {
-		return List[T]{}
-	}
-	return listFromRoot(vector.Empty[T]().Append(items...))
+	return (List[T]{}).Append(items...)
 }
 
 // CollectList drains seq into a new List, in iteration order.
 func CollectList[T any](seq iter.Seq[T]) List[T] {
-	root := vector.Empty[T]()
+	var list List[T]
+	var b *ListBuilder[T]
 	for v := range seq {
-		root = root.Append(v)
+		switch {
+		case b != nil:
+			b.Append(v)
+		case list.IsEmpty():
+			list = list.Append(v)
+		default:
+			b = list.Builder().Append(v)
+		}
 	}
-	return listFromRoot(root)
+	if b == nil {
+		return list
+	}
+	return b.Build()
 }
 
 // Len returns the number of elements in l.
@@ -94,7 +102,10 @@ func (l List[T]) Append(items ...T) List[T] {
 	if len(items) == 0 {
 		return l
 	}
-	return listFromRoot(l.rootValue().Append(items...))
+	if len(items) == 1 {
+		return listFromRoot(l.rootValue().Append(items[0]))
+	}
+	return l.Builder().Append(items...).Build()
 }
 
 // Set returns a new List with the element at index i replaced by v. l is
@@ -115,9 +126,9 @@ func (l List[T]) Set(i int, v T) List[T] {
 // element shifts down by one. l is unchanged. It panics with
 // "immutable: index out of range" when i is outside [0, Len).
 //
-// Delete is currently O(n): the vector engine rebuilds by iteration rather
-// than a path-aware shift. Bounds are checked here so a vector engine panic
-// never leaks a "vector:" message to public callers.
+// Delete is O(n) in general: the vector engine rebuilds by iteration, except
+// that deleting the last element uses its tail-pop path. Bounds are checked
+// here so a vector engine panic never leaks a "vector:" message to callers.
 func (l List[T]) Delete(i int) List[T] {
 	root := l.rootValue()
 	if i < 0 || i >= root.Len() {
@@ -160,15 +171,20 @@ func (l List[T]) Items() []T {
 }
 
 // Equal reports whether l and other hold the same elements in the same
-// order, comparing each pair with functional/internal/eq.Equal.
+// order, using functional/internal/eq's value equality. A shared root is
+// always equal to itself, even with NaN or non-reflexive Equal methods.
 func (l List[T]) Equal(other List[T]) bool {
+	if l.root == other.root {
+		return true
+	}
 	root := l.rootValue()
 	otherRoot := other.rootValue()
 	if root.Len() != otherRoot.Len() {
 		return false
 	}
+	equal := eq.For[T]()
 	for i, v := range root.All() {
-		if !eq.Equal(v, otherRoot.At(i)) {
+		if !equal(v, otherRoot.At(i)) {
 			return false
 		}
 	}

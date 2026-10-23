@@ -71,29 +71,76 @@ func TestPopTailRoomPreservesPrior(t *testing.T) {
 	}
 }
 
-func TestPopPullsLeafFromTrie(t *testing.T) {
+func TestRemoveLastPreservesPublished(t *testing.T) {
 	t.Parallel()
 
-	for _, n := range []int{33, 34, 65} {
-		r := Empty[int]()
-		for i := range n {
-			r = r.Append(i)
-		}
-		prior := r
-		next, val := r.Pop()
-		if val != n-1 {
-			t.Fatalf("n=%d: val = %d, want %d", n, val, n-1)
-		}
-		if next.Len() != n-1 {
-			t.Fatalf("n=%d: Len = %d", n, next.Len())
-		}
-		for i := 0; i < n-1; i++ {
-			if g := next.At(i); g != i {
-				t.Fatalf("n=%d: next At(%d)=%d", n, i, g)
-			}
-		}
-		if prior.Len() != n || prior.At(n-1) != n-1 {
-			t.Fatalf("n=%d: prior version broken", n)
+	for _, n := range []int{1, 2, 32, 33, 34, 64, 65, 1057, 1089} {
+		for _, op := range []string{"Pop", "Delete", "TransientDelete", "TransientDeleteInactive", "TransientDeleteNil"} {
+			t.Run(fmt.Sprintf("%s/n=%d", op, n), func(t *testing.T) {
+				t.Parallel()
+
+				publishedOwner := ownership.New()
+				prior := Empty[int]()
+				for i := range n {
+					prior = prior.TransientAppend(publishedOwner, i)
+				}
+				publishedOwner.Invalidate()
+
+				owner := ownership.New()
+				defer owner.Invalidate()
+				var next Root[int]
+				switch op {
+				case "Pop":
+					var val int
+					next, val = prior.Pop()
+					if val != n-1 {
+						t.Fatalf("val = %d, want %d", val, n-1)
+					}
+				case "Delete":
+					next = prior.Delete(n - 1)
+				case "TransientDelete":
+					next = prior.TransientDelete(owner, n-1)
+				case "TransientDeleteInactive":
+					owner = publishedOwner
+					next = prior.TransientDelete(owner, n-1)
+				case "TransientDeleteNil":
+					owner = nil
+					next = prior.TransientDelete(owner, n-1)
+				}
+				if next.Len() != n-1 {
+					t.Fatalf("Len = %d, want %d", next.Len(), n-1)
+				}
+				for i := range n - 1 {
+					if got := next.At(i); got != i {
+						t.Fatalf("next At(%d)=%d, want %d", i, got, i)
+					}
+				}
+				if len(prior.tail) > 1 && next.root != prior.root {
+					t.Fatal("tail-only removal must share the trie root")
+				}
+				if n >= 65 && len(prior.tail) == 1 &&
+					next.leafNode(0) != prior.leafNode(0) {
+					t.Fatal("pull must share the untouched first leaf across root compression")
+				}
+
+				// Follow-up edits must not reuse any published tail or leaf.
+				if next.Len() > 0 {
+					next = next.TransientSet(owner, 0, -1)
+					next = next.TransientSet(owner, next.Len()-1, -2)
+				}
+				next = next.TransientAppend(owner, -3)
+				if next.At(next.Len()-1) != -3 {
+					t.Fatal("append after removal lost its value")
+				}
+				if prior.Len() != n {
+					t.Fatalf("prior Len = %d, want %d", prior.Len(), n)
+				}
+				for i := range n {
+					if got := prior.At(i); got != i {
+						t.Fatalf("published At(%d)=%d, want %d", i, got, i)
+					}
+				}
+			})
 		}
 	}
 }

@@ -10,10 +10,11 @@
 // trie of 32-way nodes plus a tail array of up to 32 elements. Structural
 // sharing retains untouched sibling subtrees across Set/Append/Pop. Pop is O(1)
 // when the tail has more than one element and O(log32 n) when the last full
-// leaf must be pulled from the trie into the tail. Delete mid-index shifts
-// subsequent elements left and is O(n) in this version (rebuild via sequential
-// walk); it is correct, not log-n path-aware. All is O(n) via the same
-// sequential trie+tail walk (not per-index At).
+// leaf must be pulled from the trie into the tail. Deleting the last element
+// uses the same path as Pop (TransientPop for owner-scoped edits). Delete at
+// other indices shifts subsequent elements left and is O(n) in this version
+// (rebuild via sequential walk). All is O(n) via the same sequential trie+tail
+// walk (not per-index At).
 //
 // This package does not implement RRB, concat, or split.
 //
