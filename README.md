@@ -6,7 +6,7 @@ values, immutable collections, and pure state evolution.
 
 ```text
 module  github.com/alvadorncorp/gopackages/functional
-go      1.26+
+go      1.27.1
 ```
 
 **The root package exports nothing.** `functional` is documentation only —
