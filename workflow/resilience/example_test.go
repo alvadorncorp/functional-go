@@ -60,3 +60,25 @@ func ExampleTimeout_perAttemptBudget() {
 	fmt.Println(value, err)
 	// Output: ok <nil>
 }
+
+// ExampleRetry_perAttemptTimeout retries an expired child deadline while the
+// parent context still permits another attempt.
+func ExampleRetry_perAttemptTimeout() {
+	attempts := 0
+	source := action.Do(func(ctx context.Context) (string, error) {
+		attempts++
+		if attempts < 3 {
+			<-ctx.Done()
+			return "", ctx.Err()
+		}
+		return "created", nil
+	})
+	policy := resilience.RetryPolicy{
+		Attempts: 3,
+		When:     func(err error) bool { return errors.Is(err, context.DeadlineExceeded) },
+	}
+	program := resilience.Retry(policy, resilience.Timeout(time.Millisecond, source))
+	value, err := action.Run(context.Background(), program)
+	fmt.Println(value, err, attempts)
+	// Output: created <nil> 3
+}

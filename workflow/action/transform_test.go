@@ -72,6 +72,27 @@ func TestMapFallibleShortCircuitsAndPreservesItsError(t *testing.T) {
 	}
 }
 
+func TestMapFallibleDoesNotCallMapperAfterFailure(t *testing.T) {
+	t.Parallel()
+
+	mapperCalls := 0
+	mapped := action.MapFallible(action.Fail[int](errBoom), func(int) (string, error) {
+		mapperCalls++
+		return "mapped", nil
+	})
+
+	value, err := action.Run(t.Context(), mapped)
+	if err != errBoom {
+		t.Fatalf("Run() error = %v, want errBoom unchanged", err)
+	}
+	if value != "" {
+		t.Fatalf("Run() value = %q, want the zero value", value)
+	}
+	if mapperCalls != 0 {
+		t.Fatalf("mapper calls = %d, want 0 after upstream failure", mapperCalls)
+	}
+}
+
 func TestFlatMapSequencesInOrder(t *testing.T) {
 	t.Parallel()
 
@@ -155,5 +176,17 @@ func TestTransformCombinatorsPanicOnNilArguments(t *testing.T) {
 	})
 	assertPanics(t, "workflow/action: nil binder", func() {
 		_ = action.FlatMap[int, int](action.Pure(answer), nil)
+	})
+}
+
+func TestFlatMapPanicsWhenBinderReturnsNilAction(t *testing.T) {
+	t.Parallel()
+
+	chained := action.FlatMap(action.Pure(answer), func(int) action.Action[int] {
+		return nil
+	})
+
+	assertPanics(t, "workflow/action: nil action", func() {
+		_, _ = action.Run(t.Context(), chained)
 	})
 }

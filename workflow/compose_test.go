@@ -125,6 +125,30 @@ func TestMapFallibleShortCircuitsTheDownstream(t *testing.T) {
 	}
 }
 
+func TestMapFallibleSkipsMapperOnUpstreamFailure(t *testing.T) {
+	t.Parallel()
+
+	mapperCalls := 0
+	failing := workflow.From(func(userID) action.Action[user] {
+		return action.Fail[user](errNotFound)
+	})
+	mapped := workflow.MapFallible(failing, func(user) (string, error) {
+		mapperCalls++
+		return "unreachable", errInactive
+	})
+
+	value, err := action.Run(t.Context(), mapped(firstID))
+	if err != errNotFound {
+		t.Fatalf("Run() error = %v, want unchanged errNotFound", err)
+	}
+	if value != "" {
+		t.Fatalf("Run() value = %q, want empty string", value)
+	}
+	if mapperCalls != 0 {
+		t.Fatalf("mapper calls = %d, want 0", mapperCalls)
+	}
+}
+
 func TestComposeCombinatorsPanicOnNilArguments(t *testing.T) {
 	t.Parallel()
 
@@ -135,6 +159,14 @@ func TestComposeCombinatorsPanicOnNilArguments(t *testing.T) {
 	})
 	assertPanics(t, "workflow: nil mapper", func() {
 		_ = workflow.Map[userID, user, string](valid, nil)
+	})
+	assertPanics(t, "workflow: nil workflow", func() {
+		_ = workflow.MapFallible(workflow.Workflow[userID, user](nil), func(loaded user) (string, error) {
+			return loaded.Name, nil
+		})
+	})
+	assertPanics(t, "workflow: nil mapper", func() {
+		_ = workflow.MapFallible[userID, user, string](valid, nil)
 	})
 	assertPanics(t, "workflow: nil workflow", func() {
 		_ = workflow.Then(valid, workflow.Workflow[user, string](nil))
@@ -148,5 +180,10 @@ func TestApplyingAWorkflowThatReturnsNilPanics(t *testing.T) {
 
 	assertPanics(t, "workflow: nil action", func() {
 		_ = workflow.Map(broken, func(loaded user) string { return loaded.Name })(firstID)
+	})
+	assertPanics(t, "workflow: nil action", func() {
+		_ = workflow.MapFallible(broken, func(loaded user) (string, error) {
+			return loaded.Name, nil
+		})(firstID)
 	})
 }

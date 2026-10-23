@@ -114,3 +114,15 @@ func TestRecoverPanicsOnNilArguments(t *testing.T) {
 		_ = action.Recover[int](action.Pure(answer), nil)
 	})
 }
+
+func TestRecoverPanicsWhenRecoveryReturnsNilAction(t *testing.T) {
+	t.Parallel()
+
+	recovered := action.Recover(action.Fail[int](errBoom), func(error) action.Action[int] {
+		return nil
+	})
+
+	assertPanics(t, "workflow/action: nil action", func() {
+		_, _ = action.Run(t.Context(), recovered)
+	})
+}

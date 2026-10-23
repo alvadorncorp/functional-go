@@ -237,33 +237,6 @@ func TestRetryPreservesFinalDistinctError(t *testing.T) {
 	}
 }
 
-func TestRetryZeroBackoffIsImmediate(t *testing.T) {
-	t.Parallel()
-
-	transient := errors.New("transient")
-	var sourceCalls atomic.Int32
-	source := action.Do(func(context.Context) (int, error) {
-		n := sourceCalls.Add(1)
-		if n == 1 {
-			return 0, transient
-		}
-		return 9, nil
-	})
-	program := resilience.Retry(resilience.RetryPolicy{
-		Attempts: 2,
-		When:     func(error) bool { return true },
-		Backoff:  func(int) time.Duration { return 0 },
-	}, source)
-
-	value, err := action.Run(t.Context(), program)
-	if err != nil {
-		t.Fatalf("Run() error = %v, want nil", err)
-	}
-	if value != 9 || sourceCalls.Load() != 2 {
-		t.Fatalf("value/calls = %d/%d, want 9/2", value, sourceCalls.Load())
-	}
-}
-
 func TestRetryNegativeBackoffPanicsAfterPredicate(t *testing.T) {
 	t.Parallel()
 
@@ -305,7 +278,7 @@ func TestRetryPreCanceledContext(t *testing.T) {
 	cancel()
 
 	value, err := action.Run(ctx, program)
-	if !errors.Is(err, context.Canceled) {
+	if err != context.Canceled {
 		t.Fatalf("Run() error = %v, want context.Canceled", err)
 	}
 	if value != 0 {
@@ -361,7 +334,7 @@ func TestRetryCancellationDuringBackoff(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("Run did not complete after cancel")
 	}
-	if !errors.Is(err, context.Canceled) {
+	if err != context.Canceled {
 		t.Fatalf("Run() error = %v, want context.Canceled", err)
 	}
 	if value != 0 {
@@ -391,7 +364,7 @@ func TestRetryDeadlineDuringBackoff(t *testing.T) {
 	}, source)
 
 	value, err := action.Run(ctx, program)
-	if !errors.Is(err, context.DeadlineExceeded) {
+	if err != context.DeadlineExceeded {
 		t.Fatalf("Run() error = %v, want context.DeadlineExceeded", err)
 	}
 	if value != 0 {

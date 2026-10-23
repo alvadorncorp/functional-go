@@ -10,18 +10,34 @@ falha operacional.
 policy := resilience.RetryPolicy{
     Attempts: 3,
     When: faults.IsUnavailable,
-    Backoff: func(attempt int) time.Duration {
-        return time.Duration(1<<(attempt-1)) * 100 * time.Millisecond
-    },
+    Backoff: exponentialBackoff,
 }
 program := resilience.Retry(policy, source)
 value, err := action.Run(ctx, program)
 ```
 
+O adapter pode limitar o backoff antes do shift, usando `math/bits` da stdlib:
+
+```go
+func exponentialBackoff(attempt int) time.Duration {
+    const baseDelay = 100 * time.Millisecond
+    const maxDelay = 2 * time.Second
+    if attempt <= 1 {
+        return baseDelay
+    }
+    if attempt-1 >= bits.Len64(uint64(maxDelay/baseDelay)) {
+        return maxDelay
+    }
+    return baseDelay << (attempt - 1)
+}
+```
+
+O limite antes do shift impede overflow mesmo com um número alto de tentativas.
+
 `Attempts` inclui a chamada inicial. O argumento de Backoff é o número 1-based
-da tentativa que falhou. `When` não roda depois da última falha. Espera zero é
-imediata; espera negativa causa panic. Cancelamento antes da tentativa ou
-durante a espera devolve o erro exato do contexto e o zero de T.
+da tentativa que falhou. `When` não roda depois da última falha. Backoff nil ou
+espera zero são imediatos; espera negativa causa panic. Cancelamento antes da
+tentativa ou durante a espera devolve o erro exato do contexto e o zero de T.
 
 Retry não torna uma operação segura. Use-o somente quando o efeito é idempotente,
 deduplicado, transacional no limite necessário, ou quando repetição parcial foi
@@ -44,14 +60,21 @@ totalBudget := resilience.Timeout(30*time.Second,
     resilience.Retry(policy, source),
 )
 
-perAttemptBudget := resilience.Retry(policy,
+perAttemptPolicy := policy
+perAttemptPolicy.When = func(err error) bool {
+    return faults.IsUnavailable(err) || errors.Is(err, context.DeadlineExceeded)
+}
+perAttemptBudget := resilience.Retry(perAttemptPolicy,
     resilience.Timeout(3*time.Second, source),
 )
 ```
 
 `Timeout(Retry(source))` limita o conjunto das tentativas e backoffs.
-`Retry(Timeout(source))` renova o orçamento de cada tentativa. As duas formas
-são deliberadamente diferentes.
+`Retry(Timeout(source))` renova o orçamento de cada tentativa; por isso o segundo
+predicado também aceita `context.DeadlineExceeded` do contexto filho. O
+`ctx.Err()` antes de cada tentativa e a espera cancelável de Retry continuam
+respeitando o contexto pai: se o orçamento total dele acabar, não há nova
+tentativa. O timeout permanece cooperativo se a origem ignorar o contexto.
 
 ## Transparência
 

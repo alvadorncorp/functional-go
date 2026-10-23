@@ -45,11 +45,21 @@ uma fronteira cuja assinatura devolve apenas `error`.
 - construir `Within` não inicia transação;
 - cada execução recebe um escopo novo;
 - o commit ocorre só no sucesso; qualquer erro reverte;
+- um erro de commit descarta o resultado e retorna o erro original;
+- retornar sucesso sem executar o callback causa o pânico exato
+  `"workflow/transaction: boundary returned without running fn"`;
+- um erro da fronteira tem precedência sobre essa verificação, permanece
+  inalterado e não executa `fn` quando o callback foi omitido;
 - um pânico reverte e é então reerguido com seu valor original;
 - o cancelamento chega ao adaptador e nunca vira erro de negócio;
 - o escopo é inalcançável através do contexto.
 
 ## Obrigações do adaptador
+
+O adaptador deve executar o callback exatamente uma vez antes de retornar `nil`.
+Pode retornar um erro sem executar o callback, por exemplo quando não consegue
+iniciar a transação. `Within` detecta a omissão no sucesso; não conta nem impede
+chamadas repetidas, que continuam sendo uma violação do contrato do adaptador.
 
 `postgres.InTx` satisfaz `Boundary` depois de fechar sobre `db`. Ele inicia,
 confirma em erro nulo e reverte a partir de um `defer` usando um contexto

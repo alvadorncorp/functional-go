@@ -158,8 +158,12 @@ func TestWithinPropagatesACommitFailure(t *testing.T) {
 		return action.Map(s.Accounts.Save(savedAmount), func(struct{}) string { return "receipt" })
 	})
 
-	if _, err := action.Run(t.Context(), program); !errors.Is(err, errCommit) {
-		t.Fatalf("Run() error = %v, want errCommit", err)
+	value, err := action.Run(t.Context(), program)
+	if err != errCommit {
+		t.Fatalf("Run() error = %v, want unchanged errCommit", err)
+	}
+	if value != "" {
+		t.Fatalf("Run() value = %q, want the zero value", value)
 	}
 	if resource.journal.trace() != "begin,save,rollback" {
 		t.Fatalf("trace = %q, want %q", resource.journal.trace(), "begin,save,rollback")
@@ -249,6 +253,51 @@ func TestWithinScopedCapabilitiesAreFreshPerRun(t *testing.T) {
 	}
 	if resource.journal.trace() != "begin,save,commit,begin,save,commit" {
 		t.Fatalf("trace = %q, want two full lifecycles", resource.journal.trace())
+	}
+}
+
+func TestWithinPanicsWhenBoundarySkipsFunctionOnSuccess(t *testing.T) {
+	t.Parallel()
+
+	boundary := func(context.Context, func(context.Context, scope) error) error {
+		return nil
+	}
+	called := false
+	program := transaction.Within(boundary, func(scope) action.Action[string] {
+		called = true
+		return action.Pure("receipt")
+	})
+
+	assertPanics(t, "workflow/transaction: boundary returned without running fn", func() {
+		_, _ = action.Run(t.Context(), program)
+	})
+	if called {
+		t.Fatal("fn was called despite the boundary skipping its callback")
+	}
+}
+
+func TestWithinPropagatesErrorWhenBoundarySkipsFunction(t *testing.T) {
+	t.Parallel()
+
+	boundaryErr := errors.New("begin failed")
+	boundary := func(context.Context, func(context.Context, scope) error) error {
+		return boundaryErr
+	}
+	called := false
+	program := transaction.Within(boundary, func(scope) action.Action[string] {
+		called = true
+		return action.Pure("receipt")
+	})
+
+	value, err := action.Run(t.Context(), program)
+	if err != boundaryErr {
+		t.Fatalf("Run() error = %v, want unchanged boundary error", err)
+	}
+	if value != "" {
+		t.Fatalf("Run() value = %q, want the zero value", value)
+	}
+	if called {
+		t.Fatal("fn was called despite the boundary skipping its callback")
 	}
 }
 

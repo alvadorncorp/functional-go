@@ -30,9 +30,8 @@ func validateRetry[T any](policy RetryPolicy, source action.Action[T]) {
 
 func runRetry[T any](ctx context.Context, policy RetryPolicy, source action.Action[T]) (T, error) {
 	var zero T
-	var lastErr error
 
-	for attempt := 1; attempt <= policy.Attempts; attempt++ {
+	for attempt := 1; ; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return zero, err
 		}
@@ -41,7 +40,6 @@ func runRetry[T any](ctx context.Context, policy RetryPolicy, source action.Acti
 		if err == nil {
 			return value, nil
 		}
-		lastErr = err
 		if attempt == policy.Attempts || !policy.When(err) {
 			return zero, err
 		}
@@ -49,8 +47,6 @@ func runRetry[T any](ctx context.Context, policy RetryPolicy, source action.Acti
 			return zero, err
 		}
 	}
-
-	return zero, lastErr
 }
 
 func pauseAfterFailure(ctx context.Context, backoff Backoff, attempt int) error {

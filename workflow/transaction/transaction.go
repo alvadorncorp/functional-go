@@ -29,6 +29,7 @@ import (
 const (
 	panicNilBoundary = "workflow/transaction: nil boundary"
 	panicNilFunction = "workflow/transaction: nil function"
+	panicSkippedFn   = "workflow/transaction: boundary returned without running fn"
 )
 
 // Boundary is a region of execution with transactional semantics defined by its
@@ -42,6 +43,10 @@ const (
 // concrete handle stays inside the implementation: S carries capabilities, not
 // a driver type, which is what keeps a workflow from accidentally escaping the
 // transaction.
+//
+// A successful boundary must invoke the supplied function exactly once before
+// returning nil. It may return an error without invoking the function, for
+// example when beginning the transaction fails.
 //
 // The zero value is a nil function; Within rejects it.
 type Boundary[S any] func(context.Context, func(context.Context, S) error) error
@@ -58,6 +63,9 @@ type Boundary[S any] func(context.Context, func(context.Context, S) error) error
 // fn is not converted into an error: it unwinds through the boundary, which is
 // responsible for attempting a rollback before it propagates.
 //
+// The boundary must invoke its callback exactly once before returning nil;
+// returning an error without invoking the callback returns that error unchanged.
+//
 // Within is a free function rather than a method because Go does not allow a
 // method to introduce the extra type parameter T, and preserving T beats a
 // fluent shape that would need any or reflection.
@@ -65,6 +73,8 @@ type Boundary[S any] func(context.Context, func(context.Context, S) error) error
 // Within panics with "workflow/transaction: nil boundary" or
 // "workflow/transaction: nil function" at construction, and with
 // "workflow/action: nil action" at execution when fn returns a nil Action.
+// It also panics with "workflow/transaction: boundary returned without running fn"
+// when the boundary returns nil without invoking its callback.
 func Within[S, T any](boundary Boundary[S], fn func(S) action.Action[T]) action.Action[T] {
 	if boundary == nil {
 		panic(panicNilBoundary)
@@ -74,8 +84,10 @@ func Within[S, T any](boundary Boundary[S], fn func(S) action.Action[T]) action.
 	}
 	return action.Do(func(ctx context.Context) (T, error) {
 		var result T
+		var ran bool
 
 		err := boundary(ctx, func(ctx context.Context, scope S) error {
+			ran = true
 			value, err := action.Run(ctx, fn(scope))
 			if err != nil {
 				return err
@@ -86,6 +98,9 @@ func Within[S, T any](boundary Boundary[S], fn func(S) action.Action[T]) action.
 		if err != nil {
 			var zero T
 			return zero, err
+		}
+		if !ran {
+			panic(panicSkippedFn)
 		}
 		return result, nil
 	})
