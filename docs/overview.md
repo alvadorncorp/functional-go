@@ -11,7 +11,10 @@ for runnable sketches see [examples.md](examples.md).
 
 `github.com/alvadorncorp/gopackages/functional` is an umbrella module for
 small, general-purpose functional-programming building blocks with **zero
-dependencies outside the standard library, permanently**:
+dependencies outside the standard library, permanently**.
+
+Function and predicate combinators copy retained variadic slices at construction;
+later changes to the caller's slice do not change an existing composition.
 
 Public packages are grouped by role under path prefixes (no Go package at the
 group directory itself; ADR-011):

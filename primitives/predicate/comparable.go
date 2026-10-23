@@ -13,7 +13,9 @@ func NotEqualTo[T comparable](expected T) Predicate[T] {
 }
 
 // OneOf returns a predicate that performs a linear membership scan.
+// OneOf copies the variadic slice; later changes to it do not affect the result.
 func OneOf[T comparable](values ...T) Predicate[T] {
+	values = slices.Clone(values)
 	return func(value T) bool {
 		return slices.Contains(values, value)
 	}

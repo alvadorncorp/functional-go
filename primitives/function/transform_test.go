@@ -114,3 +114,32 @@ func TestPipeTransformsClosureUnderComposition(t *testing.T) {
 		t.Fatalf("closure result = %+v, want Alice/active", got)
 	}
 }
+
+func TestPipeTransformsCopiesVariadicSlice(t *testing.T) {
+	t.Parallel()
+	inc := function.Transform[int](func(value int) int { return value + 10 })
+	double := function.Transform[int](func(value int) int { return value * 2 })
+	steps := []function.Transform[int]{inc, double}
+	transform := function.PipeTransforms(steps...)
+	steps[0] = nil
+	steps[1] = func(value int) int { return -value }
+	// 5 +10 → 15 ×2 → 30; an aliased slice would panic on nil or yield -5.
+	if got, want := transform(5), 30; got != want {
+		t.Fatalf("PipeTransforms after caller mutation = %d, want %d", got, want)
+	}
+}
+
+func TestComposeTransformsCopiesVariadicSlice(t *testing.T) {
+	t.Parallel()
+	addOne := function.Transform[int](func(value int) int { return value + 1 })
+	double := function.Transform[int](func(value int) int { return value * 2 })
+	addTen := function.Transform[int](func(value int) int { return value + 10 })
+	steps := []function.Transform[int]{addTen, double, addOne}
+	transform := function.ComposeTransforms(steps...)
+	steps[0] = func(value int) int { return -value }
+	steps[2] = nil
+	// ((5+1)×2)+10 → 22; an aliased slice would panic on nil or negate.
+	if got, want := transform(5), 22; got != want {
+		t.Fatalf("ComposeTransforms after caller mutation = %d, want %d", got, want)
+	}
+}

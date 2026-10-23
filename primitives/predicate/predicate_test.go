@@ -79,3 +79,30 @@ func TestComparablePredicates(t *testing.T) {
 		t.Fatal("OneOf failed")
 	}
 }
+
+func TestCombinatorsCopyVariadicSlice(t *testing.T) {
+	t.Parallel()
+	alwaysTrue := predicate.Predicate[int](func(int) bool { return true })
+	alwaysFalse := predicate.Predicate[int](func(int) bool { return false })
+
+	andArgs := []predicate.Predicate[int]{alwaysTrue}
+	and := predicate.And(andArgs...)
+	andArgs[0] = alwaysFalse
+	if !and(1) {
+		t.Fatal("And observed a later change to its argument slice")
+	}
+
+	orArgs := []predicate.Predicate[int]{alwaysFalse}
+	or := predicate.Or(orArgs...)
+	orArgs[0] = alwaysTrue
+	if or(1) {
+		t.Fatal("Or observed a later change to its argument slice")
+	}
+
+	values := []int{1, 3}
+	oneOf := predicate.OneOf(values...)
+	values[0] = 7
+	if !oneOf(1) || oneOf(7) {
+		t.Fatal("OneOf observed a later change to its argument slice")
+	}
+}
