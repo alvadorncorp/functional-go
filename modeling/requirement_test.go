@@ -80,6 +80,21 @@ func TestAnyRequirementStopsAtFirstSuccess(t *testing.T) {
 	}
 }
 
+func TestAnyRequirementStopsWhenFirstRequirementSucceeds(t *testing.T) {
+	calls := 0
+	combined := modeling.AnyRequirement(
+		func(int, requirementInput) error { calls++; return nil },
+		func(int, requirementInput) error { panic("second requirement must not run") },
+	)
+
+	if err := combined(10, requirementInput{amount: 7}); err != nil {
+		t.Fatalf("error = %v, want nil", err)
+	}
+	if calls != 1 {
+		t.Fatalf("first requirement calls = %d, want 1", calls)
+	}
+}
+
 func TestAnyRequirementReturnsLastFailure(t *testing.T) {
 	combined := modeling.AnyRequirement(
 		func(int, requirementInput) error { return errRequirementA },

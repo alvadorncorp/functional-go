@@ -66,6 +66,21 @@ func TestAnyRuleStopsAtFirstSuccess(t *testing.T) {
 	}
 }
 
+func TestAnyRuleStopsWhenFirstRuleSucceeds(t *testing.T) {
+	calls := 0
+	combined := modeling.AnyRule(
+		func(int) error { calls++; return nil },
+		func(int) error { panic("second rule must not run") },
+	)
+
+	if err := combined(1); err != nil {
+		t.Fatalf("error = %v, want nil", err)
+	}
+	if calls != 1 {
+		t.Fatalf("first rule calls = %d, want 1", calls)
+	}
+}
+
 func TestAnyRuleReturnsLastFailure(t *testing.T) {
 	combined := modeling.AnyRule(
 		func(int) error { return errRuleA },
