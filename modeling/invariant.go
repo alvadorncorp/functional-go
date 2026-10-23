@@ -1,6 +1,9 @@
 package modeling
 
-import "errors"
+import (
+	"errors"
+	"slices"
+)
 
 const panicNilInvariant = "modeling: nil invariant"
 
@@ -8,7 +11,9 @@ const panicNilInvariant = "modeling: nil invariant"
 type Invariant[S any] func(S) error
 
 // FailFast composes invariants in argument order and returns the first failure.
+// The variadic slice is copied, so later changes to it do not affect the result.
 func FailFast[S any](invariants ...Invariant[S]) Invariant[S] {
+	invariants = slices.Clone(invariants)
 	requireInvariants(invariants)
 	return func(state S) error {
 		for _, invariant := range invariants {
@@ -21,7 +26,9 @@ func FailFast[S any](invariants ...Invariant[S]) Invariant[S] {
 }
 
 // Accumulate composes invariants in argument order and joins every failure.
+// The variadic slice is copied, so later changes to it do not affect the result.
 func Accumulate[S any](invariants ...Invariant[S]) Invariant[S] {
+	invariants = slices.Clone(invariants)
 	requireInvariants(invariants)
 	return func(state S) error {
 		failures := make([]error, 0, len(invariants))

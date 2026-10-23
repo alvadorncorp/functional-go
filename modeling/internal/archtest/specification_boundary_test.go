@@ -27,9 +27,10 @@ func TestSpecificationHasExactPublicSurface(t *testing.T) {
 	}
 }
 
-func TestSpecificationHasNoProductionImports(t *testing.T) {
-	if got := specificationProductionPackage(t).Imports; len(got) != 0 {
-		t.Fatalf("specification imports = %v, want none", got)
+func TestSpecificationImportsOnlySlices(t *testing.T) {
+	got := specificationProductionPackage(t).Imports
+	if want := []string{"slices"}; !slices.Equal(got, want) {
+		t.Fatalf("specification imports = %v, want %v", got, want)
 	}
 }
 

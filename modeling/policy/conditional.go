@@ -1,6 +1,8 @@
 package policy
 
 import (
+	"slices"
+
 	"github.com/alvadorncorp/gopackages/functional/primitives/predicate"
 	"github.com/alvadorncorp/gopackages/functional/values/optional"
 )
@@ -55,10 +57,13 @@ func OrElse[I, O any](
 }
 
 // FirstApplicable returns the first Some result in declaration order.
+// The rest slice is copied at construction, so later changes to the caller's
+// slice do not affect the returned conditional.
 func FirstApplicable[I, O any](
 	first func(I) optional.Optional[O],
 	rest ...func(I) optional.Optional[O],
 ) func(I) optional.Optional[O] {
+	rest = slices.Clone(rest)
 	requireConditional(first)
 	for _, candidate := range rest {
 		requireConditional(candidate)

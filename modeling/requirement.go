@@ -1,12 +1,16 @@
 package modeling
 
+import "slices"
+
 const panicNilRequirement = "modeling: nil requirement"
 
 // Requirement checks whether an input may be applied to a state.
 type Requirement[S, I any] func(S, I) error
 
 // AllRequirements composes requirements in argument order and returns the first failure.
+// The variadic slice is copied, so later changes to it do not affect the result.
 func AllRequirements[S, I any](requirements ...Requirement[S, I]) Requirement[S, I] {
+	requirements = slices.Clone(requirements)
 	requireRequirements(requirements)
 	return func(state S, input I) error {
 		for _, requirement := range requirements {
@@ -19,10 +23,12 @@ func AllRequirements[S, I any](requirements ...Requirement[S, I]) Requirement[S,
 }
 
 // AnyRequirement returns success from the first satisfied requirement, or the last failure.
+// The variadic slice is copied, so later changes to it do not affect the result.
 func AnyRequirement[S, I any](first Requirement[S, I], rest ...Requirement[S, I]) Requirement[S, I] {
 	if first == nil {
 		panic(panicNilRequirement)
 	}
+	rest = slices.Clone(rest)
 	requireRequirements(rest)
 	return func(state S, input I) error {
 		lastErr := first(state, input)

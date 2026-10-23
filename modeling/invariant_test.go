@@ -72,3 +72,30 @@ func TestInvariantCompositionRejectsNil(t *testing.T) {
 		})
 	}
 }
+
+func TestFailFastCopiesVariadicSlice(t *testing.T) {
+	invariants := []modeling.Invariant[int]{
+		func(int) error { return nil },
+		func(int) error { return errInvariantA },
+	}
+	combined := modeling.FailFast(invariants...)
+	invariants[0], invariants[1] = nil, func(int) error { return errInvariantB }
+
+	if err := combined(1); err != errInvariantA {
+		t.Fatalf("error = %v, want identical errInvariantA", err)
+	}
+}
+
+func TestAccumulateCopiesVariadicSlice(t *testing.T) {
+	invariants := []modeling.Invariant[int]{
+		func(int) error { return errInvariantA },
+		func(int) error { return errInvariantB },
+	}
+	combined := modeling.Accumulate(invariants...)
+	invariants[0], invariants[1] = nil, func(int) error { return nil }
+
+	err := combined(1)
+	if !errors.Is(err, errInvariantA) || !errors.Is(err, errInvariantB) {
+		t.Fatalf("error = %v, want joined invariant errors", err)
+	}
+}

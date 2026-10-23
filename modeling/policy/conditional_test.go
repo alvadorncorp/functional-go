@@ -38,6 +38,25 @@ func TestFirstApplicablePreservesOrderAndShortCircuits(t *testing.T) {
 	}
 }
 
+func TestFirstApplicableIgnoresLaterRestSliceMutation(t *testing.T) {
+	var order []string
+	none := func(name string) conditionalPolicy[int, string] {
+		return func(int) optional.Optional[string] { order = append(order, name); return optional.None[string]() }
+	}
+	some := func(name, value string) conditionalPolicy[int, string] {
+		return func(int) optional.Optional[string] { order = append(order, name); return optional.Some(value) }
+	}
+	rest := []conditionalPolicy[int, string]{none("second"), some("third", "chosen"), some("fourth", "late")}
+	selected := policy.FirstApplicable(none("first"), rest...)
+	rest[0] = nil
+	rest[1] = some("replacement", "wrong")
+	rest[2] = nil
+	value, ok := selected(0).Get()
+	if !ok || value != "chosen" || len(order) != 3 || order[0] != "first" || order[1] != "second" || order[2] != "third" {
+		t.Fatalf("result/order = %q/%v/%v, want chosen/true/[first second third]", value, ok, order)
+	}
+}
+
 func TestFirstApplicableReturnsNoneWhenAllAreNone(t *testing.T) {
 	none := func(int) optional.Optional[int] { return optional.None[int]() }
 	if got := policy.FirstApplicable(none, none)(1); !got.IsNone() {

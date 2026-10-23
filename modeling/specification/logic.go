@@ -1,8 +1,12 @@
 package specification
 
+import "slices"
+
 // All returns a Specification that accepts when every specification accepts.
 // With no operands, All returns the always-true identity.
+// The variadic slice is copied; later changes to it do not affect the result.
 func All[T any](specifications ...Specification[T]) Specification[T] {
+	specifications = slices.Clone(specifications)
 	requireSpecifications(specifications)
 	return func(value T) bool {
 		for _, spec := range specifications {
@@ -16,7 +20,9 @@ func All[T any](specifications ...Specification[T]) Specification[T] {
 
 // Any returns a Specification that accepts when any specification accepts.
 // With no operands, Any returns the always-false identity.
+// The variadic slice is copied; later changes to it do not affect the result.
 func Any[T any](specifications ...Specification[T]) Specification[T] {
+	specifications = slices.Clone(specifications)
 	requireSpecifications(specifications)
 	return func(value T) bool {
 		for _, spec := range specifications {

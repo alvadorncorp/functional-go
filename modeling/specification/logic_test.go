@@ -62,6 +62,30 @@ func TestAnyEvaluatesLeftToRightAndShortCircuits(t *testing.T) {
 	}
 }
 
+func TestAllCopiesVariadicSlice(t *testing.T) {
+	alwaysTrue := specification.Specification[int](func(int) bool { return true })
+	specifications := []specification.Specification[int]{alwaysTrue, alwaysTrue}
+	all := specification.All(specifications...)
+	specifications[0] = nil
+	specifications[1] = func(int) bool { return false }
+
+	if !all(0) {
+		t.Fatal("All = false after caller mutation, want true")
+	}
+}
+
+func TestAnyCopiesVariadicSlice(t *testing.T) {
+	alwaysFalse := specification.Specification[int](func(int) bool { return false })
+	specifications := []specification.Specification[int]{alwaysFalse, alwaysFalse}
+	anySpec := specification.Any(specifications...)
+	specifications[0] = nil
+	specifications[1] = func(int) bool { return true }
+
+	if anySpec(0) {
+		t.Fatal("Any = true after caller mutation, want false")
+	}
+}
+
 func TestNotNegatesSpecification(t *testing.T) {
 	even := specification.Specification[int](func(value int) bool { return value%2 == 0 })
 	odd := specification.Not(even)

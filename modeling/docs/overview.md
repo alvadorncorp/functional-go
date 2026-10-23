@@ -210,6 +210,9 @@ que mantém modeling evolvível de forma independente. Imutabilidade de Decision
 é superficial: estado ou valores de evento referenciados são responsabilidade
 do chamador.
 
+Combinadores copiam os slices variádicos retidos antes da validação de nil;
+alterações posteriores no slice do chamador não afetam a composição construída.
+
 Change também é conceitual e superficialmente imutável. Structs podem ser
 copiados antes da atualização; slices, maps, ponteiros e referências
 compartilhadas permanecem responsabilidade do autor do Change. Não há

@@ -94,3 +94,23 @@ func TestRuleCompositionRejectsNil(t *testing.T) {
 		})
 	}
 }
+
+func TestAllRulesCopiesVariadicSlice(t *testing.T) {
+	rules := []modeling.Rule[int]{positiveRule, func(int) error { return errRuleB }}
+	combined := modeling.AllRules(rules...)
+	rules[0], rules[1] = nil, func(int) error { return errRuleC }
+
+	if err := combined(1); err != errRuleB {
+		t.Fatalf("error = %v, want identical errRuleB", err)
+	}
+}
+
+func TestAnyRuleCopiesVariadicSlice(t *testing.T) {
+	rest := []modeling.Rule[int]{func(int) error { return errRuleB }, positiveRule}
+	combined := modeling.AnyRule(func(int) error { return errRuleA }, rest...)
+	rest[0], rest[1] = nil, func(int) error { return errRuleC }
+
+	if err := combined(1); err != nil {
+		t.Fatalf("error = %v, want nil", err)
+	}
+}

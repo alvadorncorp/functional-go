@@ -21,7 +21,7 @@ func policyProductionPackage(t *testing.T) *listedPackage {
 func TestPolicyPackageHasExactDependencies(t *testing.T) {
 	got := slices.Clone(policyProductionPackage(t).Imports)
 	sort.Strings(got)
-	want := []string{functionalPredicate, functionalOptional}
+	want := []string{functionalPredicate, functionalOptional, "slices"}
 	if !slices.Equal(got, want) {
 		t.Fatalf("policy imports = %v, want %v", got, want)
 	}

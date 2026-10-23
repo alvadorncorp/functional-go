@@ -108,3 +108,23 @@ func TestRequirementCompositionRejectsNil(t *testing.T) {
 		})
 	}
 }
+
+func TestAllRequirementsCopiesVariadicSlice(t *testing.T) {
+	requirements := []intRequirement{enoughBalance, func(int, requirementInput) error { return errRequirementB }}
+	combined := modeling.AllRequirements(requirements...)
+	requirements[0], requirements[1] = nil, func(int, requirementInput) error { return errRequirementC }
+
+	if err := combined(10, requirementInput{amount: 7}); err != errRequirementB {
+		t.Fatalf("error = %v, want identical errRequirementB", err)
+	}
+}
+
+func TestAnyRequirementCopiesVariadicSlice(t *testing.T) {
+	rest := []intRequirement{func(int, requirementInput) error { return errRequirementB }, enoughBalance}
+	combined := modeling.AnyRequirement(func(int, requirementInput) error { return errRequirementA }, rest...)
+	rest[0], rest[1] = nil, func(int, requirementInput) error { return errRequirementC }
+
+	if err := combined(10, requirementInput{amount: 7}); err != nil {
+		t.Fatalf("error = %v, want nil", err)
+	}
+}
