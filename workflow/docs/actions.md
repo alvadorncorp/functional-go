@@ -10,6 +10,24 @@ user, err := action.Run(ctx, program)
 // Now it has.
 ```
 
+Somente `Run` inicia a execução. `Do` adapta funções com resultado
+`func(context.Context) (T, error)`; `Exec` adapta efeitos sem resultado
+`func(context.Context) error` e devolve `Action[struct{}]`:
+
+```go
+notify := action.Exec(func(ctx context.Context) error {
+    return mailer.Send(ctx, receipt)
+})
+// Nenhum envio ocorreu.
+_, err := action.Run(ctx, notify)
+```
+
+`Exec` não é outra entrada de execução: valida a função na construção e adia
+o efeito até `Run`. Função nil provoca panic imediato com
+`workflow/action: nil function`, como em `Do`. Cada `Run` chama a função de novo;
+o contexto, o erro e qualquer panic seguem inalterados, sem recovery nem
+checagem adicional de cancelamento.
+
 ## Propagação de contexto
 
 O contexto dado a `Run` chega a toda `Action` derivada. Quando um cliente se

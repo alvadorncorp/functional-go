@@ -15,6 +15,20 @@ func Do[T any](fn func(context.Context) (T, error)) Action[T] {
 	return fn
 }
 
+// Exec lifts an error-only Go function into an Action with no result value.
+//
+// Like Do, Exec does not call fn during construction; fn runs once per Run
+// with the same context. Its error and any panic propagate unchanged.
+// Exec panics with "workflow/action: nil function" when fn is nil.
+func Exec(fn func(context.Context) error) Action[struct{}] {
+	if fn == nil {
+		panic(panicNilFunction)
+	}
+	return func(ctx context.Context) (struct{}, error) {
+		return struct{}{}, fn(ctx)
+	}
+}
+
 // Pure is an Action that yields value and never fails.
 //
 // It executes no effect, ignores its context, and returns the same value on

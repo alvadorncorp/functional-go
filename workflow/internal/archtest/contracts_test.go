@@ -1,6 +1,7 @@
 package archtest
 
 import (
+	"context"
 	"time"
 
 	"github.com/alvadorncorp/gopackages/workflow"
@@ -11,12 +12,17 @@ import (
 
 var (
 	_ plan.Kind                    = plan.KindEmpty
+	_ func(plan.Kind) string       = plan.Kind.String
 	_ func(string) plan.Plan       = plan.Step
 	_ func(...plan.Plan) plan.Plan = plan.Sequence
 	_ func(...plan.Plan) plan.Plan = plan.Transaction
 	_ func(plan.Plan) plan.Kind    = plan.Plan.Kind
 	_ func(plan.Plan) string       = plan.Plan.Name
 	_ func(plan.Plan) []plan.Plan  = plan.Plan.Children
+	_ func(plan.Plan) string       = plan.Plan.String
+	_ func(
+		func(context.Context) error,
+	) action.Action[struct{}] = action.Exec
 	_ func(
 		workflow.Workflow[int, string],
 		int,

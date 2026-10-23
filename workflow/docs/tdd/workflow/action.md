@@ -21,6 +21,7 @@ mesmo contexto e nunca cria goroutine, runtime, memoização ou recovery.
 ```go
 func Run[T any](context.Context, Action[T]) (T, error)
 func Do[T any](func(context.Context) (T, error)) Action[T]
+func Exec(func(context.Context) error) Action[struct{}]
 func Pure[T any](T) Action[T]
 func Fail[T any](error) Action[T]
 func Map[A, B any](Action[A], func(A) B) Action[B]
@@ -38,6 +39,13 @@ func Attempt[T any](Action[T]) Action[AttemptResult[T]]
 func Bracket[R, T any](Action[R], func(R) Action[T], func(R) Action[struct{}]) Action[T]
 func AcquireUseRelease[R, T any](Action[R], func(R) Action[T], func(R) Action[struct{}]) Action[T]
 ```
+
+`Do` adapta funções com resultado; `Exec` adapta efeitos que retornam apenas
+erro, sem introduzir outro tipo unitário. Nenhum deles executa a função durante
+a construção: somente `Run` a chama, uma vez por execução. `Exec` rejeita função
+nil imediatamente com `workflow/action: nil function`, como `Do`, e preserva o
+contexto recebido, a identidade do erro e qualquer panic. Não checa cancelamento
+antes de chamar a função: a cooperação com o contexto permanece no callback.
 
 ## Ordem e curto-circuito
 

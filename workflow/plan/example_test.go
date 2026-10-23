@@ -20,13 +20,13 @@ func ExamplePlan() {
 	)
 	fmt.Println(created.Kind() == plan.KindSequence)
 	for _, child := range created.Children() {
-		fmt.Println(child.Kind(), child.Name())
+		fmt.Printf("%s %q\n", child.Kind(), child.Name())
 	}
 	// Output:
 	// true
 	// true
-	// 1 load-customer
-	// 3
+	// step "load-customer"
+	// transaction ""
 }
 
 func ExampleSequence_identity() {
@@ -38,4 +38,39 @@ func ExampleSequence_identity() {
 	// true
 	// true
 	// true
+}
+
+func ExampleKind_String() {
+	for _, kind := range []plan.Kind{
+		plan.KindEmpty,
+		plan.KindStep,
+		plan.KindSequence,
+		plan.KindTransaction,
+		plan.Kind(255),
+	} {
+		fmt.Println(kind.String())
+	}
+	// Output:
+	// empty
+	// step
+	// sequence
+	// transaction
+	// unknown
+}
+
+func ExamplePlan_String() {
+	var empty plan.Plan
+	fmt.Println(empty.String())
+	fmt.Println(plan.Step("a").String())
+	fmt.Println(plan.Sequence(
+		plan.Step("a"),
+		plan.Step("b"),
+		plan.Transaction(plan.Step("c"), plan.Step("d")),
+	).String())
+	fmt.Println(plan.Transaction().String())
+	// Output:
+	// empty
+	// a
+	// sequence(a, b, transaction(c, d))
+	// transaction()
 }

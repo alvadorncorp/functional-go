@@ -32,6 +32,21 @@ func ExampleAction_deferredExecution() {
 	// value: loaded effects after Run: 1
 }
 
+func ExampleExec() {
+	program := action.Exec(func(context.Context) error {
+		fmt.Println("receipt sent")
+		return nil
+	})
+	fmt.Println("constructed")
+
+	_, err := action.Run(context.Background(), program)
+	fmt.Println("error:", err)
+	// Output:
+	// constructed
+	// receipt sent
+	// error: <nil>
+}
+
 func ExampleRecover() {
 	notFound := errors.New("account not found")
 

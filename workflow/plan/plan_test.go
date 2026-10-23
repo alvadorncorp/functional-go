@@ -106,6 +106,90 @@ func TestConstructorsAndChildrenOwnTheirSlices(t *testing.T) {
 	}
 }
 
+func TestKindString(t *testing.T) {
+	tests := []struct {
+		kind plan.Kind
+		want string
+	}{
+		{plan.KindEmpty, "empty"},
+		{plan.KindStep, "step"},
+		{plan.KindSequence, "sequence"},
+		{plan.KindTransaction, "transaction"},
+		{plan.Kind(4), "unknown"},
+		{plan.Kind(255), "unknown"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			if got := tt.kind.String(); got != tt.want {
+				t.Fatalf("Kind(%d).String() = %q, want %q", tt.kind, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPlanString(t *testing.T) {
+	var empty plan.Plan
+	tests := []struct {
+		name    string
+		subject plan.Plan
+		want    string
+	}{
+		{"zero", empty, "empty"},
+		{"step", plan.Step("a"), "a"},
+		{"verbatim name", plan.Step("  ação(a, b)\n "), "  ação(a, b)\n "},
+		{"empty sequence", plan.Sequence(), "empty"},
+		{"singleton sequence", plan.Sequence(plan.Step("a")), "a"},
+		{"empty transaction", plan.Transaction(), "transaction()"},
+		{"singleton transaction", plan.Transaction(plan.Step("a")), "transaction(a)"},
+		{
+			"canonical",
+			plan.Sequence(plan.Step("a"), plan.Step("b"), plan.Transaction(plan.Step("c"), plan.Step("d"))),
+			"sequence(a, b, transaction(c, d))",
+		},
+		{
+			"nested sequence",
+			plan.Sequence(plan.Step("a"), plan.Sequence(plan.Step("b"), plan.Step("c"))),
+			"sequence(a, sequence(b, c))",
+		},
+		{
+			"empty children and boundaries",
+			plan.Sequence(empty, plan.Transaction(), plan.Transaction(plan.Transaction())),
+			"sequence(empty, transaction(), transaction(transaction()))",
+		},
+		{
+			"nested verbatim name",
+			plan.Transaction(plan.Step("  ação(a, b)\n ")),
+			"transaction(  ação(a, b)\n )",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for range 2 {
+				if got := tt.subject.String(); got != tt.want {
+					t.Fatalf("String() = %q, want %q", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestPlanStringPreservesSnapshots(t *testing.T) {
+	subject := plan.Sequence(plan.Step("a"), plan.Transaction(plan.Step("b")))
+	snapshot := subject.Children()
+	if got := subject.String(); got != "sequence(a, transaction(b))" {
+		t.Fatalf("String() = %q", got)
+	}
+	for _, children := range [][]plan.Plan{snapshot, subject.Children()} {
+		if len(children) != 2 || children[0].Name() != "a" || children[1].Kind() != plan.KindTransaction {
+			t.Fatalf("String mutated children: %#v", children)
+		}
+		nested := children[1].Children()
+		if len(nested) != 1 || nested[0].Name() != "b" {
+			t.Fatalf("String mutated nested children: %#v", nested)
+		}
+	}
+}
+
 func TestPlanSupportsConcurrentReads(t *testing.T) {
 	subject := plan.Sequence(plan.Step("a"), plan.Transaction(plan.Step("b")))
 	var wait sync.WaitGroup

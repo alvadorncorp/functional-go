@@ -28,9 +28,26 @@ não são UUIDs nem package paths.
 
 ## Inspeção e imutabilidade
 
-`Kind()`, `Name()` e `Children()` são as únicas operações de leitura. Os
-construtores copiam slices recebidos, e `Children()` devolve cópia defensiva.
-Uma árvore pronta pode ser lida concorrentemente sem locks.
+`Kind()`, `Name()`, `Children()` e `String()` são as operações de leitura de
+Plan. `Kind.String()` devolve `empty`, `step`, `sequence` ou `transaction`;
+valores de Kind não definidos devolvem `unknown`.
+Os construtores copiam slices recebidos, e `Children()` devolve cópia defensiva.
+Uma árvore pronta pode ser lida concorrentemente sem locks; `String()` não
+modifica a árvore nem snapshots obtidos por `Children()`.
+
+`Plan.String()` descreve a estrutura declarada em uma forma canônica:
+
+```go
+fmt.Println(CreateOrderPlan.String())
+// sequence(load-customer, load-product, decide-order, transaction(save-order, append-outbox))
+```
+
+O valor zero e `Sequence()` produzem `empty`; um Step produz seu nome sem
+alterações. Sequence mantém as regras do construtor: um único filho é reduzido
+ao próprio filho, e sequências aninhadas com dois ou mais filhos permanecem
+aninhadas. Transaction preserva sua fronteira, inclusive `transaction()` sem
+filhos. Nomes aparecem literalmente, sem escape; a descrição não promete parsing
+ou round-trip e não acrescenta semântica de execução.
 
 ## O que Plan não faz
 

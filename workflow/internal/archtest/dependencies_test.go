@@ -61,8 +61,8 @@ func TestPlanIsAStdlibLeaf(t *testing.T) {
 		if production.ImportPath != planPackage {
 			continue
 		}
-		if !slices.Equal(production.Imports, []string{"slices"}) {
-			t.Errorf("%s imports %v, want exactly [slices]", planPackage, production.Imports)
+		if !slices.Equal(production.Imports, []string{"slices", "strings"}) {
+			t.Errorf("%s imports %v, want exactly [slices strings]", planPackage, production.Imports)
 		}
 		return
 	}

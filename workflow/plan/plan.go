@@ -3,7 +3,10 @@
 // runs an action, opens a transaction, or performs I/O.
 package plan
 
-import "slices"
+import (
+	"slices"
+	"strings"
+)
 
 // Kind identifies the structural form of a Plan.
 type Kind uint8
@@ -14,6 +17,22 @@ const (
 	KindSequence
 	KindTransaction
 )
+
+// String returns the lowercase kind name, or "unknown" for an undefined Kind.
+func (k Kind) String() string {
+	switch k {
+	case KindEmpty:
+		return "empty"
+	case KindStep:
+		return "step"
+	case KindSequence:
+		return "sequence"
+	case KindTransaction:
+		return "transaction"
+	default:
+		return "unknown"
+	}
+}
 
 // Plan is an immutable structural description. Its zero value is KindEmpty.
 type Plan struct {
@@ -57,3 +76,37 @@ func (p Plan) Name() string { return p.name }
 
 // Children returns an owned copy of p's children, or nil when p has none.
 func (p Plan) Children() []Plan { return slices.Clone(p.children) }
+
+// String returns a canonical description of p's declared structure.
+// Step names appear verbatim, without escaping or a round-trip parsing promise.
+func (p Plan) String() string {
+	switch p.kind {
+	case KindSequence, KindTransaction:
+		var b strings.Builder
+		writePlan(&b, &p)
+		return b.String()
+	case KindStep:
+		return p.name
+	default:
+		return p.kind.String()
+	}
+}
+
+func writePlan(b *strings.Builder, p *Plan) {
+	switch p.kind {
+	case KindSequence, KindTransaction:
+		b.WriteString(p.kind.String())
+		b.WriteByte('(')
+		for i := range p.children {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			writePlan(b, &p.children[i])
+		}
+		b.WriteByte(')')
+	case KindStep:
+		b.WriteString(p.name)
+	default:
+		b.WriteString(p.kind.String())
+	}
+}

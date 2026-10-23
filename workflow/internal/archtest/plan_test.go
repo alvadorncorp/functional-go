@@ -22,7 +22,7 @@ func TestPlanIsOpaqueAndNonExecutable(t *testing.T) {
 		methods = append(methods, planType.Method(i).Name)
 	}
 	slices.Sort(methods)
-	want := []string{"Children", "Kind", "Name"}
+	want := []string{"Children", "Kind", "Name", "String"}
 	if !slices.Equal(methods, want) {
 		t.Fatalf("Plan methods = %v, want %v", methods, want)
 	}
@@ -30,5 +30,18 @@ func TestPlanIsOpaqueAndNonExecutable(t *testing.T) {
 		if _, found := planType.MethodByName(forbidden); found {
 			t.Errorf("Plan exposes execution method %s", forbidden)
 		}
+	}
+}
+
+func TestKindHasOnlyStringMethod(t *testing.T) {
+	kindType := reflect.TypeFor[plan.Kind]()
+	var methods []string
+	for i := range kindType.NumMethod() {
+		methods = append(methods, kindType.Method(i).Name)
+	}
+	slices.Sort(methods)
+	want := []string{"String"}
+	if !slices.Equal(methods, want) {
+		t.Fatalf("Kind methods = %v, want %v", methods, want)
 	}
 }
