@@ -521,6 +521,19 @@ func describePort(raw string) string {
 }
 ```
 
+For an imperative caller, unwrap once with `ToPair` and return early on error
+instead of pairing `IsErr`/`ErrValue` with `MustGet`:
+
+```go
+func portLabel(port result.Result[int, error]) (string, error) {
+	value, err := result.ToPair(port)
+	if err != nil {
+		return "", err
+	}
+	return "port " + strconv.Itoa(value), nil
+}
+```
+
 `FromPair` checks only `err != nil` and drops the value on failure. Avoid it
 for `(n, err)` APIs with partial values and for functions whose last result
 is a concrete pointer error type; see
