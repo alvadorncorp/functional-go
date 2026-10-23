@@ -85,14 +85,13 @@ Semântica:
 ## Alternativas consideradas
 
 - **Entrada `iter.Seq[A]`.** `adr:modeling:010` adotou `iter.Seq` em `Replay` e
-  `Project` para evitar materialização num fold de passagem única, e o
-  `appendOutbox` do withdraw itera `decision.Events()` diretamente pelo mesmo
-  motivo. Rejeitado aqui: uma `Action` é reexecutável e um `iter.Seq` não promete
-  produzir os mesmos itens em uma segunda passagem. A cópia em slice na
-  construção fixa o que cada `Run` executa; a reexecutabilidade vence a economia
-  de uma alocação. O caller materializa explicitamente com
-  `slices.Collect(decision.Events())`, e a ordem continua garantida porque os
-  appends são sequenciais em ordem de índice.
+  `Project` para evitar materialização num fold de passagem única. Rejeitado
+  aqui: uma `Action` é reexecutável e um `iter.Seq` não promete produzir os
+  mesmos itens em uma segunda passagem. A cópia em slice na construção fixa o
+  que cada `Run` executa; a reexecutabilidade vence a economia de uma alocação.
+  O caller materializa explicitamente os eventos de `decision.Events()` antes de
+  chamar `Traverse`, e a ordem continua garantida porque os appends são
+  sequenciais em ordem de índice.
 - **Nomes `ForEach` ou `Each`.** Rejeitados: sugerem iteração só por efeito,
   descartando valores, enquanto o combinador coleta um resultado por item.
   `Traverse` nomeia exatamente "mapear com efeito e coletar".
@@ -122,8 +121,11 @@ alocação é uma cópia de `items` na construção, um slice de resultado por `
 as alocações do próprio binder. Callers com `iter.Seq` pagam uma materialização
 explícita; a invariante de ordem continua valendo porque a execução é
 sequencial. A cópia rasa e a ausência de checagem de contexto ficam
-documentadas no contrato. A adoção nos exemplos é trabalho separado: checkout
-primeiro, withdraw e crosscontext como follow-ups nomeados.
+documentadas no contrato. Emenda (2026-10-23): o `appendOutbox` do withdraw
+passou a usar `Traverse` sobre os eventos materializados, como o checkout. Os
+laços `for` com `action.Run` de crosscontext (`shared` e `distributed`)
+permanecem de propósito: o filtro por item/decisão torna `Traverse` desajeitado
+ali, e o laço é Go idiomático. Não há adoção pendente.
 
 ## Não-objetivos
 
