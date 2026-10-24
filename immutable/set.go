@@ -38,12 +38,15 @@ func (s Set[T]) materialize() hamt.Root[T, struct{}] {
 	return s.root
 }
 
-// SetOf returns a Set holding items, deduplicated.
+// SetOf returns a Set holding items, deduplicated. When items repeat, the
+// last equal item is the stored representative. Empty input returns the zero
+// Set without a hash seed.
 func SetOf[T comparable](items ...T) Set[T] {
 	return (Set[T]{}).Add(items...)
 }
 
-// CollectSet drains seq into a new Set, deduplicated.
+// CollectSet drains seq into a new Set, deduplicated. When seq repeats an
+// element, the last equal element is the stored representative.
 func CollectSet[T comparable](seq iter.Seq[T]) Set[T] {
 	var result Set[T]
 	var b *SetBuilder[T]
@@ -75,8 +78,10 @@ func (s Set[T]) Has(v T) bool {
 	return ok
 }
 
-// Add returns a new Set with items added; items already present are a
-// no-op. s is unchanged.
+// Add returns a new Set with items added. An item equal to one already held
+// replaces the stored representative, which is observable for values that
+// compare equal but are distinguishable (+0 and -0, strings sharing
+// different backing data). s is unchanged.
 func (s Set[T]) Add(items ...T) Set[T] {
 	switch len(items) {
 	case 0:
@@ -263,7 +268,8 @@ func (b *SetBuilder[T]) checkNotBuilt() {
 }
 
 // Add adds items under the builder's exclusive owner, deduplicated, and
-// returns b for chaining.
+// returns b for chaining. As with Set.Add, an item equal to one already held
+// replaces the stored representative.
 func (b *SetBuilder[T]) Add(items ...T) *SetBuilder[T] {
 	b.checkNotBuilt()
 	owner := b.win.Owner()

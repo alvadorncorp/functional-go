@@ -19,7 +19,8 @@ func FuzzHAMTCollisions(f *testing.F) {
 		2, 0, 1, 2, 4, 2, 2, 8, 3, 2, 4, 9,
 		3, 12, 0, 3, 8, 0, 3, 0, 0, 3, 4, 0, 4, 0, 0,
 	})
-	// Clone a published collision, reuse its owner, then branch under fresh owners.
+	// Clone a published collision, then branch under fresh owners; a published
+	// owner is invalidated and never reused.
 	f.Add([]byte{
 		0, 0, 1, 0, 4, 2, 0, 8, 3, 2, 4, 9, 2, 12, 4,
 		3, 8, 0, 4, 0, 0, 5, 2, 0, 2, 0, 5, 2, 8, 6,

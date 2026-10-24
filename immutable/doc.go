@@ -57,7 +57,9 @@
 // true; reads miss / At panics on empty List). Map and Set first write
 // (Set/Update/Delete/Add/Remove) or Builder() materializes a proper hamt.Empty
 // seed so the lineage never freezes a zero maphash.Seed. Independent zero
-// Maps/Sets each get their own seed on first materialization.
+// Maps/Sets each get their own seed on first materialization. MapOf, SetOf,
+// and the Collect functions given empty input return the zero value without
+// creating a seed; the seed appears on the first write.
 //
 // SortedMap is the deliberate exception: K has no default order, so the zero
 // SortedMap has no comparator. It reads as empty and Delete on it is a no-op,
@@ -125,14 +127,19 @@
 //     Equal or EqualFunc. Comparing by == would mean comparing identity of the
 //     underlying representation.
 //
-//  5. Constructors and collectors use transient builders internally for bulk
-//     input, retaining allocation-free empty and pure singleton paths.
-//     Multi-item List.Append and Set.Add/Remove likewise batch edits under one
-//     transient owner. Calling write methods n times in a loop still creates
-//     intermediate collections: use <Type>.Builder() for that case. It seeds
-//     a mutable builder from a snapshot, opens an exclusive transient window,
-//     and freezes that window on Build(), returning an immutable collection
-//     and permanently disabling the builder.
+//  5. Empty ListOf, MapOf, and SetOf return the zero collection, open no edit
+//     window, and allocate nothing. Collect* given an empty sequence also
+//     returns the zero, unseeded collection, but that is not an allocation
+//     guarantee. A single-item Append, Set.Add, or Set.Remove, a one-entry
+//     MapOf, and the first item of a Collect call edit through the pure path
+//     with no transient window; that is not zero total allocation, only no
+//     builder or edit-window setup. Multi-item List.Append and
+//     Set.Add/Remove, and bulk constructors and collectors, batch edits under
+//     one transient owner. Calling write methods n times in a loop still
+//     creates intermediate collections: use <Type>.Builder() for that case.
+//     It seeds a mutable builder from a snapshot, opens an exclusive transient
+//     window, and freezes that window on Build(), returning an immutable
+//     collection and permanently disabling the builder.
 //
 //  6. Every test in this package is package immutable_test (external) and
 //     asserts only publicly observable behavior, never the internal

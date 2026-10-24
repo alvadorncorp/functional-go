@@ -24,7 +24,9 @@ Constructors are **`ListOf` / `MapOf` / `SetOf` / `EmptySortedMap`** (not
   is a valid empty collection for reads; the **first write**
   (`Set`/`Update`/`Delete`/`Add`/`Remove`) or `Builder()` **materializes**
   a proper `hamt.Empty` seed so the lineage never freezes a zero
-  `maphash.Seed`.
+  `maphash.Seed`. `MapOf`, `SetOf`, `CollectMap`, and `CollectSet` with empty
+  input return the zero value and create no seed; it materializes on the
+  first write or `Builder()`.
   Independent zero receivers each get their own seed on first materialization.
   `Set.Union`, `Set.Intersection`, and `Set.Difference` accept operands of
   any lineage (independent seeds or one derived lineage); which operand's
@@ -41,8 +43,14 @@ Constructors are **`ListOf` / `MapOf` / `SetOf` / `EmptySortedMap`** (not
   place), and `Freeze` on `Build` — **O(1)** owner invalidation, no tree
   walk. Residual inactive stamps fail `IsOwnedBy`, so no Detach walk is
   required. Builders are **not** safe for concurrent use.
-  Constructors, collectors, and multi-item `Append`/`Add`/`Remove` use the same
-  transient edit path internally; their receivers remain immutable.
+  Bulk constructors, collectors, and multi-item `Append`/`Add`/`Remove` use the
+  transient edit path internally; their receivers remain immutable. Empty
+  `ListOf`/`MapOf`/`SetOf` return the zero collection with no edit window and
+  no allocation. An empty `Collect*` sequence also returns the zero, unseeded
+  collection, but that is not an allocation guarantee. Single-item writes
+  (including the first item of a `Collect*` call and a one-entry `MapOf`) are
+  pure, with no transient window. That is not zero total allocation: it only
+  skips the builder and window setup.
 - **`List.Delete`:** middle-index deletion rebuilds the vector in **O(n)**;
   last-element deletion uses internal tail removal (O(1) with a non-singleton
   tail, otherwise O(log₃₂ n)). The public O(n) upper bound remains unchanged;
@@ -50,9 +58,13 @@ Constructors are **`ListOf` / `MapOf` / `SetOf` / `EmptySortedMap`** (not
 - **No `reflect` in production:** `immutable` production code does not import
   `reflect`. Equality goes through `functional/internal/eq` (method, then
   `==`; never `reflect.DeepEqual`).
-  `List.Equal`, `Map.Equal`, and `Set.Equal` also recognize a shared root, so the
-  same version is reflexive even with NaN values or keys. `EqualFunc` still
-  evaluates the caller's comparison; `SortedMap.Equal` compares stored values.
+  `List.Equal`, `Map.Equal`, and `SortedMap.Equal` select the
+  value-comparison strategy (`eq.For[V]()`) once per call. Only
+  `List.Equal`, `Map.Equal`, and `Set.Equal` also recognize a shared root, so
+  the same version is reflexive even with NaN values or keys, or a
+  non-reflexive custom `Equal` method (the shared-root check bypasses it).
+  `SortedMap.Equal` has no identity shortcut and keeps its comparator-based
+  lookup; `EqualFunc` on any type never skips the caller's comparison.
 - **Semantic immutability:** the collection structure never mutates in place.
   Stored values are not deep-copied; mutable referents shared by the caller
   remain shared across versions.
@@ -108,7 +120,8 @@ over a stdlib slice/map; that is no longer the engine.
    `transient.Window` and `Freeze` on `Build`; public panics remain
    `"immutable: ..."`.
 6. **Zero `List`, `Map`, and `Set` values are valid empty collections.**
-   Map/Set first write or `Builder()` materializes an `hamt.Empty` seed.
+   Map/Set first write or `Builder()` materializes an `hamt.Empty` seed; empty
+   `MapOf`/`SetOf`/`Collect*` input stays the unseeded zero value.
    **`SortedMap` is the deliberate exception:** `K` has no default order, so
    the zero `SortedMap` has no comparator. It reads as empty and `Delete` on
    it is a no-op, but `Set` and `Builder()` panic with `"immutable: zero
@@ -131,11 +144,12 @@ over a stdlib slice/map; that is no longer the engine.
 | `Set`, `Delete` (SortedMap) | `O(log n)` | Path-copy weight-balanced tree; `O(log n)` comparator calls, at most one single or double rotation per level |
 | `Union`, `Intersection`, `Difference` (Set) | `O(min(m,n)·log max(m,n))` | Walks the smaller operand (size `m` or `n`), probes the larger |
 | `Append`, `Set` (List) | `O(log n)` amortized / path | Path-copy vector |
-| `Delete` (List) | `O(log n)` headroom | **Today O(n)** rebuild |
+| `Delete` (List) | `O(n)` | Middle index rebuilds by iteration; last index uses tail removal (faster), but the public bound is `O(n)` |
 
 Only the table's documented bound is guaranteed as API headroom for methods
-that meet it. `List.Delete`'s current implementation is O(n); do not depend
-on a tighter constant. See [ADR-005](../adr/functional/adr-005-persistent-engine-family.md)
+that meet it. `List.Delete`'s public bound is O(n): the last index is
+faster, but do not depend on a tighter constant. See
+[ADR-005](../adr/functional/adr-005-persistent-engine-family.md)
 and [core.md](core.md).
 
 ---
@@ -155,18 +169,18 @@ and [core.md](core.md).
 
 | Function / method | Behaviour |
 |---|---|
-| `ListOf[T](items ...T) List[T]` | Copies `items`, in order (via vector append). |
-| `CollectList[T](seq iter.Seq[T]) List[T]` | Drains `seq` into a new `List`, in iteration order. |
+| `ListOf[T](items ...T) List[T]` | Copies `items`, in order. Empty: zero `List`. One item: pure `Append`. Two or more: one transient `ListBuilder` window. |
+| `CollectList[T](seq iter.Seq[T]) List[T]` | Drains `seq` into a new `List`, in iteration order. First item is a pure `Append`; later items go through one builder. Empty `seq`: zero `List`. |
 | `(l List[T]) Len() int` | Element count. |
 | `(l List[T]) IsEmpty() bool` | `Len() == 0`. Zero `List` is empty. |
 | `(l List[T]) At(i int) T` | Element at `i`; panics `"immutable: index out of range"` outside `[0, Len)`. |
 | `(l List[T]) Append(items ...T) List[T]` | New `List` with `items` appended. `l` unchanged. Path-copy vector. |
 | `(l List[T]) Set(i int, v T) List[T]` | New `List` with index `i` replaced. Panics as above. |
-| `(l List[T]) Delete(i int) List[T]` | New `List` without index `i`; later elements shift down. Panics as above. **Currently O(n).** |
+| `(l List[T]) Delete(i int) List[T]` | New `List` without index `i`; later elements shift down. Panics as above. Middle indexes are O(n); the last index uses tail removal. Public bound **O(n)**. |
 | `(l List[T]) Values() iter.Seq[T]` | Elements in index order. |
 | `(l List[T]) All() iter.Seq2[int, T]` | (index, element) pairs in index order. |
 | `(l List[T]) Items() []T` | Fresh mutable copy; caller owns it. |
-| `(l List[T]) Equal(other List[T]) bool` | Same elements, same order, via `functional/internal/eq.Equal` (no `DeepEqual`). |
+| `(l List[T]) Equal(other List[T]) bool` | Same elements, same order. A shared root returns `true`. Otherwise values compare via `eq.For[T]()`, selected once per call (no `DeepEqual`). |
 | `(l List[T]) EqualFunc(other List[T], eq func(T, T) bool) bool` | Same length; pairs compared with `eq`. |
 | `(l List[T]) Builder() *ListBuilder[T]` | Seeds a `ListBuilder[T]` from `l` and opens a `transient.Window`. |
 
@@ -181,8 +195,8 @@ repeated `Build`, panics `"immutable: builder used after Build"`.
 
 | Function / method | Behaviour |
 |---|---|
-| `MapOf[K,V](m map[K]V) Map[K,V]` | Copies `m` into a fresh HAMT root (`hamt.Empty` seed). |
-| `CollectMap[K,V](seq iter.Seq2[K,V]) Map[K,V]` | Drains `seq`; last value wins on a repeated key, matching `maps.Collect`. |
+| `MapOf[K,V](m map[K]V) Map[K,V]` | Copies `m`. Empty `m`: zero `Map`, no seed. One entry: pure `Set`. Two or more: one transient `MapBuilder` window on a fresh seeded root. |
+| `CollectMap[K,V](seq iter.Seq2[K,V]) Map[K,V]` | Drains `seq`; on a repeated key the last key and last value win, matching `maps.Collect`. Empty `seq`: zero `Map`, no seed. |
 | `(m Map[K,V]) Len() int` | Entry count. |
 | `(m Map[K,V]) IsEmpty() bool` | `Len() == 0`. Zero `Map` is empty. |
 | `(m Map[K,V]) Get(k K) (V, bool)` / `Has(k K) bool` | Read access. |
@@ -191,7 +205,7 @@ repeated `Build`, panics `"immutable: builder used after Build"`.
 | `(m Map[K,V]) Delete(k K) Map[K,V]` | New `Map` without `k`. `m` unchanged. Zero `Map` materializes seed first. |
 | `(m Map[K,V]) All/Keys/Values() iter.Seq(2)[...]` | Unspecified iteration order. |
 | `(m Map[K,V]) Items() map[K]V` | Fresh, non-nil copy. |
-| `(m Map[K,V]) Equal(other Map[K,V]) bool` | Same key set, each value equal via `functional/internal/eq.Equal` (no `DeepEqual`). |
+| `(m Map[K,V]) Equal(other Map[K,V]) bool` | Same key set, each value equal. A shared root returns `true`. Otherwise values compare via `eq.For[V]()`, selected once per call (no `DeepEqual`). |
 | `(m Map[K,V]) EqualFunc(other Map[K,V], eq func(V, V) bool) bool` | Same keys; values compared with `eq`. |
 | `(m Map[K,V]) Builder() *MapBuilder[K,V]` | Seeds a `MapBuilder[K,V]` (opens a `transient.Window`). Zero `Map` materializes seed first. |
 
@@ -203,23 +217,24 @@ publish-and-disable contract as `ListBuilder`.
 
 | Function / method | Behaviour |
 |---|---|
-| `SetOf[T](items ...T) Set[T]` | Deduplicated into a fresh HAMT root (`hamt.Empty` seed). |
-| `CollectSet[T](seq iter.Seq[T]) Set[T]` | Deduplicated. |
+| `SetOf[T](items ...T) Set[T]` | Deduplicated; for repeated equal items the last is the stored representative. Empty input: zero `Set`, no seed. One item: pure `Add`. Two or more: one transient `SetBuilder` window on a fresh seeded root. |
+| `CollectSet[T](seq iter.Seq[T]) Set[T]` | Deduplicated; the last equal element is the stored representative. Empty `seq`: zero `Set`, no seed. |
 | `(s Set[T]) Len() int` | Element count. |
 | `(s Set[T]) IsEmpty() bool` | `Len() == 0`. Zero `Set` is empty. |
 | `(s Set[T]) Has(v T) bool` | Membership. |
-| `(s Set[T]) Add(items ...T) Set[T]` | New `Set` with `items` added; already-present items are a no-op. `s` unchanged. Zero `Set` materializes seed first. |
+| `(s Set[T]) Add(items ...T) Set[T]` | New `Set` with `items` added. An item equal to a held one replaces the stored representative (observable for `+0`/`-0` and shared strings); membership and `Len` are unchanged. `s` unchanged. Zero `Set` materializes seed first. |
 | `(s Set[T]) Remove(items ...T) Set[T]` | New `Set` without `items`; absent items are a no-op. `s` unchanged. Zero `Set` materializes seed first. |
 | `(s Set[T]) Values() iter.Seq[T]` | Unspecified iteration order. |
 | `(s Set[T]) Items() []T` | Fresh slice, unspecified order. |
-| `(s Set[T]) Equal(other Set[T]) bool` | Same membership. `T` is `comparable`, so no `eq.Equal` call is needed. |
+| `(s Set[T]) Equal(other Set[T]) bool` | Same membership. A shared root returns `true`. `T` is `comparable`, so no `eq` strategy is involved. |
 | `(s Set[T]) Union(other Set[T]) Set[T]` | Every element of `s` or `other`. Both unchanged. Shared structure and seed lineage UNSPECIFIED. |
 | `(s Set[T]) Intersection(other Set[T]) Set[T]` | Every element of `s` that `other` also holds. Both unchanged. Shared structure and seed lineage UNSPECIFIED. |
 | `(s Set[T]) Difference(other Set[T]) Set[T]` | `s` minus `other`. Both unchanged. Shared structure and seed lineage UNSPECIFIED. |
 | `(s Set[T]) Builder() *SetBuilder[T]` | Seeds a `SetBuilder[T]` (opens a `transient.Window`). Zero `Set` materializes seed first. |
 
-`SetBuilder[T]` — mutable, not concurrency-safe — offers `Add`, `Remove`
-(chainable), `Len`, `Has`, and `Build() Set[T]` with the same freeze,
+`SetBuilder[T]` — mutable, not concurrency-safe — offers `Add` (an equal item
+replaces the stored representative, as in `Set.Add`), `Remove` (both
+chainable), `Len`, `Has`, and `Build() Set[T]` with the same freeze,
 publish-and-disable contract.
 
 ## `SortedMap[K,V]`
@@ -239,7 +254,7 @@ Keys for which `cmp` returns 0 are the same key. A nil comparator panics
 | `(m SortedMap[K,V]) Set(k K, v V) SortedMap[K,V]` | New `SortedMap` with `k` mapped to `v`; an equivalent stored key is replaced by `k`, and its value by `v`. `m` unchanged. Panics on the zero `SortedMap`. |
 | `(m SortedMap[K,V]) Delete(k K) SortedMap[K,V]` | New `SortedMap` without `k`. `m` unchanged. The result keeps `m`'s comparator, even when emptied. No-op on the zero `SortedMap`. |
 | `(m SortedMap[K,V]) All/Keys/Values() iter.Seq(2)[...]` | Ascending comparator order (`Values` in the order of their keys). |
-| `(m SortedMap[K,V]) Equal(other SortedMap[K,V]) bool` | Same entry count, every key found (by `other`'s comparator) with a value equal via `functional/internal/eq.Equal`. |
+| `(m SortedMap[K,V]) Equal(other SortedMap[K,V]) bool` | Same entry count, every key found (by `other`'s comparator) with a value equal via `eq.For[V]()`, selected once per call. No shared-root shortcut: even the same version compares its values. |
 | `(m SortedMap[K,V]) EqualFunc(other SortedMap[K,V], eq func(V, V) bool) bool` | Same keys; values compared with `eq`. |
 | `(m SortedMap[K,V]) Builder() *SortedMapBuilder[K,V]` | Seeds a `SortedMapBuilder[K,V]` with `m`'s root and comparator (opens a `transient.Window`). Panics on the zero `SortedMap`. |
 

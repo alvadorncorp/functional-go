@@ -18,7 +18,9 @@
 // Replacing an existing key is not required to be a structural no-op even when
 // the new value equals the old one (V is not comparable; no reflect equality).
 //
-// Allowed non-stdlib imports (when needed): ownership, cow, sharing, keyhash.
-// Must not import transient, eq, optional, immutable, valueobject,
-// or vector.
+// Allowed functional-module imports: internal/core/ownership, cow, sharing and
+// internal/engine/keyhash. Any other functional package is forbidden; in
+// particular transient, eq, immutable, state, values/optional and the peer
+// engines vector and wbtree. The authority is internal/archtest
+// (hamtAllowedFunctional, engineForbiddenTargets).
 package hamt
