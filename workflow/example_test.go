@@ -77,6 +77,17 @@ func ExampleWorkflow_dependencyInjection() {
 	// remote
 }
 
+func ExampleMap() {
+	load := workflow.From(func(id userID) action.Action[user] {
+		return action.Pure(user{ID: id, Name: "ada", Active: true})
+	})
+	loadName := workflow.Map(load, func(loaded user) string { return loaded.Name })
+
+	name, err := action.Run(context.Background(), workflow.Provide(loadName, userID(7)))
+	fmt.Println(name, err)
+	// Output: ada <nil>
+}
+
 func ExampleProvide() {
 	load := workflow.From(func(id userID) action.Action[user] {
 		return action.Pure(user{ID: id, Name: "provided", Active: true})

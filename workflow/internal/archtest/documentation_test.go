@@ -38,6 +38,7 @@ func requiredDocuments() []string {
 		"docs/adr/workflow/adr-011-explicit-resilience-as-action-transformation.md",
 		"docs/adr/workflow/adr-012-no-ddd-runtime-module.md",
 		"docs/adr/workflow/adr-013-sequential-traverse-over-slices.md",
+		"docs/adr/workflow/adr-014-ast-evidence-for-exercised-surface-gate.md",
 		"docs/tdd/workflow/core.md",
 		"docs/tdd/workflow/action.md",
 		"docs/tdd/workflow/composition.md",
@@ -214,14 +215,14 @@ func TestDocumentationADRIndexAndSupersession(t *testing.T) {
 	indexText := string(index)
 	adrLink := regexp.MustCompile(`adr/workflow/adr-(\d{3})-[a-z0-9-]+\.md`)
 	matches := adrLink.FindAllStringSubmatch(indexText, -1)
-	if len(matches) != 13 {
-		t.Fatalf("docs index ADR links = %d, want 13", len(matches))
+	if len(matches) != 14 {
+		t.Fatalf("docs index ADR links = %d, want 14", len(matches))
 	}
 	seen := make(map[string]int, len(matches))
 	for _, match := range matches {
 		seen[match[1]]++
 	}
-	for i := 1; i <= 13; i++ {
+	for i := 1; i <= 14; i++ {
 		key := formatADRNumber(i)
 		if count := seen[key]; count != 1 {
 			t.Errorf("ADR-%s link count = %d, want 1", key, count)

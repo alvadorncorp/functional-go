@@ -29,6 +29,7 @@
 - [ADR-011 — Resiliência explícita como transformação de Action](adr/workflow/adr-011-explicit-resilience-as-action-transformation.md)
 - [ADR-012 — Sem módulo DDD/hexagonal de runtime](adr/workflow/adr-012-no-ddd-runtime-module.md)
 - [ADR-013 — Traverse sequencial sobre slices](adr/workflow/adr-013-sequential-traverse-over-slices.md)
+- [ADR-014 — Evidência AST para o gate de superfície exercitada](adr/workflow/adr-014-ast-evidence-for-exercised-surface-gate.md)
 
 ## Desenhos técnicos
 

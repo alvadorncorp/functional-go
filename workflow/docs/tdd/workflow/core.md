@@ -5,7 +5,7 @@ context: workflow
 title: Workflow module core
 status: Aceito
 tags: [workflow, core, module, architecture, archtest]
-related: [adr:workflow:001, adr:workflow:007, adr:workflow:009, adr:workflow:010, adr:workflow:011, tdd:workflow:action, tdd:workflow:composition, tdd:workflow:plan-resilience]
+related: [adr:workflow:001, adr:workflow:007, adr:workflow:009, adr:workflow:010, adr:workflow:011, adr:workflow:014, tdd:workflow:action, tdd:workflow:composition, tdd:workflow:plan-resilience]
 date: 2026-08-11
 ---
 # TDD: Núcleo do módulo workflow
@@ -54,7 +54,18 @@ nome, assinatura, field shape ou arquivo precisam alterar o gate na mesma fase.
   `WithCancel`, `WithDeadline`, `WithValue`, `Value`, `WithoutCancel`,
   `AfterFunc`); a única exceção é `context.WithTimeout` no pacote `resilience`;
 - `Pair` e `AttemptResult` possuem somente os campos decididos e zero métodos;
-- cada export possui um consumidor compilado fora do próprio pacote;
+- cada export possui consumo exercitado fora do próprio pacote, provado por
+  `go/parser` sem tipos (`adr:workflow:014`): seletor exato de import path e
+  símbolo, com alias resolvido, dot import de pacote rastreado rejeitado, import
+  em branco ignorado e identificadores sombreados descartados; comentário,
+  string, prefixo e pacote estrangeiro não contam. Uma função consumida alcança
+  só os tipos locais de seus resultados e um tipo consumido, os tipos de seus
+  campos exportados; constantes exigem seletor direto. Os consumidores são a
+  produção do módulo, os `example_test.go` externos do próprio módulo e todo
+  `.go` de `examples/workflow`, exceto `internal/archtest` e os testes unitários
+  do módulo; `go vet ./...` na raiz do módulo continua rodando. O gate não
+  checa tipos nem execução: os quatro módulos de exemplo exigem build isolado
+  separado;
 - superfícies e arquivos de produção são allowlists exatas; a lista de
   documentos exigidos é verificada somente por presença, junto com chaves de
   frontmatter e tokens selecionados;

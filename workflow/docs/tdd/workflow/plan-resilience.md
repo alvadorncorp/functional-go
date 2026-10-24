@@ -113,13 +113,27 @@ Fixadas por `resilience/retry_test.go`, `retry_attempts_test.go` e
   imediato;
 - atraso negativo entra em pânico com `"workflow/resilience: negative backoff"`
   depois de a fonte e o predicado rodarem uma vez;
-- o erro devolvido é o da última tentativa, sem embrulhar nem agregar, e o
-  valor é o zero de `T`;
-- o `ctx` é verificado antes de cada tentativa: um contexto já cancelado devolve
-  `context.Canceled` sem chamar fonte, predicado nem backoff;
-- cancelamento ou prazo durante o backoff interrompem a espera e devolvem o erro
-  do contexto pai, `context.Canceled` ou `context.DeadlineExceeded`, sem outra
-  chamada à fonte;
+- a ordem de decisão do laço é: (1) verificar `ctx.Err()`; (2) chamar a fonte;
+  (3) sucesso devolve o valor; (4) com `Attempts` esgotado ou `When` falso, o
+  erro da fonte é devolvido diretamente; (5) só então vem o backoff e a próxima
+  tentativa. O erro da fonte sai sem embrulhar nem agregar e o valor é o zero
+  de `T`; não há `errors.Join` entre tentativas nem entre o erro da fonte e o
+  do contexto;
+- o erro da fonte é o resultado somente quando a própria fonte encerra o laço
+  (passo 4). Nesse caso o contexto não é consultado depois da chamada: um
+  cancelamento ou prazo que ocorra durante ou depois da última tentativa, ou
+  depois de `When` falso, não substitui o erro da fonte, e um sucesso da fonte
+  continua sendo devolvido mesmo que o contexto tenha sido cancelado durante a
+  chamada. O cancelamento do pai não sobrepõe um resultado terminal da fonte;
+- `Retry` devolve exatamente `ctx.Err()` — `context.Canceled` ou
+  `context.DeadlineExceeded`, sem embrulho — somente quando observa a parada do
+  contexto pai em um dos dois pontos de verificação: na entrada de uma
+  tentativa (passo 1, inclusive a primeira, sem chamar fonte, predicado nem
+  backoff) ou na espera do backoff (passo 5). Depois de uma falha retentável com
+  tentativa restante, um pai já parado é observado na espera quando há atraso
+  positivo ou zero (atraso zero apenas consulta `ctx.Err()`) e, com `Backoff`
+  nulo, na entrada da tentativa seguinte; em nenhum dos casos a fonte é chamada
+  de novo. O erro retentável anterior é descartado nesse caso;
 - pânicos da fonte, de `When` e de `Backoff` escapam inalterados;
 - o mesmo `Retry` construído pode ser executado concorrentemente.
 
