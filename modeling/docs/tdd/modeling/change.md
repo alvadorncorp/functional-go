@@ -19,8 +19,9 @@ modeling module. It does not re-export from the root or use
 signature modeling-owned.
 
 When this contract was written the repository had no Reducer/Replay
-implementation or release. Reducer/Replay later arrived as an independent
-capability (`tdd:modeling:reducer-replay`, ADR-006/ADR-010); Change has no
+implementation or release. Reducer/Replay was introduced later as an
+independent capability (`tdd:modeling:reducer-replay`, ADR-006); ADR-010 only
+partially amended it, moving `Replay` events to `iter.Seq`. Change has no
 dependency on those concepts. This technical contract authorizes only the
 Change capability; tagging and release numbering remain separate.
 
