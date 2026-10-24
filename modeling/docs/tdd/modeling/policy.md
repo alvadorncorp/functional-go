@@ -55,9 +55,10 @@ Zip também rejeita combiner nil com `modeling/policy: nil combiner`.
 
 ## Dependências e arquitetura
 
-Somente `conditional.go` importa Predicate e Optional. `modeling/policy` não
-importa raiz, siblings ou internal. Gates AST limitam exports exatos; gates de
-dependência mantêm a exceção funcional restrita ao package e aos dois imports.
+Somente `conditional.go` importa Predicate e Optional, além do stdlib `slices`.
+`modeling/policy` não importa raiz, siblings ou internal. Gates AST limitam
+exports exatos; gates de dependência mantêm a exceção funcional restrita ao
+package e aos dois imports functional.
 
 ## Testes e leis
 

@@ -6,10 +6,16 @@ title: Capability pública e aditiva de Policy
 status: Aceita
 tags: [modeling, policy, generics, optional, predicate, architecture]
 deciders: [alvadorn]
-related: [adr:modeling:001, adr:modeling:002, adr:modeling:003, tdd:modeling:policy]
+related: [adr:modeling:001, adr:modeling:002, adr:modeling:003, adr:modeling:009, tdd:modeling:policy]
 date: 2026-08-10
 ---
 # ADR-005: Capability pública e aditiva de Policy
+
+> **Supersessão parcial (ADR-009):** a superfície de `modeling/policy` ampliou-se
+> de sete para onze exports (`Compose`, `Zip`, `Choose`, `OrElse`). Os sete
+> símbolos originais, suas assinaturas, ordem de avaliação e panics permanecem
+> em vigor, e o status desta ADR continua Aceita. Ver
+> [ADR-009](adr-009-policy-composition-algebra.md).
 
 ## Contexto e problema
 
@@ -20,8 +26,11 @@ estado e não executa efeitos. O pedido exige uma capability própria
 Optional. Isso contradiz deliberadamente o limite root-only e a proibição geral
 de tipos functional em APIs públicas.
 
-O ID 004 permanece reservado ao predecessor planejado Reducer/Replay; Policy usa
-005 sem reescrever ou antecipar Change/Reducer/Replay.
+O ID 004 foi reservado, no momento desta decisão, ao predecessor planejado
+Reducer/Replay; na cronologia efetiva, 004 é Change
+([ADR-004](adr-004-change-capability-boundary.md)) e Reducer/Replay é
+[ADR-006](adr-006-reducer-capability-boundary.md). Policy usa 005 sem
+reescrever ou antecipar Change/Reducer/Replay.
 
 ## Direcionadores
 
@@ -55,7 +64,8 @@ usar `predicate.Predicate` e `optional.Optional`.
 ## Decisão
 
 A dependência é application → modeling/policy → os packages públicos
-`functional/primitives/predicate` e `functional/values/optional`. A raiz
+`functional/primitives/predicate` e `functional/values/optional`, além do stdlib
+`slices`, usado na cópia defensiva de FirstApplicable. A raiz
 `modeling`, siblings e `functional` não dependem de policy.
 
 FirstApplicable exige primeiro operando, avalia na ordem declarada e para no

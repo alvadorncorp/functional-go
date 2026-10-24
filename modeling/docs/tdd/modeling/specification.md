@@ -42,10 +42,11 @@ Combinadores rejeitam operandos nil eager com
 
 ## Dependências e arquitetura
 
-Os production files não possuem imports. Specification não importa Predicate,
-raiz, Policy, Change, Reducer ou Projection. Archtests pinam o oitavo package,
-zero imports, cinco exports, ausência de aliases na raiz e proibição das arestas
-entre siblings.
+Os production files importam somente o stdlib `slices` (apenas `logic.go`);
+`transform.go` e `specification.go` não têm imports. Specification não importa
+Predicate, raiz, Policy, Change, Reducer ou Projection. Archtests pinam o oitavo
+package, o conjunto de imports exatamente `["slices"]`, cinco exports, ausência
+de aliases na raiz e proibição das arestas entre siblings.
 
 ## Testes e leis
 

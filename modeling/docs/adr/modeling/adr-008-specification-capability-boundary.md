@@ -11,6 +11,11 @@ date: 2026-08-11
 ---
 # ADR-008: Capability nominal e independente de Specification
 
+> **Correção de redação:** a decisão original descrevia o package como
+> "zero-import". A implementação entregue importa somente o stdlib `slices`
+> (`logic.go`); a decisão — sem `functional`, raiz, `policy` nem siblings —
+> permanece em vigor e o texto abaixo foi alinhado a esse fato.
+
 ## Contexto e problema
 
 O módulo distingue condição genérica, classificação de domínio, validação
@@ -44,7 +49,7 @@ Rejeitada: `All` e `Any` exigiriam conversão de slices, os checks eager de nil
 continuariam locais e os loops diretos são menores. O acoplamento não compra
 semântica nem implementação relevante.
 
-### Leaf package direto, nominal e sem imports (escolhida)
+### Leaf package direto, nominal e somente stdlib `slices` (escolhida)
 
 Escolhida: `modeling/specification` expõe exatamente `Specification`, `All`,
 `Any`, `Not` e `Contramap` e implementa a álgebra sobre funções Go.
@@ -61,7 +66,9 @@ falha, não autoriza operação e não seleciona estratégia.
 na construção com panics determinísticos. Invocar a zero Specification mantém
 o comportamento natural de função nil de Go.
 
-O package não importa `functional`, raiz `modeling`, `policy` nem siblings.
+O package não importa `functional`, raiz `modeling`, `policy` nem siblings; seu
+único import de produção é o stdlib `slices` (`logic.go`), e `transform.go` e
+`specification.go` não têm imports.
 `Of` fica fora porque atribuição/conversão direta é suficiente. `Xor` fica fora
 porque nenhum caso de domínio o justificou. Filter, error, mensagem, reason,
 validate, registry, reflection, runtime e bridges também ficam excluídos.
@@ -78,4 +85,5 @@ e exige nova decisão e tratamento SemVer. Este trabalho não publica release.
 Aplicações ganham classificação nominal e composável mantendo Policy,
 Requirement, Rule e Invariant semanticamente distintos. O custo é uma pequena
 duplicação intencional da álgebra booleana genérica em troca de uma fronteira
-zero-import mais forte e de contratos de nil próprios.
+de dependências mais forte (leaf somente stdlib `slices`) e de contratos de nil
+próprios.

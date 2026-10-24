@@ -18,9 +18,11 @@ modeling module. It does not re-export from the root or use
 `functional/primitives/function.Transform` values while keeping every public
 signature modeling-owned.
 
-The repository currently has no Reducer/Replay implementation or release.
-Change has no dependency on those concepts. This technical contract authorizes
-only the Change capability; tagging and release numbering remain separate.
+When this contract was written the repository had no Reducer/Replay
+implementation or release. Reducer/Replay later arrived as an independent
+capability (`tdd:modeling:reducer-replay`, ADR-006/ADR-010); Change has no
+dependency on those concepts. This technical contract authorizes only the
+Change capability; tagging and release numbering remain separate.
 
 ## Public contracts
 

@@ -86,5 +86,5 @@ Message pertencem a outras responsabilidades.
 
 A zero Specification é função nil ao ser chamada. Combinadores rejeitam
 Specification nil eager; Contramap também rejeita mapper nil. Nil nunca é true,
-false ou skip. O package não tem imports de produção, efeitos, runtime,
-reflection, registry, persistence ou infraestrutura.
+false ou skip. O package importa somente o stdlib `slices` e não tem efeitos,
+runtime, reflection, registry, persistence ou infraestrutura.

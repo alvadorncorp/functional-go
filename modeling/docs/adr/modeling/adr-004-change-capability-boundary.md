@@ -91,8 +91,11 @@ Implementation converts `Change[S]` values to and from
 existing functional requirement from v1.0.1 to v1.1.0 and permits direct imports
 only from `functional/immutable` and `functional/primitives/function`.
 
-The current repository has no Reducer/Replay capability. Change is
-structurally independent, so this decision neither introduces nor claims those
+The repository had no Reducer/Replay capability when this decision was written.
+Reducer/Replay was added later, independently, by
+[ADR-006](adr-006-reducer-capability-boundary.md) and
+[ADR-010](adr-010-streaming-replay-project-seq.md); Change remains structurally
+independent of it, so this decision neither introduces nor claims those
 concepts, and it authorizes no tag or release action.
 
 ## Consequences

@@ -23,7 +23,7 @@ application domain
       │                     ↓ uses
       │               stdlib iter
       └── specializes → modeling/specification
-                            (zero production imports)
+                            (stdlib slices only)
 ```
 
 Aplicações importam o pacote raiz para Decision, Transition, Invariant, Rule e
@@ -84,8 +84,9 @@ efeito.
 
 `modeling/specification` representa `T -> bool` nominal: classificação
 booleana de domínio. All/Any avaliam left-to-right com short-circuit, Not
-deriva a categoria complementar e Contramap adapta input. O pacote tem zero
-imports de produção e é independente de Policy e de todo sibling.
+deriva a categoria complementar e Contramap adapta input. O pacote é um leaf
+cujo único import de produção é o stdlib `slices`, e é independente de Policy e
+de todo sibling.
 
 Policy pergunta qual resultado ou estratégia usar. Specification pergunta se
 um valor pertence a uma categoria de domínio. Rule explica condição falha,
