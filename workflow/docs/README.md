@@ -37,3 +37,4 @@
 - [Composição](tdd/workflow/composition.md)
 - [Transação](tdd/workflow/transaction.md)
 - [Integração com modeling](tdd/workflow/modeling-integration.md)
+- [Plan e Resilience](tdd/workflow/plan-resilience.md)

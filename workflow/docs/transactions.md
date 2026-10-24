@@ -24,6 +24,12 @@ func Within[S, T any](boundary Boundary[S], fn func(S) action.Action[T]) action.
 O adaptador fornece `Boundary[S]`; a aplicação define `S`. O handle concreto
 nunca aparece em uma assinatura de workflow e nunca é armazenado em um contexto.
 
+Em execução bem-sucedida, a `Boundary` chama o callback exatamente uma vez, e
+essa chamada termina de forma síncrona antes de a `Boundary` retornar `nil`. Ela
+pode retornar um erro sem chamar o callback, por exemplo quando o `BEGIN` falha.
+`Within` detecta a omissão no sucesso, mas não conta nem impede chamadas
+repetidas: isso continua sendo contrato do adaptador.
+
 ## Estreitamento de capacidades
 
 Ofereça apenas o que é legal onde é legal:

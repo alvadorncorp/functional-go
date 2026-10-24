@@ -30,6 +30,12 @@ O valor zero é Empty. `Step` preserva o nome não vazio. `Sequence()` é Empty,
 `Transaction` preserva sempre o nó conceitual, inclusive com zero ou um filho.
 Construtores e `Children` fazem cópias defensivas.
 
+Emenda parcial (2026-10-23): a inspeção somente leitura também inclui `String`,
+em `Plan` e em `Kind`. `Plan.String` devolve uma descrição canônica da estrutura
+declarada, com nomes de `Step` literais, sem escape e sem promessa de leitura de
+volta (parsing). Isso não torna `Plan` executável e não altera as demais
+decisões deste ADR.
+
 Plan não recebe contexto, não executa `Action`, não chama `Run`, não abre
 transação, não aplica resilience, não inicia goroutine e não realiza I/O.
 

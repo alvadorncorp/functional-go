@@ -44,9 +44,10 @@ const (
 // a driver type, which is what keeps a workflow from accidentally escaping the
 // transaction.
 //
-// A successful boundary must invoke the supplied function exactly once before
-// returning nil. It may return an error without invoking the function, for
-// example when beginning the transaction fails.
+// A successful boundary must invoke the supplied function exactly once, and
+// that call must complete synchronously, before the boundary returns nil. It
+// may return an error without invoking the function, for example when beginning
+// the transaction fails.
 //
 // The zero value is a nil function; Within rejects it.
 type Boundary[S any] func(context.Context, func(context.Context, S) error) error
@@ -63,8 +64,10 @@ type Boundary[S any] func(context.Context, func(context.Context, S) error) error
 // fn is not converted into an error: it unwinds through the boundary, which is
 // responsible for attempting a rollback before it propagates.
 //
-// The boundary must invoke its callback exactly once before returning nil;
-// returning an error without invoking the callback returns that error unchanged.
+// The boundary must invoke its callback exactly once, completing it before
+// returning nil; returning an error without invoking the callback returns that
+// error unchanged. Within neither counts nor prevents repeated callback calls:
+// those remain a violation of the adapter contract.
 //
 // Within is a free function rather than a method because Go does not allow a
 // method to introduce the extra type parameter T, and preserving T beats a

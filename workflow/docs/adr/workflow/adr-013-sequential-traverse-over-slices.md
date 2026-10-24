@@ -123,9 +123,12 @@ explícita; a invariante de ordem continua valendo porque a execução é
 sequencial. A cópia rasa e a ausência de checagem de contexto ficam
 documentadas no contrato. Emenda (2026-10-23): o `appendOutbox` do withdraw
 passou a usar `Traverse` sobre os eventos materializados, como o checkout. Os
-laços `for` com `action.Run` de crosscontext (`shared` e `distributed`)
-permanecem de propósito: o filtro por item/decisão torna `Traverse` desajeitado
-ali, e o laço é Go idiomático. Não há adoção pendente.
+laços `for` com `action.Run` de crosscontext permanecem de propósito, por
+motivos distintos. Em `distributed`, `appendIntegrationMessages` filtra por
+evento (só `TransferOccurred` vai ao outbox), o que torna `Traverse` desajeitado
+ali. Em `shared`, `appendAll` não filtra: grava uma mensagem por evento de duas
+decisões distintas, uma depois da outra, e o laço imperativo é Go idiomático.
+Não há adoção pendente.
 
 ## Não-objetivos
 

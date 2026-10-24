@@ -56,10 +56,12 @@ uma fronteira cuja assinatura devolve apenas `error`.
 
 ## Obrigações do adaptador
 
-O adaptador deve executar o callback exatamente uma vez antes de retornar `nil`.
-Pode retornar um erro sem executar o callback, por exemplo quando não consegue
-iniciar a transação. `Within` detecta a omissão no sucesso; não conta nem impede
-chamadas repetidas, que continuam sendo uma violação do contrato do adaptador.
+Em execução bem-sucedida, o adaptador deve executar o callback exatamente uma
+vez, e a chamada deve ter terminado de forma síncrona antes de o adaptador
+retornar `nil`. Pode retornar um erro sem executar o callback, por exemplo quando
+não consegue iniciar a transação. `Within` detecta a omissão no sucesso; não
+conta nem impede chamadas repetidas, que continuam sendo uma violação do
+contrato do adaptador.
 
 `postgres.InTx` satisfaz `Boundary` depois de fechar sobre `db`. Ele inicia,
 confirma em erro nulo e reverte a partir de um `defer` usando um contexto

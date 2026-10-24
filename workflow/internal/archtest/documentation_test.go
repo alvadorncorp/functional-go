@@ -43,6 +43,7 @@ func requiredDocuments() []string {
 		"docs/tdd/workflow/composition.md",
 		"docs/tdd/workflow/transaction.md",
 		"docs/tdd/workflow/modeling-integration.md",
+		"docs/tdd/workflow/plan-resilience.md",
 	}
 }
 
