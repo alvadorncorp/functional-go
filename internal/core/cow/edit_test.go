@@ -13,26 +13,6 @@ type fakeNode struct {
 	value int
 }
 
-func TestNeedsCopy(t *testing.T) {
-	t.Parallel()
-
-	owner := ownership.New()
-	other := ownership.New()
-
-	if cow.NeedsCopy(owner, owner) {
-		t.Fatal("owned node must not need copy")
-	}
-	if !cow.NeedsCopy(other, owner) {
-		t.Fatal("foreign owner must need copy")
-	}
-	if !cow.NeedsCopy(nil, owner) {
-		t.Fatal("published (nil) node must need copy")
-	}
-	if !cow.NeedsCopy(owner, nil) {
-		t.Fatal("nil current owner must need copy")
-	}
-}
-
 func TestEnsureEditableReturnsSameWhenOwned(t *testing.T) {
 	t.Parallel()
 
@@ -102,17 +82,6 @@ func TestEnsureEditablePanicsOnNilCloneWhenCopyRequired(t *testing.T) {
 		}
 	}()
 	_ = cow.EnsureEditable[*fakeNode](n.owner, owner, n, nil)
-}
-
-func TestNeedsCopyAfterInvalidate(t *testing.T) {
-	t.Parallel()
-
-	owner := ownership.New()
-	// Same pointer identity is insufficient once the token is inactive.
-	owner.Invalidate()
-	if !cow.NeedsCopy(owner, owner) {
-		t.Fatal("inactive owner must need copy even for same pointer")
-	}
 }
 
 func TestEnsureEditableClonesAfterInvalidate(t *testing.T) {

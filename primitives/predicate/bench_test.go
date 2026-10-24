@@ -35,21 +35,3 @@ func BenchmarkOrShortCircuit(b *testing.B) {
 		benchmarkPredicateResult = p(1)
 	}
 }
-
-func BenchmarkAll(b *testing.B) {
-	b.ReportAllocs()
-	values := []int{1, 2, 3, 4, 5, 6, 7, 8}
-	p := predicate.Predicate[int](func(v int) bool { return v > 0 })
-	for b.Loop() {
-		benchmarkPredicateResult = predicate.All(values, p)
-	}
-}
-
-func BenchmarkAnyShortCircuit(b *testing.B) {
-	b.ReportAllocs()
-	values := []int{1, 2, 3, 4, 5, 6, 7, 8}
-	p := predicate.Predicate[int](func(v int) bool { return v == 1 })
-	for b.Loop() {
-		benchmarkPredicateResult = predicate.Any(values, p)
-	}
-}

@@ -44,28 +44,6 @@ func TestAndOrShortCircuitLeftToRight(t *testing.T) {
 	}
 }
 
-func TestQuantifiers(t *testing.T) {
-	t.Parallel()
-	positive := predicate.Predicate[int](func(value int) bool { return value > 0 })
-	if !predicate.All([]int{}, positive) || predicate.Any([]int{}, positive) || !predicate.None([]int{}, positive) {
-		t.Fatal("empty quantifier identities failed")
-	}
-	values := []int{1, 2, 3}
-	if !predicate.All(values, positive) ||
-		!predicate.Any(values, predicate.EqualTo(2)) ||
-		predicate.None(values, positive) {
-		t.Fatal("quantifier result failed")
-	}
-	anyCalls := 0
-	if !predicate.Any(values, func(value int) bool { anyCalls++; return value == 1 }) || anyCalls != 1 {
-		t.Fatalf("Any short-circuit calls = %d, want 1", anyCalls)
-	}
-	allCalls := 0
-	if predicate.All(values, func(value int) bool { allCalls++; return value < 1 }) || allCalls != 1 {
-		t.Fatalf("All short-circuit calls = %d, want 1", allCalls)
-	}
-}
-
 func TestComparablePredicates(t *testing.T) {
 	t.Parallel()
 	if !predicate.EqualTo("go")("go") || predicate.EqualTo("go")("rust") {

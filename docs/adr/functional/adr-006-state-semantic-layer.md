@@ -6,7 +6,7 @@ title: State semantic layer — pure State[T], mesh deps, lineage and single-use
 status: Aceita
 tags: [functional, state, lineage, version, transaction, mesh]
 deciders: [alvadorn]
-related: [adr:functional:003, adr:functional:004, adr:functional:005]
+related: [adr:functional:003, adr:functional:004, adr:functional:005, adr:functional:014]
 date: 2026-08-07
 ---
 # ADR-006: State semantic layer — pure State[T], mesh deps, lineage and single-use Tx
@@ -133,3 +133,19 @@ domain types itself; another public package to maintain.
 
 **Neutral:** Status is **Aceita** with the shipped API above; related ADRs
 003/004/005 remain in force for module deps, thin core, and engines.
+
+## Amendment: frozen state surface
+
+Partial amendment (2026-10-23) that does not change the decision above and
+leaves the status **Aceita**. The shipped `state` API (`Of`, `Mutation`,
+`Apply`, `Materialize`, `Snapshot`, `Begin`/`Commit`, `DiffBetween`) is
+supported and **frozen**: it keeps its documented behavior, and new surface is
+not added to the package. The package carries no `Deprecated` marker, and this
+ADR makes no promise to remove it or to ship a v2.
+
+The owner-approved v1 hygiene choice that records this freeze is
+[ADR-014 — v1 surface hygiene](adr-014-v1-surface-hygiene.md)
+(`adr:functional:014`); this amendment only restates its effect on `state`.
+
+**Negative:** A frozen package that is neither deprecated nor extended gives
+callers no signal about its long-term direction.

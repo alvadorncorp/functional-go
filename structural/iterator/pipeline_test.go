@@ -21,22 +21,13 @@ func counted(values []int, yielded *int) iter.Seq[int] {
 	}
 }
 
-func TestSourcesAreLazy(t *testing.T) {
+func TestEmptyAndOnce(t *testing.T) {
 	t.Parallel()
-	values := []int{1, 2, 3}
-	seq := iterator.FromSlice(values)
-	values[0] = 9
-	if got := slices.Collect(seq); !slices.Equal(got, []int{9, 2, 3}) {
-		t.Fatalf("FromSlice = %v", got)
-	}
 	if got := slices.Collect(iterator.Empty[int]()); got != nil {
 		t.Fatalf("Empty = %v", got)
 	}
 	if got := slices.Collect(iterator.Once("x")); !slices.Equal(got, []string{"x"}) {
 		t.Fatalf("Once = %v", got)
-	}
-	if got := slices.Collect(iterator.FromValues(1, 2)); !slices.Equal(got, []int{1, 2}) {
-		t.Fatalf("FromValues = %v", got)
 	}
 }
 
@@ -58,17 +49,17 @@ func TestTransformPipelineIsLazyAndStopsEarly(t *testing.T) {
 
 func TestFilterMapFlatMapAndFlatten(t *testing.T) {
 	t.Parallel()
-	filtered := iterator.FilterMap(iterator.FromValues(1, 2, 3), func(v int) (string, bool) {
+	filtered := iterator.FilterMap(slices.Values([]int{1, 2, 3}), func(v int) (string, bool) {
 		return string(rune('a' + v - 1)), v%2 == 1
 	})
 	if got := slices.Collect(filtered); !slices.Equal(got, []string{"a", "c"}) {
 		t.Fatalf("FilterMap = %v", got)
 	}
-	flat := iterator.FlatMap(iterator.FromValues(1, 2), func(v int) iter.Seq[int] { return iterator.FromValues(v, -v) })
+	flat := iterator.FlatMap(slices.Values([]int{1, 2}), func(v int) iter.Seq[int] { return slices.Values([]int{v, -v}) })
 	if got := slices.Collect(flat); !slices.Equal(got, []int{1, -1, 2, -2}) {
 		t.Fatalf("FlatMap = %v", got)
 	}
-	nested := iterator.FromValues(iterator.FromValues(1, 2), iterator.Once(3))
+	nested := slices.Values([]iter.Seq[int]{slices.Values([]int{1, 2}), iterator.Once(3)})
 	if got := slices.Collect(iterator.Flatten(nested)); !slices.Equal(got, []int{1, 2, 3}) {
 		t.Fatalf("Flatten = %v", got)
 	}
@@ -84,14 +75,14 @@ func TestLimits(t *testing.T) {
 	if got := slices.Collect(iterator.Drop(source, 0)); !slices.Equal(got, []int{1}) {
 		t.Fatalf("Drop(0) = %v", got)
 	}
-	if got := slices.Collect(iterator.Drop(iterator.FromValues(1, 2, 3), 2)); !slices.Equal(got, []int{3}) {
+	if got := slices.Collect(iterator.Drop(slices.Values([]int{1, 2, 3}), 2)); !slices.Equal(got, []int{3}) {
 		t.Fatalf("Drop = %v", got)
 	}
-	takeWhile := iterator.TakeWhile(iterator.FromValues(1, 2, 3), func(v int) bool { return v < 3 })
+	takeWhile := iterator.TakeWhile(slices.Values([]int{1, 2, 3}), func(v int) bool { return v < 3 })
 	if got := slices.Collect(takeWhile); !slices.Equal(got, []int{1, 2}) {
 		t.Fatalf("TakeWhile = %v", got)
 	}
-	dropWhile := iterator.DropWhile(iterator.FromValues(1, 2, 3, 1), func(v int) bool { return v < 3 })
+	dropWhile := iterator.DropWhile(slices.Values([]int{1, 2, 3, 1}), func(v int) bool { return v < 3 })
 	if got := slices.Collect(dropWhile); !slices.Equal(got, []int{3, 1}) {
 		t.Fatalf("DropWhile = %v", got)
 	}

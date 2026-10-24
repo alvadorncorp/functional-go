@@ -18,7 +18,7 @@
 //
 // This package does not implement RRB, concat, or split.
 //
-// Allowed functional-module imports: internal/core/ownership, cow and sharing.
+// Allowed functional-module imports: internal/core/ownership and cow.
 // Any other functional package is forbidden; in particular transient, eq,
 // immutable, state, values/optional, keyhash and the peer engines hamt and
 // wbtree. The authority is internal/archtest (vectorAllowedFunctional,

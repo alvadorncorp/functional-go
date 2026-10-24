@@ -5,6 +5,9 @@ import (
 	"slices"
 )
 
+// Collect collects the values yielded by seq into a slice.
+//
+// Deprecated: Use slices.Collect instead.
 func Collect[T any](seq iter.Seq[T]) []T { return slices.Collect(seq) }
 
 func Fold[T, A any](seq iter.Seq[T], initial A, fn func(A, T) A) A {

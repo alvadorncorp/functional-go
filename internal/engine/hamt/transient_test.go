@@ -4,7 +4,6 @@ import (
 	"math"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/cow"
 	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
 )
 
@@ -102,7 +101,7 @@ func TestTransientSharingAfterNewOwner(t *testing.T) {
 	}
 }
 
-func TestMutationAfterFreezeNeedsCopy(t *testing.T) {
+func TestMutationAfterFreezeRequiresFreshOwner(t *testing.T) {
 	t.Parallel()
 
 	owner := ownership.New()
@@ -111,12 +110,12 @@ func TestMutationAfterFreezeNeedsCopy(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected leaf, got %T", r.node)
 	}
-	if cow.NeedsCopy(lf.owner, owner) {
+	if !ownership.IsOwnedBy(lf.owner, owner) {
 		t.Fatal("active owner must not need copy")
 	}
 
 	owner.Invalidate()
-	if !cow.NeedsCopy(lf.owner, owner) {
+	if ownership.IsOwnedBy(lf.owner, owner) {
 		t.Fatal("after invalidate, same stamp must need copy")
 	}
 

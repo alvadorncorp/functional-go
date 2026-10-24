@@ -6,6 +6,12 @@
 // contracts for that pure T. It does not own domain rules, validation, or
 // persistence engines.
 //
+// # Stability
+//
+// The existing state API is supported and frozen: it keeps working as
+// documented, but the package is not extended with new surface. The package
+// carries no Deprecated marker, and there is no removal or v2 plan for it.
+//
 // # Pure T, no domain
 //
 // State[T] holds and evolves T as opaque data. Callers supply T and any

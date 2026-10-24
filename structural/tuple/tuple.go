@@ -7,6 +7,9 @@ type Tuple2[A, B any] struct {
 
 func Of2[A, B any](a A, b B) Tuple2[A, B] { return Tuple2[A, B]{First: a, Second: b} }
 
+// FromValues2 constructs a Tuple2 from two values.
+//
+// Deprecated: Use Of2 instead.
 func FromValues2[A, B any](a A, b B) Tuple2[A, B] { return Of2(a, b) }
 
 func MapFirst[A, B, C any](t Tuple2[A, B], fn func(A) C) Tuple2[C, B] {

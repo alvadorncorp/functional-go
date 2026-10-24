@@ -1,6 +1,7 @@
 package lazy_test
 
 import (
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -95,6 +96,45 @@ func TestLazyMemoizesPanic(t *testing.T) {
 		if got != payload {
 			t.Fatalf("panic[%d]: got %#v, want %#v", i, got, payload)
 		}
+	}
+}
+
+func TestLazyMemoizesGoexitPanic(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	l := lazy.New(func() int {
+		calls.Add(1)
+		runtime.Goexit()
+		return 42
+	})
+
+	firstPanic := make(chan any, 1)
+	go func() {
+		defer func() {
+			firstPanic <- recover()
+		}()
+		_ = l.Get()
+	}()
+	payload := <-firstPanic
+	if _, ok := payload.(*runtime.PanicNilError); !ok {
+		t.Fatalf("first Get panic: got %T, want *runtime.PanicNilError", payload)
+	}
+
+	for i := range 2 {
+		func() {
+			defer func() {
+				got := recover()
+				if _, ok := got.(*runtime.PanicNilError); !ok {
+					t.Fatalf("later Get %d panic: got %T, want *runtime.PanicNilError", i, got)
+				}
+			}()
+			_ = l.Get()
+			t.Fatalf("later Get %d returned after initializer called Goexit", i)
+		}()
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("initializer calls: got %d, want 1", got)
 	}
 }
 

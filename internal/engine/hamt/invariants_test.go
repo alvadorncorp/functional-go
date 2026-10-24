@@ -3,6 +3,7 @@ package hamt
 import (
 	"testing"
 
+	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
 	"github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
 )
 
@@ -173,6 +174,204 @@ func TestPathCompressionDoesNotElevateBitmap(t *testing.T) {
 		return
 	}
 	t.Fatal("could not find nestA/nestB/sibling key triple under any seed")
+}
+
+func TestDeletePromotesTerminalThroughSharedPrefix(t *testing.T) {
+	t.Parallel()
+
+	for _, terminal := range []string{"leaf", "collision"} {
+		for _, mode := range []string{"pure", "transient-published", "transient-owned", "transient-frozen"} {
+			t.Run(terminal+"/"+mode, func(t *testing.T) {
+				// Diverge only in the last hash fragment, leaving twelve unary
+				// bitmaps above the branch that disappears on deletion.
+				const otherHash = uint64(1) << maxShift
+				var base node[int, int] = &leaf[int, int]{hash: 0, key: 0, val: 10}
+				want := map[int]int{0: 10, 1: 11}
+				if terminal == "collision" {
+					base, _ = base.set(0, 0, 4, 40)
+					want[4] = 40
+				}
+				base, _ = base.set(otherHash, 0, 1, 11)
+				current := base
+				owner := ownership.New()
+				defer owner.Invalidate()
+				frozen := owner
+				if mode == "transient-owned" || mode == "transient-frozen" {
+					current, _ = current.tset(owner, 0, 0, 0, 10)
+				}
+				if mode == "transient-frozen" {
+					owner.Invalidate()
+					owner = ownership.New()
+					defer owner.Invalidate()
+				}
+				keep := current
+				for {
+					b, ok := keep.(*bitmapNode[int, int])
+					if !ok {
+						break
+					}
+					keep = b.children[0]
+				}
+				var removed bool
+				if mode == "pure" {
+					current, removed = current.del(otherHash, 0, 1)
+				} else {
+					current, removed = current.tdel(owner, otherHash, 0, 1)
+				}
+				if !removed || current != keep {
+					t.Fatalf("delete = (%T, %v), want original terminal %T", current, removed, keep)
+				}
+				switch n := current.(type) {
+				case *leaf[int, int]:
+					if terminal != "leaf" {
+						t.Fatal("collision collapsed unexpectedly")
+					}
+					if mode == "transient-owned" && !ownership.IsOwnedBy(n.owner, owner) {
+						t.Fatal("promoted leaf lost active ownership")
+					}
+				case *collision[int, int]:
+					if terminal != "collision" {
+						t.Fatal("leaf became a collision")
+					}
+					if mode == "transient-owned" && !ownership.IsOwnedBy(n.owner, owner) {
+						t.Fatal("promoted collision lost active ownership")
+					}
+				default:
+					t.Fatalf("terminal still wrapped in %T", current)
+				}
+				switch mode {
+				case "pure":
+					assertOwnersNil(t, current)
+				case "transient-frozen":
+					assertNotOwnedByInactive(t, current, frozen)
+				}
+				assertTerminalCompressionContents(t, base, want)
+				delete(want, 1)
+				assertTerminalCompressionContents(t, current, want)
+
+				// Publishing and editing the promoted terminal under a new owner
+				// must preserve both the original and compressed snapshots.
+				owner.Invalidate()
+				fresh := ownership.New()
+				defer fresh.Invalidate()
+				next, added := current.tset(fresh, 0, 0, 0, 99)
+				if added {
+					t.Fatal("replacement changed entry count")
+				}
+				assertTerminalCompressionContents(t, current, want)
+				want[0] = 99
+				assertTerminalCompressionContents(t, next, want)
+				want[0], want[1] = 10, 11
+				assertTerminalCompressionContents(t, base, want)
+			})
+		}
+	}
+}
+
+// TestDeleteKeepsBitmapChildBelowUnaryParent guards the del/tdel branch where a
+// unary parent's child is replaced by a surviving *bitmap* (not a terminal): it
+// must stay wrapped because that bitmap's indexes are relative to shift 5.
+func TestDeleteKeepsBitmapChildBelowUnaryParent(t *testing.T) {
+	t.Parallel()
+
+	// Hashes 0, 32 and 64 share the shift-0 index, so the root is unary; at
+	// shift 5 they take indexes 0, 1 and 2 in one three-leaf bitmap.
+	hashes := map[int]uint64{0: 0, 1: 32, 2: 64}
+	for _, mode := range []string{"pure", "transient"} {
+		t.Run(mode, func(t *testing.T) {
+			t.Parallel()
+
+			var base node[int, int] = &leaf[int, int]{hash: hashes[0], key: 0, val: 10}
+			base, _ = base.set(hashes[1], 0, 1, 11)
+			base, _ = base.set(hashes[2], 0, 2, 12)
+			rootBM, ok := base.(*bitmapNode[int, int])
+			if !ok || len(rootBM.children) != 1 {
+				t.Fatalf("setup root = %T children=%d, want unary bitmap", base, childrenLen(base))
+			}
+			setupInner, ok := rootBM.children[0].(*bitmapNode[int, int])
+			if !ok || setupInner.bitmap != 0b111 || len(setupInner.children) != 3 {
+				t.Fatalf("setup child = %T, want three-leaf bitmap 0b111", rootBM.children[0])
+			}
+
+			var got node[int, int]
+			var removed bool
+			switch mode {
+			case "pure":
+				got, removed = base.del(hashes[2], 0, 2)
+			case "transient":
+				owner := ownership.New()
+				defer owner.Invalidate()
+				got, removed = base.tdel(owner, hashes[2], 0, 2)
+			}
+			if !removed {
+				t.Fatal("delete reported no removal")
+			}
+
+			// Consumer-visible behavior first: a promoted shift-5 bitmap would
+			// lose lookups starting at shift 0.
+			assertUnaryBitmapContents(t, got, hashes, map[int]int{0: 10, 1: 11})
+			assertUnaryBitmapContents(t, base, hashes, map[int]int{0: 10, 1: 11, 2: 12})
+
+			root, ok := got.(*bitmapNode[int, int])
+			if !ok || root.bitmap != bitpos(0) || len(root.children) != 1 {
+				t.Fatalf("root = %T, want unary bitmap at index 0", got)
+			}
+			inner, ok := root.children[0].(*bitmapNode[int, int])
+			if !ok || inner.bitmap != 0b11 || len(inner.children) != 2 {
+				t.Fatalf("root child = %T, want two-leaf bitmap 0b11 (not promoted)", root.children[0])
+			}
+		})
+	}
+}
+
+func assertUnaryBitmapContents(t *testing.T, n node[int, int], hashes map[int]uint64, want map[int]int) {
+	t.Helper()
+	for key, hash := range hashes {
+		got, found := n.get(hash, 0, key)
+		value, present := want[key]
+		if got != value || found != present {
+			t.Fatalf("get(%d) = (%d, %v), want (%d, %v)", key, got, found, value, present)
+		}
+	}
+	count := 0
+	n.forEach(func(key, value int) bool {
+		if expected, ok := want[key]; !ok || value != expected {
+			t.Fatalf("unexpected entry (%d, %d)", key, value)
+		}
+		count++
+		return true
+	})
+	if count != len(want) {
+		t.Fatalf("entry count = %d, want %d", count, len(want))
+	}
+}
+
+func assertTerminalCompressionContents(t *testing.T, n node[int, int], want map[int]int) {
+	t.Helper()
+	for _, key := range []int{0, 1, 4, 8} {
+		var hash uint64
+		if key == 1 {
+			hash = uint64(1) << maxShift
+		}
+		got, found := n.get(hash, 0, key)
+		value, present := want[key]
+		if got != value || found != present {
+			t.Fatalf("get(%d) = (%d, %v), want (%d, %v)", key, got, found, value, present)
+		}
+	}
+	count := 0
+	seen := make(map[int]bool)
+	n.forEach(func(key, value int) bool {
+		if expected, ok := want[key]; !ok || value != expected || seen[key] {
+			t.Fatalf("unexpected or duplicate entry (%d, %d)", key, value)
+		}
+		seen[key] = true
+		count++
+		return true
+	})
+	if count != len(want) {
+		t.Fatalf("entry count = %d, want %d", count, len(want))
+	}
 }
 
 // Non-goal: V any is not comparable; Set of an existing key always may

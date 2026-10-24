@@ -58,6 +58,17 @@ group directory itself; ADR-011):
 - **`state`** — `State[T]`: pure semantic evolution over an opaque `T`.
   Mesh-isolated from `immutable` in production code.
 
+### v1 compatibility notes
+
+Every v1 public name stays. Where a name only forwards to the standard
+library or to another name in its own package, it carries a `Deprecated:`
+marker and keeps its behavior ([ADR-014](adr/functional/adr-014-v1-surface-hygiene.md)):
+`iterator.FromSlice`/`FromValues` (use `slices.Values`), `iterator.Collect`
+(use `slices.Collect`), `predicate.All`/`Any`/`None` (use
+`slices.ContainsFunc`, or `iterator.All`/`Any` over `slices.Values`), and
+`tuple.FromValues2` (use `Of2`). `state` is **frozen**, not deprecated: its
+API is supported as shipped, with no new surface and no removal plan.
+
 ## Why the root package is doc-only
 
 `functional` itself (the root package, [`doc.go`](../doc.go)) exports
@@ -105,8 +116,7 @@ clone and share structure. See
 | Package | Role |
 |---|---|
 | `ownership` | Pointer-identity `*Owner` token with `Active` / `Invalidate`; nil stamp = published |
-| `cow` | `NeedsCopy` / `EnsureEditable` — caller supplies clone; no `Clone[T]`, no reflect |
-| `sharing` | `Detach` / `Published` — clear exclusive stamps |
+| `cow` | `EnsureEditable` — caller supplies clone; no `Clone[T]`, no reflect |
 | `transient` | `Window` Open / Owner / Freeze (Freeze is O(1) owner invalidation) |
 
 Engines live under `functional/internal/engine/` (also internal):
@@ -196,6 +206,8 @@ produce `iter.Seq` values, but `structural/iterator` never imports
 
 ```mermaid
 flowchart TB
+  accTitle: functional module production import graph
+  accDescr: Public packages, the internal core with ownership and cow and transient, the engines and eq. Solid edges are production imports and the dashed state edge is test-only composition.
   function[primitives/function]
   predicate[primitives/predicate]
   order[primitives/order]
@@ -214,7 +226,6 @@ flowchart TB
   eq["internal/eq (internal)"]
   ownership["internal/core/ownership"]
   cow["internal/core/cow"]
-  sharing["internal/core/sharing"]
   transient["internal/core/transient"]
   hamt["internal/engine/hamt"]
   vector["internal/engine/vector"]
@@ -232,14 +243,12 @@ flowchart TB
   immutable --> wbtree
   hamt --> ownership
   hamt --> cow
-  hamt --> sharing
   hamt --> keyhash
   vector --> ownership
   vector --> cow
   wbtree --> ownership
   wbtree --> cow
   cow --> ownership
-  sharing --> ownership
   transient --> ownership
   state -.->|test-only composition| immutable
 ```
@@ -306,3 +315,4 @@ not use `reflect`.
 - [ADR-009 — Tuplas, lazy, iteradores e optics sobre contratos nativos de Go](adr/functional/adr-009-structural-primitives-and-iterator-boundary.md)
 - [ADR-012 — Interop de Result com o par (T, error) e regra de ordem do Match](adr/functional/adr-012-values-error-pair-interop-and-match.md)
 - [ADR-013 — SortedMap sobre um motor de árvore balanceada por peso (wbtree)](adr/functional/adr-013-sorted-map-weight-balanced-engine.md)
+- [ADR-014 — Higiene da superfície v1 (sinônimos Deprecated, núcleo enxuto, Lazy nativo, state congelado)](adr/functional/adr-014-v1-surface-hygiene.md)

@@ -6,7 +6,7 @@ title: Tuplas, lazy, iteradores e optics sobre contratos nativos de Go
 status: Aceita
 tags: [functional, generics, iterators, concurrency, optics, dependencies]
 deciders: [alvadorn]
-related: [adr:functional:003, adr:functional:008]
+related: [adr:functional:003, adr:functional:008, adr:functional:014]
 date: 2026-08-09
 ---
 # ADR-009: Tuplas, lazy, iteradores e optics sobre contratos nativos de Go
@@ -62,10 +62,11 @@ early termination. Zip usa `iter.Pull`, encerra ambos os pulls e termina no
 menor input. A ordem de pull é esquerda e depois direita; se a direita terminar
 primeiro, no máximo um valor esquerdo sem par pode ter sido consumido.
 
-`lazy` é um handle por ponteiro com estado explícito protegido por `sync.Once`:
-executa no máximo uma vez, é segura concorrentemente, espelha a memoização de
-sucesso/panic de `sync.OnceValue`, libera a função inicializadora armazenada e
-repete o mesmo payload de panic. `optics` inicia somente com Lens tipada e
+`lazy` é um handle por ponteiro: executa no máximo uma vez, é segura
+concorrentemente, memoiza sucesso e panic como `sync.OnceValue`, libera a
+função inicializadora armazenada e repete o mesmo payload de panic. A
+implementação original usava estado explícito sobre `sync.Once`; a emenda
+abaixo a troca por `sync.OnceValue`. `optics` inicia somente com Lens tipada e
 composição explícita.
 
 ## Consequências
@@ -73,10 +74,35 @@ composição explícita.
 **Positivas:** interoperabilidade nativa, ausência de coleções intermediárias,
 uma única nova aresta pública e APIs pequenas com ceilings executáveis.
 
-**Negativas:** iterator mantém wrappers nominais para dois adapters de slices;
-Zip herda overhead fixo de Pull e o consumo assimétrico documentado; Lazy retém
-o valor ou panic memoizado durante sua própria vida.
+**Negativas:** iterator mantém wrappers nominais para dois adapters de slices
+(agora `Deprecated`, ver emenda); Zip herda overhead fixo de Pull e o consumo
+assimétrico documentado; Lazy retém o valor ou panic memoizado durante sua
+própria vida.
 
 **Neutras / Rollback:** cada pacote é aditivo. Reverter as fases remove código,
 guia e inventário correspondente. A remoção de iterator também remove a única
 nova aresta. Prism, Traversal, async iterators, effects e caches continuam fora.
+
+## Emenda parcial (2026-10-23, ADR-014)
+
+Emenda parcial que não substitui esta decisão; o status continua **Aceita**.
+Registrada com a decisão [ADR-014](adr-014-v1-surface-hygiene.md).
+
+- **Sinônimos `Deprecated`, sem remoção.** `iterator.FromSlice` e
+  `iterator.FromValues` (substituto `slices.Values`), `iterator.Collect`
+  (substituto `slices.Collect`) e `tuple.FromValues2` (substituto `Of2`)
+  continuam exportados e com a mesma semântica; passam a carregar o marcador
+  `Deprecated:`. Os adaptadores de origem seguem como visões vivas do slice do
+  chamador. O restante da API de `iterator` e `tuple` não muda.
+- **`Lazy` sobre `sync.OnceValue`.** O texto original descrevia estado explícito
+  protegido por `sync.Once` que "espelha" `sync.OnceValue`. Agora o `Lazy` usa
+  `sync.OnceValue` diretamente. Sucesso, panic comum, execução única sob
+  concorrência e liberação do inicializador permanecem. A correção: com a
+  implementação manual, um `runtime.Goexit` no inicializador deixava o `Lazy`
+  concluído com o valor zero e todo `Get` seguinte o devolvia em silêncio; com
+  `sync.OnceValue`, o próprio `Get` e os seguintes entram em panic; sob a
+  conversão padrão de `panic(nil)` do Go (módulo principal com `go >= 1.21` e
+  `GODEBUG panicnil` sem override) o payload é `*runtime.PanicNilError`. Sob o
+  override legado `panicnil=1`, `sync.OnceValue` segue o runtime: nunca devolve
+  o valor zero como inicializado, mas o tipo do payload não é garantido. Não se
+  afirma mudança no tratamento padrão de `panic(nil)`.

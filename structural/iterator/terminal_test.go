@@ -26,7 +26,7 @@ func TestZipAndEnumerate(t *testing.T) {
 	leftYielded, rightYielded, leftStopped, rightStopped := 0, 0, 0, 0
 	left := tracked([]int{1, 2, 3}, &leftYielded, &leftStopped)
 	right := tracked([]int{10, 20}, &rightYielded, &rightStopped)
-	got := iterator.Collect(iterator.Zip(left, right))
+	got := slices.Collect(iterator.Zip(left, right))
 	want := []tuple.Tuple2[int, int]{tuple.Of2(1, 10), tuple.Of2(2, 20)}
 	if !slices.Equal(got, want) {
 		t.Fatalf("Zip = %v", got)
@@ -34,7 +34,7 @@ func TestZipAndEnumerate(t *testing.T) {
 	if leftYielded != 3 || rightYielded != 2 || leftStopped != 1 || rightStopped != 1 {
 		t.Fatalf("yielded=%d/%d stopped=%d/%d", leftYielded, rightYielded, leftStopped, rightStopped)
 	}
-	enumerated := iterator.Collect(iterator.Enumerate(iterator.FromValues("a", "b")))
+	enumerated := slices.Collect(iterator.Enumerate(slices.Values([]string{"a", "b"})))
 	wantEnumerated := []tuple.Tuple2[int, string]{tuple.Of2(0, "a"), tuple.Of2(1, "b")}
 	if !slices.Equal(enumerated, wantEnumerated) {
 		t.Fatalf("Enumerate = %v", enumerated)
@@ -46,7 +46,7 @@ func TestZipStopsBothSourcesOnDownstreamTermination(t *testing.T) {
 	leftYielded, rightYielded, leftStopped, rightStopped := 0, 0, 0, 0
 	left := tracked([]int{1, 2, 3}, &leftYielded, &leftStopped)
 	right := tracked([]int{10, 20, 30}, &rightYielded, &rightStopped)
-	got := iterator.Collect(iterator.Take(iterator.Zip(left, right), 1))
+	got := slices.Collect(iterator.Take(iterator.Zip(left, right), 1))
 	if len(got) != 1 || got[0] != tuple.Of2(1, 10) {
 		t.Fatalf("Zip Take(1) = %v", got)
 	}
@@ -60,7 +60,7 @@ func TestZipStopsBothSourcesOnDownstreamTermination(t *testing.T) {
 
 func TestTerminalsAndShortCircuit(t *testing.T) {
 	t.Parallel()
-	seq := iterator.FromValues(1, 2, 3, 4)
+	seq := slices.Values([]int{1, 2, 3, 4})
 	if got := iterator.Fold(seq, 0, func(total, value int) int { return total + value }); got != 10 {
 		t.Fatalf("Fold = %d", got)
 	}
@@ -124,15 +124,15 @@ func TestFirstEmpty(t *testing.T) {
 
 func TestInfiniteSourcesAndUnfold(t *testing.T) {
 	t.Parallel()
-	if got := iterator.Collect(iterator.Take(iterator.Repeat("x"), 3)); !slices.Equal(got, []string{"x", "x", "x"}) {
+	if got := slices.Collect(iterator.Take(iterator.Repeat("x"), 3)); !slices.Equal(got, []string{"x", "x", "x"}) {
 		t.Fatalf("Repeat = %v", got)
 	}
 	iterated := iterator.Take(iterator.Iterate(1, func(v int) int { return v * 2 }), 4)
-	if got := iterator.Collect(iterated); !slices.Equal(got, []int{1, 2, 4, 8}) {
+	if got := slices.Collect(iterated); !slices.Equal(got, []int{1, 2, 4, 8}) {
 		t.Fatalf("Iterate = %v", got)
 	}
 	seq := iterator.Unfold(0, func(state int) (int, int, bool) { return state, state + 1, state < 3 })
-	if got := iterator.Collect(seq); !slices.Equal(got, []int{0, 1, 2}) {
+	if got := slices.Collect(seq); !slices.Equal(got, []int{0, 1, 2}) {
 		t.Fatalf("Unfold = %v", got)
 	}
 }

@@ -3,6 +3,7 @@ package iterator_test
 import (
 	"fmt"
 	"iter"
+	"slices"
 	"testing"
 
 	"github.com/alvadorncorp/gopackages/functional/structural/iterator"
@@ -34,8 +35,8 @@ func benchmarkMapCollect(b *testing.B, values []int) {
 	b.Run("MapCollect", func(b *testing.B) {
 		b.ReportAllocs()
 		for b.Loop() {
-			seq := iterator.Map(iterator.FromSlice(values), func(v int) int { return v * 2 })
-			iteratorBenchmarkSlice = iterator.Collect(seq)
+			seq := iterator.Map(slices.Values(values), func(v int) int { return v * 2 })
+			iteratorBenchmarkSlice = slices.Collect(seq)
 		}
 	})
 	b.Run("MapCollectManual", func(b *testing.B) {
@@ -54,9 +55,9 @@ func benchmarkFilterMapCollect(b *testing.B, values []int) {
 	b.Run("FilterMapCollect", func(b *testing.B) {
 		b.ReportAllocs()
 		for b.Loop() {
-			filtered := iterator.Filter(iterator.FromSlice(values), func(v int) bool { return v%2 == 0 })
+			filtered := iterator.Filter(slices.Values(values), func(v int) bool { return v%2 == 0 })
 			mapped := iterator.Map(filtered, func(v int) int { return v * 2 })
-			iteratorBenchmarkSlice = iterator.Collect(mapped)
+			iteratorBenchmarkSlice = slices.Collect(mapped)
 		}
 	})
 	b.Run("FilterMapCollectManual", func(b *testing.B) {
@@ -77,9 +78,9 @@ func benchmarkFilterMapTake10(b *testing.B, values []int) {
 	b.Run("FilterMapTake10", func(b *testing.B) {
 		b.ReportAllocs()
 		for b.Loop() {
-			filtered := iterator.Filter(iterator.FromSlice(values), func(v int) bool { return v%2 == 0 })
+			filtered := iterator.Filter(slices.Values(values), func(v int) bool { return v%2 == 0 })
 			mapped := iterator.Map(filtered, func(v int) int { return v * 2 })
-			iteratorBenchmarkSlice = iterator.Collect(iterator.Take(mapped, 10))
+			iteratorBenchmarkSlice = slices.Collect(iterator.Take(mapped, 10))
 		}
 	})
 	b.Run("FilterMapTake10Manual", func(b *testing.B) {
@@ -104,10 +105,10 @@ func benchmarkFlatMapCollect(b *testing.B, values []int) {
 	b.Run("FlatMapCollect", func(b *testing.B) {
 		b.ReportAllocs()
 		for b.Loop() {
-			seq := iterator.FlatMap(iterator.FromSlice(values), func(v int) iter.Seq[int] {
-				return iterator.FromValues(v, -v)
+			seq := iterator.FlatMap(slices.Values(values), func(v int) iter.Seq[int] {
+				return slices.Values([]int{v, -v})
 			})
-			iteratorBenchmarkSlice = iterator.Collect(seq)
+			iteratorBenchmarkSlice = slices.Collect(seq)
 		}
 	})
 	b.Run("FlatMapCollectManual", func(b *testing.B) {

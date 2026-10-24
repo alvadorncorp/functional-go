@@ -12,6 +12,12 @@ is represented in the type. `ReduceNonEmpty` consumes
 `len(values)+1`; it allocates exactly the output slice. FoldLeft, FoldRight,
 Reduce, and ReduceNonEmpty allocate no intermediate collection.
 
+These folds take **slices**. To reduce an `iter.Seq`, use
+[`iterator.Fold`](iterator.md#fold-over-iterseq-vs-slice-folds): it consumes
+the sequence once, left to right, with no intermediate slice. Choose by what
+you already hold: a slice goes to `fold.*`, a sequence goes to
+`iterator.Fold`; avoid converting one into the other just to fold.
+
 The package imports exactly `values/optional` and `values/nonempty`. It does not
 import immutable collections or the other primitive packages. See
 [ADR-008](../adr/functional/adr-008-functional-primitives-and-fold-boundary.md).

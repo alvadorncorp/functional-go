@@ -9,6 +9,11 @@ lineage, version identity, single-use transactions, and structural diffs for
 that pure `T`. It does **not** own domain rules, validation, or persistence
 engines.
 
+**Status: supported and frozen.** The existing API remains supported as
+documented; the package receives no new surface. It is not marked
+`Deprecated`, and there is no removal or v2 plan. See
+[ADR-006](../adr/functional/adr-006-state-semantic-layer.md#amendment-frozen-state-surface).
+
 ---
 
 ## Responsibilities

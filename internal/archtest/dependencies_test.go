@@ -9,9 +9,9 @@
 // internal/eq production code imports neither reflect nor unsafe, immutable
 // and state production code import neither reflect nor unsafe, and
 // internal/engine packages obey their own import allow-lists (keyhash: stdlib
-// only; hamt: ownership/cow/sharing/keyhash only among functional packages;
-// vector: ownership/cow/sharing only among functional packages; wbtree:
-// ownership/cow only among functional packages).
+// only; hamt: ownership/cow/keyhash only among functional packages; vector:
+// ownership/cow only among functional packages; wbtree: ownership/cow only
+// among functional packages).
 package archtest
 
 import (
@@ -35,7 +35,6 @@ const (
 	pkgOwnership       = "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
 	pkgCow             = "github.com/alvadorncorp/gopackages/functional/internal/core/cow"
 	pkgTransient       = "github.com/alvadorncorp/gopackages/functional/internal/core/transient"
-	pkgSharing         = "github.com/alvadorncorp/gopackages/functional/internal/core/sharing"
 	pkgEq              = "github.com/alvadorncorp/gopackages/functional/internal/eq"
 	pkgKeyhash         = "github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
 	pkgHamt            = "github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
@@ -115,7 +114,6 @@ var corePackages = []string{
 	pkgOwnership,
 	pkgCow,
 	pkgTransient,
-	pkgSharing,
 }
 
 // enginePackages is every production package under internal/engine.
@@ -149,7 +147,6 @@ var allPackages = []string{
 	pkgOwnership,
 	pkgCow,
 	pkgTransient,
-	pkgSharing,
 	pkgKeyhash,
 	pkgHamt,
 	pkgVector,
@@ -162,7 +159,6 @@ var coreAllowedEdges = map[string][]string{
 	pkgOwnership: {},
 	pkgCow:       {pkgOwnership},
 	pkgTransient: {pkgOwnership},
-	pkgSharing:   {pkgOwnership},
 }
 
 // coreForbiddenTargets are non-core functional packages no core package may
@@ -183,7 +179,6 @@ var coreForbiddenTargets = []string{
 var hamtAllowedFunctional = []string{
 	pkgOwnership,
 	pkgCow,
-	pkgSharing,
 	pkgKeyhash,
 }
 
@@ -193,12 +188,11 @@ var hamtAllowedFunctional = []string{
 var vectorAllowedFunctional = []string{
 	pkgOwnership,
 	pkgCow,
-	pkgSharing,
 }
 
 // wbtreeAllowedFunctional is the only permitted set of functional-module
 // imports for the wbtree engine (among non-self deps). wbtree must not import
-// sharing, keyhash, hamt, vector, or transient.
+// keyhash, hamt, vector, or transient.
 var wbtreeAllowedFunctional = []string{
 	pkgOwnership,
 	pkgCow,
@@ -302,9 +296,9 @@ func TestValuesNoReflectOrUnsafe(t *testing.T) {
 }
 
 // TestCoreDependencyDAG proves the core package graph is a star into
-// ownership: cow, transient, and sharing may each depend on ownership, and
-// nothing else in functional. Peer edges, reverse edges into ownership, and
-// edges into eq/public packages are forbidden.
+// ownership: cow and transient may each depend on ownership, and nothing else
+// in functional. Peer edges, reverse edges into ownership, and edges into
+// eq/public packages are forbidden.
 func TestCoreDependencyDAG(t *testing.T) {
 	t.Parallel()
 	for _, pkg := range corePackages {
@@ -371,8 +365,8 @@ func TestEngineNoReflect(t *testing.T) {
 
 // TestEngineDependencies proves engine import allow-lists:
 //   - keyhash: standard library only (no functional packages)
-//   - hamt: among functional packages, only ownership, cow, sharing, keyhash
-//   - vector: among functional packages, only ownership, cow, sharing
+//   - hamt: among functional packages, only ownership, cow, keyhash
+//   - vector: among functional packages, only ownership, cow
 //   - wbtree: among functional packages, only ownership, cow
 //   - no engine may import transient, eq, immutable, or state
 //   - hamt ↛ vector and vector ↛ hamt (peer engines stay disconnected);

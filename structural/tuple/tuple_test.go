@@ -14,9 +14,6 @@ func TestTuple2ConstructionAndTransforms(t *testing.T) {
 	if got.First != "age" || got.Second != 42 {
 		t.Fatalf("Of2 = %#v", got)
 	}
-	if from := tuple.FromValues2("age", 42); from != got {
-		t.Fatalf("FromValues2 = %#v, want %#v", from, got)
-	}
 	if swapped := tuple.Swap(got); swapped.First != 42 || swapped.Second != "age" {
 		t.Fatalf("Swap = %#v", swapped)
 	}

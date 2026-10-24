@@ -6,7 +6,7 @@ import (
 	"github.com/alvadorncorp/gopackages/functional/primitives/predicate"
 )
 
-func TestBooleanAndQuantifierLaws(t *testing.T) {
+func TestBooleanLaws(t *testing.T) {
 	t.Parallel()
 	p := predicate.Predicate[int](func(v int) bool { return v%2 == 0 })
 	q := predicate.Predicate[int](func(v int) bool { return v > 0 })
@@ -29,12 +29,5 @@ func TestBooleanAndQuantifierLaws(t *testing.T) {
 		assertSame("Or associativity", predicate.Or(p, predicate.Or(q, r)), predicate.Or(predicate.Or(p, q), r))
 		assertSame("And De Morgan", predicate.Not(predicate.And(p, q)), predicate.Or(predicate.Not(p), predicate.Not(q)))
 		assertSame("Or De Morgan", predicate.Not(predicate.Or(p, q)), predicate.And(predicate.Not(p), predicate.Not(q)))
-	}
-	values := []int{-2, 0, 2}
-	if predicate.None(values, p) != !predicate.Any(values, p) {
-		t.Fatal("None(xs,p) != !Any(xs,p)")
-	}
-	if predicate.All(values, p) != !predicate.Any(values, predicate.Not(p)) {
-		t.Fatal("All(xs,p) != !Any(xs,Not(p))")
 	}
 }

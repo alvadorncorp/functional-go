@@ -426,6 +426,10 @@ func deferredConfigName() string {
 
 ## 14. Native iterator pipeline
 
+Slices enter the pipeline through `slices.Values` and leave through
+`slices.Collect`; `iterator` supplies the lazy middle. (`iterator.FromSlice`
+and `iterator.Collect` still compile but are `Deprecated:` synonyms.)
+
 ```go
 package pipeline
 
@@ -438,11 +442,35 @@ import (
 )
 
 func zipPeople(ids []int, names []string) []tuple.Tuple2[int, string] {
-	active := iterator.Filter(iterator.FromSlice(names), func(name string) bool {
+	active := iterator.Filter(slices.Values(names), func(name string) bool {
 		return name != ""
 	})
 	normalized := iterator.Map(active, strings.ToUpper)
-	return slices.Collect(iterator.Zip(iterator.FromSlice(ids), normalized))
+	return slices.Collect(iterator.Zip(slices.Values(ids), normalized))
+}
+```
+
+`slices.Values` is a live view, so the slice must not change while the
+sequence is being consumed.
+
+Reduce an `iter.Seq` with `iterator.Fold`; use `fold.FoldLeft` when you hold a
+slice:
+
+```go
+package pipeline
+
+import (
+	"slices"
+
+	"github.com/alvadorncorp/gopackages/functional/primitives/fold"
+	"github.com/alvadorncorp/gopackages/functional/structural/iterator"
+)
+
+func sums(values []int) (fromSeq, fromSlice int) {
+	add := func(total, value int) int { return total + value }
+	fromSeq = iterator.Fold(slices.Values(values), 0, add) // iter.Seq source
+	fromSlice = fold.FoldLeft(values, 0, add)              // slice source
+	return fromSeq, fromSlice
 }
 ```
 

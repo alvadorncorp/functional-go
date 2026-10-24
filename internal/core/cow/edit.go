@@ -2,12 +2,6 @@ package cow
 
 import "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
 
-// NeedsCopy reports whether the caller must copy before mutating under owner.
-// It is the pure negation of ownership.IsOwnedBy.
-func NeedsCopy(nodeOwner, owner *ownership.Owner) bool {
-	return !ownership.IsOwnedBy(nodeOwner, owner)
-}
-
 // EnsureEditable returns node when it is already exclusively owned by owner.
 // Otherwise it returns the result of clone, which the caller must implement
 // to allocate a structure-specific copy stamped with owner.

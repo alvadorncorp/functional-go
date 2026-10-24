@@ -52,7 +52,7 @@ This README is the **documentation index**. Guides live under
 | [docs/packages/optics.md](docs/packages/optics.md) | `github.com/alvadorncorp/gopackages/functional/structural/optics` |
 | [docs/packages/immutable.md](docs/packages/immutable.md) | `github.com/alvadorncorp/gopackages/functional/immutable` |
 | [docs/packages/state.md](docs/packages/state.md) | `github.com/alvadorncorp/gopackages/functional/state` |
-| [docs/packages/core.md](docs/packages/core.md) | `internal/core` (ownership, cow, sharing, transient) — maintainers |
+| [docs/packages/core.md](docs/packages/core.md) | `internal/core` (ownership, cow, transient) — maintainers |
 | [docs/packages/values.md](docs/packages/values.md) | Family guide for the five `functional/values/*` packages |
 | [docs/packages/values-optional.md](docs/packages/values-optional.md) | `github.com/alvadorncorp/gopackages/functional/values/optional` |
 | [docs/packages/values-result.md](docs/packages/values-result.md) | `github.com/alvadorncorp/gopackages/functional/values/result` |
@@ -82,6 +82,7 @@ This README is the **documentation index**. Guides live under
 | [docs/adr/functional/adr-011-primitives-and-structural-path-groups.md](docs/adr/functional/adr-011-primitives-and-structural-path-groups.md) | `adr:functional:011` |
 | [docs/adr/functional/adr-012-values-error-pair-interop-and-match.md](docs/adr/functional/adr-012-values-error-pair-interop-and-match.md) | `adr:functional:012` |
 | [docs/adr/functional/adr-013-sorted-map-weight-balanced-engine.md](docs/adr/functional/adr-013-sorted-map-weight-balanced-engine.md) | `adr:functional:013` |
+| [docs/adr/functional/adr-014-v1-surface-hygiene.md](docs/adr/functional/adr-014-v1-surface-hygiene.md) | `adr:functional:014` |
 
 ---
 
@@ -92,17 +93,17 @@ This README is the **documentation index**. Guides live under
 | Package | Role | Core types |
 |---|---|---|
 | [`primitives/function`](primitives/function/) | Stateless, standard-library-only combinators and transforms | `Identity`, `Constant`, `Compose`, `Pipe`, `Flip`, `Tap`, `Transform[T]`, `PipeTransforms`, `ComposeTransforms` |
-| [`primitives/predicate`](primitives/predicate/) | Stateless, standard-library-only Boolean predicates, quantifiers, and comparables | `Predicate[T]`, `Not`, `And`, `Or`, `All`, `Any`, `None`, `EqualTo`, `NotEqualTo`, `OneOf` |
+| [`primitives/predicate`](primitives/predicate/) | Stateless, standard-library-only Boolean predicates and comparables; slice quantifiers are Deprecated | `Predicate[T]`, `Not`, `And`, `Or`, `EqualTo`, `NotEqualTo`, `OneOf` (Deprecated: `All`, `Any`, `None`) |
 | [`primitives/order`](primitives/order/) | Sign-based total orders, projections, and lexicographic composition | `Order[T]`, `Natural`, `By`, `Then`, `Min`, `Max` |
-| [`primitives/fold`](primitives/fold/) | Iterative slice folds, reductions, and left scans | `FoldLeft`, `FoldRight`, `Reduce`, `ReduceNonEmpty`, `ScanLeft` |
+| [`primitives/fold`](primitives/fold/) | Iterative slice folds, reductions, and left scans; fold an `iter.Seq` with `iterator.Fold` | `FoldLeft`, `FoldRight`, `Reduce`, `ReduceNonEmpty`, `ScanLeft` |
 
 ### `structural/`
 
 | Package | Role | Core types |
 |---|---|---|
-| [`structural/tuple`](structural/tuple/) | `Tuple2`/`Tuple3` heterogeneous carriers and component maps; stdlib-only | `Tuple2[A,B]`, `Tuple3[A,B,C]`, `Of2`, `Of3`, `Swap` |
-| [`structural/lazy`](structural/lazy/) | Concurrent-safe deferred memoization; stdlib-only | `Lazy[T]`, `New`, `Of`, `Get`, `Map`, `FlatMap` |
-| [`structural/iterator`](structural/iterator/) | Lazy transforms/limits/Zip over `iter.Seq`; imports only `structural/tuple` | `Map`, `Filter`, `Take`, `Zip`, `Enumerate`, `Collect`, `Fold` |
+| [`structural/tuple`](structural/tuple/) | `Tuple2`/`Tuple3` heterogeneous carriers and component maps; stdlib-only | `Tuple2[A,B]`, `Tuple3[A,B,C]`, `Of2`, `Of3`, `Swap` (Deprecated: `FromValues2`) |
+| [`structural/lazy`](structural/lazy/) | Concurrent-safe deferred memoization over `sync.OnceValue`; stdlib-only | `Lazy[T]`, `New`, `Of`, `Get`, `Map`, `FlatMap` |
+| [`structural/iterator`](structural/iterator/) | Lazy transforms/limits/Zip over `iter.Seq`; imports only `structural/tuple` | `Map`, `Filter`, `Take`, `Zip`, `Enumerate`, `Fold` (Deprecated: `FromSlice`, `FromValues`, `Collect`) |
 | [`structural/optics`](structural/optics/) | Typed Lens; stdlib-only leaf | `Lens[S,A]`, `NewLens`, `Get`, `Set`, `Modify`, `Compose` |
 
 ### `values/`, collections, state
@@ -111,7 +112,12 @@ This README is the **documentation index**. Guides live under
 |---|---|---|
 | [`values/optional`](values/optional/), [`values/result`](values/result/), [`values/either`](values/either/), [`values/nonempty`](values/nonempty/), [`values/validated`](values/validated/) | Independent algebraic value types; see the [family guide](docs/packages/values.md) | `Optional[T]`, `Result[T,E]`, `Either[L,R]`, `NonEmpty[T]`, `Validated[T,E]` |
 | [`immutable`](immutable/) | Immutable collections with functional writes (HAMT Map/Set, 32-way vector List, weight-balanced-tree SortedMap) | `List[T]`, `Map[K,V]`, `Set[T]`, `SortedMap[K,V]`, `Builder()` |
-| [`state`](state/) | Pure semantic evolution over `T` | `State[T]`, `Transaction[T]`, `Diff[T]`, `Snapshot[T]` |
+| [`state`](state/) | Pure semantic evolution over `T`; supported and frozen, not deprecated | `State[T]`, `Transaction[T]`, `Diff[T]`, `Snapshot[T]` |
+
+Names marked **Deprecated** are thin synonyms of standard-library calls
+(`slices.Values`, `slices.Collect`, `slices.ContainsFunc`) or of `Of2`. They
+keep working and are not removed in v1; see
+[ADR-014](docs/adr/functional/adr-014-v1-surface-hygiene.md).
 
 ---
 

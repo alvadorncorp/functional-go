@@ -2,22 +2,31 @@
 type: adr
 id: adr:functional:004
 context: functional
-title: Thin immutability core — ownership, cow, sharing, transient
+title: Thin immutability core — ownership, cow, transient
 status: Aceita
-tags: [functional, core, ownership, cow, transient, sharing, immutable]
+tags: [functional, core, ownership, cow, transient, immutable]
 deciders: [alvadorn]
-related: [adr:functional:001, adr:functional:003, adr:functional:005]
+related: [adr:functional:001, adr:functional:003, adr:functional:005, adr:functional:014]
 date: 2026-08-07
 ---
-# ADR-004: Thin immutability core — ownership, cow, sharing, transient
+# ADR-004: Thin immutability core — ownership, cow, transient
 
 > **Supersession (engine claims only):** Baseline B ships structure-sharing
 > engines (HAMT + 32-way vector). Representation decisions, seed policy,
 > O(1) Freeze publish, and List.Delete O(n) are recorded in
 > [ADR-005](adr-005-persistent-engine-family.md). This ADR remains the
-> decision record for the **thin core** (ownership / cow / sharing /
-> transient). Passages below that describe "full-copy engines" are
-> historical context from when the core was extracted.
+> decision record for the **thin core** (ownership / cow / transient).
+> Passages below that describe "full-copy engines" are historical context
+> from when the core was extracted.
+
+> **Partial amendment (2026-10-23, [ADR-014](adr-014-v1-surface-hygiene.md)):**
+> the core now has **three** packages — `ownership`, `cow`, `transient`. The
+> `sharing` package (`Detach` / `Published`) and `cow.NeedsCopy` had no
+> production caller and were removed; with O(1) Freeze by `Invalidate`, no
+> Detach walk exists. "Needs a copy?" is spelled `!ownership.IsOwnedBy(...)`
+> (same semantics and argument order). Status stays **Aceita**; the original
+> four-package layout appears below only as historical context, marked
+> "(historical)".
 
 ## Context and problem
 
@@ -64,37 +73,38 @@ in core" gate.
 hottest shared path; fights archtests and zero-deps posture for the
 substrate every engine would share.
 
-### Option 3: Thin core packages — ownership, cow, sharing, transient (chosen)
+### Option 3: Thin core packages — ownership, cow, sharing (historical), transient (chosen)
 
 **Pros:** Clear responsibility split; builders already wire
-`transient.Window`; future structure-sharing engines can stamp/detach
+`transient.Window`; future structure-sharing engines can stamp
 owners without rewriting permission logic; clone stays at the edge.
-**Cons:** Today's full-copy List/Map/Set barely exercise ownership/cow/
-sharing yet; those packages exist as the substrate, not as a fully wired
+**Cons:** Today's full-copy List/Map/Set barely exercise ownership/cow
+yet; those packages exist as the substrate, not as a fully wired
 HAMT.
 
 ## Decision
 
 **Chosen: Option 3.**
 
-### Layout under `functional/internal/core/`
+### Layout under `functional/internal/core/` (current: three packages)
 
 | Package | Responsibility |
 |---|---|
 | `ownership` | Exclusive-mutation token. `Owner` equality is **pointer identity** only. `New()` allocates a non-zero-size value (padding byte) so Go does not collapse zero-sized allocations. `IsOwnedBy(node, owner)` is false when either pointer is nil — `(nil, nil)` is never "owned." A nil stamp means published/shared. |
-| `cow` | Mutability decision only: `NeedsCopy` (negation of `IsOwnedBy`) and `EnsureEditable` (return node if owned, else call caller-supplied `clone`). **No** structure inspection, **no** deep copy, **no** `Clone[T]`. Nil `clone` when a copy is required panics `"cow: clone required but nil"`. |
-| `sharing` | Publish side: `Detach` clears a node stamp to nil; `Published` reports a nil stamp. Dual of `cow` — enter exclusive mutation vs leave it. Neither package clones nodes. |
+| `cow` | Mutability decision only: `EnsureEditable` (return node if owned, else call caller-supplied `clone`). **No** structure inspection, **no** deep copy, **no** `Clone[T]`. Nil `clone` when a copy is required panics `"cow: clone required but nil"`. (historical: `NeedsCopy`, the negation of `IsOwnedBy`, was removed by ADR-014.) |
 | `transient` | Single-threaded mutation window. `Open()` holds a fresh `*ownership.Owner`; open iff owner is non-nil. `Owner()` and `Freeze()` panic `"transient: window used after Freeze"` on nil, zero-value, or already-frozen windows. `Freeze` only clears the window's owner — it does **not** walk collection nodes. |
+
+(historical: `sharing` — `Detach` cleared a node stamp to nil and `Published` reported a nil stamp — was removed by ADR-014.)
 
 ### Dependency DAG (star into ownership)
 
 ```text
 ownership  (no core deps)
     ↑
-cow · transient · sharing   (each imports only ownership)
+cow · transient   (each imports only ownership)
 ```
 
-No peer edges among cow/transient/sharing. Core imports neither
+No peer edges between cow and transient. Core imports neither
 `internal/eq` nor any public package. No production `reflect` under
 `internal/core`.
 
@@ -132,7 +142,7 @@ engines can grow without pulling clone/reflect into shared code; Builders
 already speak the same Open/Freeze lifecycle a transient-capable engine
 would need; archtests lock the DAG and the no-reflect rule.
 
-**Negative:** ownership/cow/sharing are lightly used by the current
+**Negative:** ownership and cow are lightly used by the current
 full-copy engines; maintainers must not mistake their presence for a
 shipped HAMT. Complexity tables in package docs can still look "ahead" of
 today's constants — that is deliberate API headroom, not core's job.

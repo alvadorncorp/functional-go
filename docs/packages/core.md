@@ -6,12 +6,14 @@
 |---|---|
 | ownership | `github.com/alvadorncorp/gopackages/functional/internal/core/ownership` |
 | cow | `github.com/alvadorncorp/gopackages/functional/internal/core/cow` |
-| sharing | `github.com/alvadorncorp/gopackages/functional/internal/core/sharing` |
 | transient | `github.com/alvadorncorp/gopackages/functional/internal/core/transient` |
 
-Maintainer guide for the thin immutability substrate. Callers outside
+Maintainer guide for the thin immutability substrate: three packages
+(`ownership`, `cow`, `transient`). Callers outside
 `functional` cannot import these packages (`internal/`). For the decision
-record see [ADR-004](../adr/functional/adr-004-thin-immutability-core.md).
+record see [ADR-004](../adr/functional/adr-004-thin-immutability-core.md)
+and its partial amendment in
+[ADR-014](../adr/functional/adr-014-v1-surface-hygiene.md).
 Engines (HAMT, vector, wbtree) are separate — see
 [ADR-005](../adr/functional/adr-005-persistent-engine-family.md),
 [ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md), and
@@ -28,8 +30,7 @@ not walk trees on freeze, and does not implement List/Map/Set/SortedMap.
 | Package | Role |
 |---|---|
 | `ownership` | Exclusive-mutation token (`*Owner`); pointer identity + Active state |
-| `cow` | "Needs a copy?" / `EnsureEditable` with caller-supplied clone |
-| `sharing` | Detach / Published — clear exclusive stamps |
+| `cow` | `EnsureEditable` with caller-supplied clone |
 | `transient` | Single-threaded Open → Owner → Freeze mutation window |
 
 **Laws vs representation:** core = mutation permission laws; engines =
@@ -50,7 +51,7 @@ never provides `Clone[T]` and never uses `reflect`.
 - `Active()` is true for a non-nil token that has not been invalidated.
 - `Invalidate()` permanently deactivates the token (idempotent; nil-safe).
   **Freeze uses this for O(1) publish:** residual stamps of an inactive
-  owner fail `IsOwnedBy`, so engines need not walk the tree to Detach.
+  owner fail `IsOwnedBy`, so engines need not walk the tree to clear stamps.
 - `IsOwnedBy(nodeOwner, owner)` is true only when both pointers are non-nil,
   equal, **and** `owner` is Active. `(nil, nil)` is **not** owned; an
   invalidated owner is never an editable owner.
@@ -59,27 +60,25 @@ never provides `Clone[T]` and never uses `reflect`.
 
 ## `cow`
 
-- `NeedsCopy(nodeOwner, owner)` ≡ `!ownership.IsOwnedBy(...)`.
 - `EnsureEditable[N](nodeOwner, owner, node, clone)` returns `node` when
-  already owned; otherwise calls `clone()`. If a copy is required and
-  `clone` is nil, panics `"cow: clone required but nil"`.
+  already owned (`ownership.IsOwnedBy`); otherwise calls `clone()`. If a copy
+  is required and `clone` is nil, panics `"cow: clone required but nil"`.
 - The concrete type of `N` is opaque to core. The caller must stamp the
   clone with `owner` if exclusive mutation is intended afterward.
-- After `Invalidate`, `NeedsCopy` is true even if the pointer stamp still
+- To ask "needs a copy?" directly, engines use `!ownership.IsOwnedBy(...)`.
+  After `Invalidate`, `IsOwnedBy` is false even if the pointer stamp still
   matches — engines copy-on-write into the new window.
+- There is no `NeedsCopy` function: it was removed as an unused alias of
+  `!IsOwnedBy` (ADR-014).
 
 ---
 
-## `sharing`
+## Removed: `sharing`
 
-- Dual of `cow`: leave exclusive mutation rather than enter it.
-- `Detach(nodeOwner **Owner)` sets `*nodeOwner` to nil (no-op if already
-  nil or the double-pointer is nil).
-- `Published(nodeOwner *Owner)` is true when the stamp is nil.
-- Does not clone; after detach, any mutation under any owner requires a
-  structure-defined copy.
-- With O(1) Freeze via `Invalidate`, Detach walks are optional: inactive
-  stamps already fail `IsOwnedBy`.
+The former `sharing` package (`Detach` / `Published`) had no production
+caller and was removed (ADR-014). Freeze is O(1) by `Invalidate`, so inactive
+stamps already fail `IsOwnedBy`; no walk clears stamps, and a published node
+is simply one whose stamp is nil or inactive.
 
 ---
 
@@ -114,15 +113,15 @@ full-copy buffer.
 ```text
 ownership
     ↑
-cow · transient · sharing
+cow · transient
 ```
 
-- Star into `ownership` only — no peer edges among cow/transient/sharing.
+- Star into `ownership` only — no peer edge between cow and transient.
 - No `reflect` in production files under `internal/core`.
 - Core must not import `internal/eq` or any public subpackage.
 - Public packages other than `immutable` must not import core.
 - `immutable` may import core (Builders use `transient`).
-- Engines may import `ownership` / `cow` / `sharing` but **not** `transient`
+- Engines may import `ownership` / `cow` but **not** `transient`
   (callers pass an owner from a window).
 
 Enforced by `functional/internal/archtest`
@@ -136,7 +135,7 @@ Enforced by `functional/internal/archtest`
 `functional/internal/eq` resolves `Equal` without `reflect` (method, then
 `==`; non-comparable types without `Equal` return false). It is shared by
 public packages and is deliberately **not** part of core so the mutation
-substrate stays a pure ownership/COW/sharing layer.
+substrate stays a pure ownership/COW layer.
 
 Engines live under `functional/internal/engine/` (`hamt`, `vector`,
 `wbtree`, `keyhash`) — representation, not laws. See
@@ -152,4 +151,5 @@ Engines live under `functional/internal/engine/` (`hamt`, `vector`,
 - [Package API: immutable](immutable.md)
 - [ADR-004 — Thin immutability core](../adr/functional/adr-004-thin-immutability-core.md)
 - [ADR-005 — Persistent engine family](../adr/functional/adr-005-persistent-engine-family.md)
+- [ADR-014 — v1 surface hygiene (removes `sharing` and `cow.NeedsCopy`)](../adr/functional/adr-014-v1-surface-hygiene.md)
 - [ADR-003 — Zero-dependency boundary](../adr/functional/adr-003-zero-dependency-boundary.md)

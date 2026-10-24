@@ -7,16 +7,16 @@ The module root [README](../README.md) is a short **index**. Content lives here.
 | [overview.md](overview.md) | Purpose, the language constraint that shapes the API, the immutability core, the zero-dependency boundary, the sibling-import rule |
 | [examples.md](examples.md) | Usage sketches, including Result parsing and Validated accumulation |
 | [packages/function.md](packages/function.md) | `primitives/function` — stdlib-only function combinators |
-| [packages/predicate.md](packages/predicate.md) | `primitives/predicate` — stdlib-only Boolean predicates |
+| [packages/predicate.md](packages/predicate.md) | `primitives/predicate` — stdlib-only Boolean predicates; `All`/`Any`/`None` are Deprecated slice synonyms |
 | [packages/order.md](packages/order.md) | `primitives/order` — stdlib-only total orders |
-| [packages/fold.md](packages/fold.md) | `primitives/fold` — slice folds; edges to `values/optional` and `values/nonempty` |
-| [packages/tuple.md](packages/tuple.md) | `structural/tuple` — Tuple2/Tuple3 carriers; stdlib-only |
-| [packages/lazy.md](packages/lazy.md) | `structural/lazy` — concurrent deferred memoization; stdlib-only |
-| [packages/iterator.md](packages/iterator.md) | `structural/iterator` — `iter.Seq` adapters; imports only `structural/tuple` |
+| [packages/fold.md](packages/fold.md) | `primitives/fold` — slice folds (`iterator.Fold` folds an `iter.Seq`); edges to `values/optional` and `values/nonempty` |
+| [packages/tuple.md](packages/tuple.md) | `structural/tuple` — Tuple2/Tuple3 carriers; stdlib-only; `FromValues2` Deprecated |
+| [packages/lazy.md](packages/lazy.md) | `structural/lazy` — concurrent deferred memoization over `sync.OnceValue`; stdlib-only |
+| [packages/iterator.md](packages/iterator.md) | `structural/iterator` — `iter.Seq` adapters; imports only `structural/tuple`; `FromSlice`/`FromValues`/`Collect` Deprecated |
 | [packages/optics.md](packages/optics.md) | `structural/optics` — typed Lens; stdlib-only |
 | [packages/immutable.md](packages/immutable.md) | Public API of `github.com/alvadorncorp/gopackages/functional/immutable` (`List`, `Map`, `Set`, `SortedMap`), including measured Append-loop vs. Builder benchmarks |
-| [packages/state.md](packages/state.md) | Public API of `github.com/alvadorncorp/gopackages/functional/state` (pure `State[T]`, lineage, Tx, Diff) |
-| [packages/core.md](packages/core.md) | Maintainer guide for `internal/core` (ownership, cow, sharing, transient) |
+| [packages/state.md](packages/state.md) | Public API of `github.com/alvadorncorp/gopackages/functional/state` (pure `State[T]`, lineage, Tx, Diff); frozen, not deprecated |
+| [packages/core.md](packages/core.md) | Maintainer guide for `internal/core` (ownership, cow, transient) |
 | [packages/values.md](packages/values.md) | Family guide: choice by semantics, zero values, dependency boundary, and cost model |
 | [packages/values-optional.md](packages/values-optional.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/optional` |
 | [packages/values-result.md](packages/values-result.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/result` |
@@ -47,3 +47,4 @@ Current decisions:
 - [ADR-011 — primitives and structural path groups](adr/functional/adr-011-primitives-and-structural-path-groups.md)
 - [ADR-012 — Interop de Result com o par (T, error) e regra de ordem do Match](adr/functional/adr-012-values-error-pair-interop-and-match.md)
 - [ADR-013 — SortedMap sobre um motor de árvore balanceada por peso (wbtree)](adr/functional/adr-013-sorted-map-weight-balanced-engine.md)
+- [ADR-014 — Higiene da superfície v1 (sinônimos Deprecated, núcleo enxuto, Lazy nativo, state congelado)](adr/functional/adr-014-v1-surface-hygiene.md)

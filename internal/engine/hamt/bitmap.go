@@ -53,13 +53,19 @@ func (b *bitmapNode[K, V]) del(hash uint64, shift uint, key K) (node[K, V], bool
 	if nextChild == nil {
 		return b.removeSlot(bit, pos), true
 	}
+	if len(b.children) == 1 {
+		switch nextChild.(type) {
+		case *leaf[K, V], *collision[K, V]:
+			return nextChild, true
+		}
+	}
 	return &bitmapNode[K, V]{
 		bitmap:   b.bitmap,
 		children: replaceChild(b.children, pos, nextChild),
 	}, true
 }
 
-// removeSlot drops the child at pos. When two children remain, a leaf or
+// removeSlot drops the child at pos. When one child remains, a leaf or
 // collision sibling is returned directly (path compression): those nodes
 // store full hashes so Root.Get may start at shift 0. An internal bitmap
 // sibling must NOT be elevated — its bitmap is relative to a deeper shift.
@@ -114,19 +120,23 @@ func (b *bitmapNode[K, V]) tdel(owner *ownership.Owner, hash uint64, shift uint,
 	if !removed {
 		return b, false
 	}
-	b = ensureEditableBitmap(b, owner)
-	// Recompute pos after clone: bitmap/layout identical so pos is stable.
-	pos = childIndex(b.bitmap, idx)
 	if nextChild == nil {
-		return b.removeSlotOwned(bit, pos), true
+		return b.removeSlotOwned(owner, bit, pos), true
 	}
+	if len(b.children) == 1 {
+		switch nextChild.(type) {
+		case *leaf[K, V], *collision[K, V]:
+			return nextChild, true
+		}
+	}
+	b = ensureEditableBitmap(b, owner)
 	b.children[pos] = nextChild
 	return b, true
 }
 
-// removeSlotOwned is the transient counterpart of removeSlot: mutates an
-// already-owned bitmap in place when compression does not apply.
-func (b *bitmapNode[K, V]) removeSlotOwned(bit uint32, pos int) node[K, V] {
+// removeSlotOwned is the transient counterpart of removeSlot: clones only when
+// a surviving bitmap needs mutation, not when a terminal child is promoted.
+func (b *bitmapNode[K, V]) removeSlotOwned(owner *ownership.Owner, bit uint32, pos int) node[K, V] {
 	if len(b.children) == 1 {
 		return nil
 	}
@@ -137,6 +147,7 @@ func (b *bitmapNode[K, V]) removeSlotOwned(bit uint32, pos int) node[K, V] {
 			return keep
 		}
 	}
+	b = ensureEditableBitmap(b, owner)
 	b.bitmap &^= bit
 	b.children = removeChild(b.children, pos)
 	return b

@@ -41,8 +41,8 @@ Constructors are **`ListOf` / `MapOf` / `SetOf` / `EmptySortedMap`** (not
 - **Builders:** open an internal `transient.Window`, edit under the window's
   exclusive `*ownership.Owner` (engine transient paths mutate owned nodes in
   place), and `Freeze` on `Build` — **O(1)** owner invalidation, no tree
-  walk. Residual inactive stamps fail `IsOwnedBy`, so no Detach walk is
-  required. Builders are **not** safe for concurrent use.
+  walk. Residual inactive stamps fail `IsOwnedBy`, so no stamp-clearing walk
+  is required. Builders are **not** safe for concurrent use.
   Bulk constructors, collectors, and multi-item `Append`/`Add`/`Remove` use the
   transient edit path internally; their receivers remain immutable. Empty
   `ListOf`/`MapOf`/`SetOf` return the zero collection with no edit window and

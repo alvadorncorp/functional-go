@@ -42,8 +42,8 @@ func childIndex(bitmap uint32, idx uint) int {
 	return bits.OnesCount32(bitmap & (bitpos(idx) - 1))
 }
 
-// merge combines two non-equal-key nodes that diverge at shift.
-// When full hashes match, a collision bucket is produced.
+// merge combines nodes with unequal full hashes, branching at or below shift.
+// Callers handle equal hashes before merging; unequal hashes must diverge by maxShift.
 // owner is stamped on every newly allocated node (nil for pure immutable path).
 func merge[K comparable, V any](
 	shift uint,
@@ -51,14 +51,8 @@ func merge[K comparable, V any](
 	h2 uint64, n2 node[K, V],
 	owner *ownership.Owner,
 ) node[K, V] {
-	if h1 == h2 {
-		// Same hash, different keys (callers guarantee key inequality).
-		return joinCollision(h1, n1, n2, owner)
-	}
-	if shift > maxShift {
-		// Exhausted hash bits with unequal hashes: still bucket them.
-		// Should be unreachable for 5-bit strides over 64 bits, but keep safe.
-		return joinCollision(h1, n1, n2, owner)
+	if h1 == h2 || shift > maxShift {
+		panic("hamt: unreachable merge")
 	}
 
 	i1 := hashIndex(h1, shift)
@@ -80,26 +74,5 @@ func merge[K comparable, V any](
 		owner:    owner,
 		bitmap:   bitpos(i1),
 		children: []node[K, V]{child},
-	}
-}
-
-// joinCollision flattens n1 and n2 into a single collision node.
-// Both sides are expected to be leaf or collision with the same hash.
-func joinCollision[K comparable, V any](hash uint64, n1, n2 node[K, V], owner *ownership.Owner) node[K, V] {
-	entries := append(collectEntries(n1), collectEntries(n2)...)
-	return &collision[K, V]{owner: owner, hash: hash, entries: entries}
-}
-
-func collectEntries[K comparable, V any](n node[K, V]) []entry[K, V] {
-	switch t := n.(type) {
-	case *leaf[K, V]:
-		return []entry[K, V]{{key: t.key, val: t.val}}
-	case *collision[K, V]:
-		out := make([]entry[K, V], len(t.entries))
-		copy(out, t.entries)
-		return out
-	default:
-		// Bitmap nodes are not merged via collision; return empty to avoid panic.
-		return nil
 	}
 }

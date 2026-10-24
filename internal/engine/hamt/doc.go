@@ -14,11 +14,13 @@
 // sharing remains valid.
 //
 // Equal keys replace both the stored key and value in pure and transient updates.
+// Deletion promotes singleton leaf and collision children through bitmap paths.
+// Bitmap children stay at their original depth because their slots are shift-relative.
 //
 // Replacing an existing key is not required to be a structural no-op even when
 // the new value equals the old one (V is not comparable; no reflect equality).
 //
-// Allowed functional-module imports: internal/core/ownership, cow, sharing and
+// Allowed functional-module imports: internal/core/ownership, cow and
 // internal/engine/keyhash. Any other functional package is forbidden; in
 // particular transient, eq, immutable, state, values/optional and the peer
 // engines vector and wbtree. The authority is internal/archtest

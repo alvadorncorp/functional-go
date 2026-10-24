@@ -24,7 +24,8 @@ immutable update `O(n)` and left Builders as the only linear bulk path.
 
 Baseline B replaces those engines with structure-sharing representations
 while keeping the thin immutability core (ADR-004) as **laws only** —
-ownership, cow, sharing, transient — not as a generic clone/engine library.
+ownership, cow, transient (originally also sharing, removed by ADR-014) —
+not as a generic clone/engine library.
 
 ## Decision drivers
 
@@ -81,7 +82,7 @@ transient mutation and O(1) Invalidate publish.
 
 `transient.Window.Freeze` is **O(1)**: `ownership.Owner.Invalidate()` plus
 clearing the window owner. Nodes may retain inactive stamps; `IsOwnedBy`
-fails for them, so no Detach walk is required at publish time.
+fails for them, so no stamp-clearing walk is required at publish time.
 
 ### List.Delete
 
@@ -93,7 +94,8 @@ was the Baseline B trade-off.
 
 ### Core remains thin
 
-ADR-004 still holds: core = ownership / cow / sharing / transient laws.
+ADR-004 still holds: core = ownership / cow / transient laws (the unused
+`sharing` package was removed by ADR-014).
 Engines own representation. No `Clone[T]`, no `reflect` in core.
 
 ## Consequences
