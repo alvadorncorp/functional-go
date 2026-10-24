@@ -37,7 +37,7 @@
 // (functional/internal/engine/wbtree) ordered by its comparator, which every
 // derived version keeps. Single updates allocate along a tree path (depth
 // curve), not a full collection copy. Core
-// (ownership/cow/sharing/transient) is laws only; engines own
+// (ownership/cow/transient) is laws only; engines own
 // representation.
 //
 // # Builders
