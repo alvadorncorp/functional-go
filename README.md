@@ -49,8 +49,8 @@ support: `encoding/json` encodes it as `{}`.
 
 ## Documentation
 
-[Overview](docs/overview.md) · [More examples](docs/examples.md) ·
-[Package guides and architecture decisions](docs/README.md)
+[Overview](docs/overview.md) · [Examples by package](docs/examples.md) ·
+[Runnable workflow examples](examples/README.md) · [Package guides and ADRs](docs/README.md)
 
 ## Development
 

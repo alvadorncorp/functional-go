@@ -21,7 +21,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: ['.', workflow]
+        module:
+          - '.'
+          - workflow
+          - examples/checkout
+          - examples/createorder
+          - examples/crosscontext
+          - examples/withdraw
         target: [test-unit, test-race, test-published, vet, lint]
     steps:
       - uses: actions/checkout@v7

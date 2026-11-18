@@ -4,5 +4,9 @@ toolchain go1.27.4
 
 use (
 	.
+	./examples/checkout
+	./examples/createorder
+	./examples/crosscontext
+	./examples/withdraw
 	./workflow
 )

@@ -17,3 +17,7 @@ check the documented output.
 - [Resilience](../resilience/example_test.go): `resilience.Retry` repeats the
   action according to an explicit policy; where `Timeout` sits decides between
   a total budget and a per-attempt one.
+
+The [runnable scenarios](../../examples/README.md) combine these APIs with
+modeling and in-memory persistence. They cover checkout, order creation,
+withdrawals, and transfers across transaction boundaries.

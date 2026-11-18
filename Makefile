@@ -1,4 +1,5 @@
-MODULES := . workflow
+MODULES := . workflow examples/checkout examples/createorder \
+	examples/crosscontext examples/withdraw
 
 .PHONY: test-unit test-race test-published vet bench lint
 
