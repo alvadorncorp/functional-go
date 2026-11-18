@@ -8,11 +8,12 @@ tags: [workflow, modeling, decision, domain, outbox]
 related: [adr:workflow:modeling-integration-boundary, adr:workflow:transactional-outbox-as-application-composition, tdd:workflow:transaction]
 date: 2026-08-10
 ---
-# TDD: Padrão de integração com modeling
+# TDD: Modeling integration pattern
 
-## Escopo técnico
+## Technical scope
 
-A forma canônica é aquisição com efeito, decisão pura, confirmação com efeito:
+The canonical shape is effectful acquisition, pure decision, effectful
+confirmation:
 
 ```text
 Action[Account]
@@ -26,33 +27,34 @@ Decision[Account, Event]
 Action[Receipt]          inside one transaction boundary
 ```
 
-Nenhum pacote no módulo `workflow` importa `modeling`. A aplicação é a camada de
-composição que importa ambos.
+No package in the `workflow` module imports `modeling`. The application is the
+composition layer that imports both.
 
-## Propriedade
+## Ownership
 
-| Conceito | Dono |
+| Concept | Owner |
 |---|---|
 | `Specification`, `Policy`, `Rule`, `Requirement`, `Transition`, `Invariant`, `Decision` | `modeling` |
-| regra ou limiar de negócio concreto | domínio da aplicação |
-| capacidades `Load`, `Save` | aplicação |
-| `OutboxMessage`, `EventEncoder` | aplicação |
-| `Workflow`, `Action`, fronteira de transação | `workflow` |
-| SQL, HTTP, broker | adaptador |
+| a concrete business rule or threshold | the application domain |
+| `Load`, `Save` capabilities | the application |
+| `OutboxMessage`, `EventEncoder` | the application |
+| `Workflow`, `Action`, transaction boundary | `workflow` |
+| SQL, HTTP, broker | adapter |
 
-## Invariantes demonstradas pelos exemplos
+## Invariants demonstrated by the examples
 
-- uma `Specification` classifica input puro e alimenta uma `Policy` por
-  adaptação explícita na aplicação; nenhum package core ganha uma aresta
-  `workflow -> modeling` ou `modeling -> workflow`;
-- o domínio compila e é testado sem `context`, `workflow`, banco ou transporte;
-- uma decisão recusada retorna antes de qualquer transação ser aberta;
-- a ordem de eventos de `Decision.Events()` é preservada quando as mensagens são
-  persistidas, porque os appends rodam em sequência na ordem de emissão (de
-  índice), seja o `iter.Seq` iterado diretamente, seja materializado para
+- a `Specification` classifies pure input and feeds a `Policy` through explicit
+  adaptation in the application; no core package gains a `workflow -> modeling`
+  or `modeling -> workflow` edge;
+- the domain compiles and is tested without `context`, `workflow`, a database,
+  or transport;
+- a refused decision returns before any transaction opens;
+- the event order of `Decision.Events()` is preserved when the messages are
+  persisted, because the appends run in sequence in emission (index) order,
+  whether the `iter.Seq` is iterated directly or materialized for
   `action.Traverse`;
-- uma decisão que emite zero eventos não produz linhas de outbox;
-- um ramo escolhido por um `policy.Policy` é executado pelo workflow, enquanto o
-  limiar que o selecionou permanece no domínio;
-- `modeling` não precisou de mudança para ser utilizável aqui — a fronteira
-  estaria errada se tivesse precisado.
+- a decision that emits zero events produces no outbox rows;
+- the workflow runs the branch a `policy.Policy` chose, while the threshold
+  that selected it stays in the domain;
+- `modeling` needed no change to be usable here; had it needed one, the
+  boundary would be wrong.

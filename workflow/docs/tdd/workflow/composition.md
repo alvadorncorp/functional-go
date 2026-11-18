@@ -8,9 +8,9 @@ tags: [workflow, composition, inputs, generics, closures, reuse]
 related: [adr:workflow:workflow-as-reusable-effectful-composition, adr:workflow:functional-dependency-injection-through-capabilities, adr:workflow:composition-and-resource-safety, tdd:workflow:action]
 date: 2026-08-11
 ---
-# TDD: Composição de Workflow
+# TDD: Workflow composition
 
-## Escopo técnico
+## Technical scope
 
 ```text
 Workflow[I,O] + I       --Provide-->   Action[O]
@@ -18,11 +18,11 @@ Workflow[I,O] + (A→I)  --Contramap--> Workflow[A,O]
 Workflow[A,B] + Workflow[B,C] --Then--> Workflow[A,C]
 ```
 
-Dependências entram na construção, input entra na aplicação e contexto entra em
-`Run`. Aplicar um workflow pode projetar o input e construir uma Action, mas não
-executa o efeito descrito por ela.
+Dependencies enter at construction, input enters at application, and context
+enters at `Run`. Applying a workflow may project the input and build an Action,
+but it never runs the effect the Action describes.
 
-## Contratos públicos
+## Public contracts
 
 ```go
 func From[I, O any](func(I) action.Action[O]) Workflow[I, O]
@@ -33,17 +33,18 @@ func Provide[I, O any](Workflow[I, O], I) action.Action[O]
 func Contramap[A, I, O any](Workflow[I, O], func(A) I) Workflow[A, O]
 ```
 
-## Leis
+## Laws
 
-- `Contramap(wf, identity)` é observacionalmente equivalente a `wf`;
-- contramaps aninhados equivalem à composição dos mappers;
-- `Provide(wf, input)` equivale a aplicar `wf(input)`, incluindo resultado,
-  erro, contexto e contagem de execução;
-- `Contramap` chama mapper na aplicação, não na construção;
-- `Provide` e `Contramap` nunca chamam `Run` nem executam efeitos.
+- `Contramap(wf, identity)` is observationally equivalent to `wf`;
+- nested contramaps equal the composition of the mappers;
+- `Provide(wf, input)` equals applying `wf(input)`, including result, error,
+  context, and execution count;
+- `Contramap` calls the mapper at application, not at construction;
+- `Provide` and `Contramap` never call `Run` and never run effects.
 
-## Limites
+## Limits
 
-Composição permanece binária e type-safe. Não existe lista variádica heterogênea,
-reflection, resolução tardia de dependências, DI container, engine ou runtime.
-`Provide` fornece input; não registra nem resolve dependências.
+Composition stays binary and type-safe. There is no heterogeneous variadic
+list, no reflection, no late dependency resolution, no DI container, no engine,
+no runtime. `Provide` supplies input; it registers and resolves no
+dependencies.

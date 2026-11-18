@@ -1,11 +1,10 @@
 # workflow
 
-`workflow` oferece primitivos pequenos e type-safe para construir, compor e
-executar workflows reutilizáveis com efeitos em Go.
+`workflow` provides small, type-safe primitives for building, composing, and
+running reusable workflows with effects in Go.
 
-Workflows descrevem a orquestração da aplicação; regras de domínio permanecem no
-domínio, e a infraestrutura permanece atrás de capacidades definidas pela
-aplicação.
+Workflows describe application orchestration; domain rules stay in the domain,
+and infrastructure stays behind capabilities the application defines.
 
 ```go
 import (
@@ -29,50 +28,50 @@ program := loadUser(id)
 user, err := action.Run(ctx, program)
 ```
 
-## Os três momentos
+## The three moments
 
-Dependências entram na construção, a entrada entra na aplicação e o contexto
-entra na execução. Construir e compor workflows não realiza I/O; apenas
-`action.Run` inicia qualquer coisa.
+Dependencies enter at construction, input enters at application, and context
+enters at execution. Building and composing workflows performs no I/O; only
+`action.Run` starts anything.
 
-## Pacotes
+## Packages
 
-| Caminho de importação | Conteúdo |
+| Import path | Contents |
 |---|---|
 | `go.alvadorn.org/functional/workflow` | `Workflow[I,O]`, `From`, `Map`, `MapFallible`, `Then`, `Provide`, `Contramap` |
-| `go.alvadorn.org/functional/workflow/action` | `Action[T]`, construção, transformação, combinação sequencial, observação, finalização, error reification e resource safety |
-| `go.alvadorn.org/functional/workflow/plan` | `plan.Plan` — descrição estrutural explícita, imutável e não executável |
-| `go.alvadorn.org/functional/workflow/resilience` | `Retry`, `Timeout` e política de backoff como transformações explícitas de Action |
+| `go.alvadorn.org/functional/workflow/action` | `Action[T]`, construction, transformation, sequential combination, observation, finalization, error reification, and resource safety |
+| `go.alvadorn.org/functional/workflow/plan` | `plan.Plan` — an explicit, immutable, non-executable structural description |
+| `go.alvadorn.org/functional/workflow/resilience` | `Retry`, `Timeout`, and backoff policy as explicit Action transformations |
 | `go.alvadorn.org/functional/workflow/transaction` | `Boundary[S]`, `Within` |
 
-Plan descreve; Workflow constrói; Action adia; Resilience transforma;
-Boundary delimita; Run executa.
+Plan describes; Workflow builds; Action defers; Resilience transforms;
+Boundary delimits; Run executes.
 
-O núcleo depende apenas da biblioteca padrão, e um teste de arquitetura mantém
-isso assim.
+The core depends only on the standard library, and an architecture test keeps
+it that way.
 
-## Álgebra de composição
+## Composition algebra
 
-`Contramap` adapta input e `Provide` fixa o input sem executar efeitos.
-`FlatMap` representa dependência; `Zip` preserva dois resultados independentes e
-`Both` os combina, e `Traverse` executa uma Action por item de um slice, sempre
-em ordem sequencial. `Tap` observa sucesso, `Attempt` transforma erro em dado,
-`Ensure` finaliza retornos normais e `Bracket` delimita acquire/use/release sem
-possuir o recurso concreto.
+`Contramap` adapts input and `Provide` fixes the input without running
+effects. `FlatMap` expresses dependency; `Zip` keeps two independent results
+and `Both` combines them, and `Traverse` runs one Action per slice item,
+always in sequential order. `Tap` observes success, `Attempt` turns an error
+into data, `Ensure` finalizes normal returns, and `Bracket` scopes
+acquire/use/release without owning the concrete resource.
 
-## O que não é
+## What it is not
 
-Não é um motor de workflows, não é um framework DDD, não é um contêiner de
-injeção de dependências e não é um sistema de efeitos. Não promete durabilidade,
-paralelismo nem atomicidade distribuída. Retry e timeout existem apenas como
-transformações explícitas e cooperativas em `workflow/resilience`.
+It is not a workflow engine, a DDD framework, a dependency-injection
+container, or an effect system. It promises no durability, no parallelism, and
+no distributed atomicity. Retry and timeout exist only as explicit,
+cooperative transformations in `workflow/resilience`.
 
-## Documentação
+## Documentation
 
-Comece pela [visão geral](docs/overview.md), depois a
-[arquitetura](docs/architecture.md). Índice completo em
-[docs/README.md](docs/README.md), incluindo [Plan](docs/plan.md),
-[Resilience](docs/resilience.md), ADRs e desenhos técnicos.
+Start with the [overview](docs/overview.md), then the
+[architecture](docs/architecture.md). The full index is in
+[docs/README.md](docs/README.md), including [Plan](docs/plan.md),
+[Resilience](docs/resilience.md), ADRs, and technical designs.
 
-Os [exemplos executáveis](docs/examples.md) usam somente a API pública e
-adaptadores em memória.
+The [runnable examples](docs/examples.md) use only the public API and
+in-memory adapters.

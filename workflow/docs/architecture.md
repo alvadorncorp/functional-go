@@ -1,4 +1,4 @@
-# Arquitetura
+# Architecture
 
 ```mermaid
 flowchart TB
@@ -25,10 +25,10 @@ flowchart TB
     PORTS --> ADAPTERS
 ```
 
-Chamadas efetivas acontecem somente após `action.Run(ctx, program)`. Toda seta
-acima descreve uma referência, não uma invocação.
+Actual calls happen only after `action.Run(ctx, program)`. Every arrow above
+describes a reference, not an invocation.
 
-## Topologia dos módulos
+## Module topology
 
 ```text
                 application
@@ -37,10 +37,11 @@ acima descreve uma referência, não uma invocação.
        functional modeling workflow
 ```
 
-`workflow` e `modeling` são irmãos, não uma pilha: a aplicação é a camada que os
-compõe. O núcleo de `workflow` depende apenas da biblioteca padrão.
+`workflow` and `modeling` are siblings, not a stack: the application is the
+layer that composes them. The core of `workflow` depends only on the standard
+library.
 
-## Núcleo funcional, casca com efeitos
+## Functional core, effectful shell
 
 ```text
              FUNCTIONAL CORE
@@ -60,30 +61,32 @@ compõe. O núcleo de `workflow` depende apenas da biblioteca padrão.
                   adapters
 ```
 
-O objetivo não é tornar I/O puro. É tornar explícita a fronteira entre descrever
-uma computação e executá-la.
+The goal is to make the boundary between describing a computation and running
+it explicit, not to make I/O pure.
 
-## Teste de fronteira
+## Boundary test
 
-Para qualquer abstração proposta, pergunte em ordem: ainda faria sentido se o
-PostgreSQL fosse substituído? Se não, é um adaptador. Ainda faria sentido se o
-domínio Banking fosse substituído por completo? Se não, pertence à aplicação.
-Ainda faria sentido sem efeitos, contexto e ciclo de vida? Se sim, pertence a
-`functional` ou `modeling`. Somente algo que seja especificamente composição mais
-execução com efeitos é candidato a `workflow`.
+For any proposed abstraction, ask in order: would it still make sense if
+PostgreSQL were replaced? If not, it is an adapter. Would it still make sense
+if the Banking domain were replaced entirely? If not, it belongs to the
+application. Would it still make sense without effects, context, and
+lifecycle? If so, it belongs in `functional` or `modeling`. Only something
+that is specifically composition plus effectful execution is a candidate for
+`workflow`.
 
-## Lifecycle sem runtime
+## Lifecycle without a runtime
 
-`Bracket` conhece somente `Action[R]`, `R → Action[T]` e
-`R → Action[struct{}]`. Não conhece pool, lock, lease, tracing ou banco. `Zip`,
-`Both` e `Traverse` não criam goroutines; `Ensure` e `Bracket` não recuperam
-panic nem blindam cancelamento. O DAG permanece
-`workflow -> action <- transaction`, com `plan` como folha stdlib e
-`resilience -> action`. O fecho do core permanece stdlib-only.
+`Bracket` knows only `Action[R]`, `R → Action[T]`, and
+`R → Action[struct{}]`. It knows nothing about pools, locks, leases, tracing,
+or databases. `Zip`, `Both`, and `Traverse` create no goroutines; `Ensure` and
+`Bracket` recover no panics and shield no cancellation. The dependency DAG
+stays `workflow -> action <- transaction`, with `plan` as a stdlib-only leaf
+and `resilience -> action`. The core's closure stays stdlib-only.
 
-## Resilience sem preempção
+## Resilience without preemption
 
-`workflow/resilience` transforma `action.Action` de forma lazy e síncrona. É a
-única exceção arquitetural para `time` e `context.WithTimeout`. Timeout é
-cooperativo: deriva um contexto filho e chama a origem no mesmo goroutine; uma
-Action que ignora contexto não é interrompida por preempção.
+`workflow/resilience` transforms `action.Action` lazily and synchronously. It
+is the one architectural exception for `time` and `context.WithTimeout`.
+Timeout is cooperative: it derives a child context and calls the source on the
+same goroutine; an Action that ignores its context is never interrupted by
+preemption.

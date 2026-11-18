@@ -1,5 +1,6 @@
-# Tempo como dado
+# Time as data
 
-Regra de domínio que depende de “agora” recebe o fato já decidido no input
-(checkout: `Coupon.expired bool`, não `time.Now()` no pacote de domínio).
-`context` e relógio ficam no adapter. Não exporte `Clock` em `workflow`.
+A domain rule that depends on "now" receives the already-decided fact as
+input (checkout: `Coupon.expired bool`, not `time.Now()` in the domain
+package). `context` and the clock stay in the adapter. Don't export a `Clock`
+from `workflow`.

@@ -1,8 +1,8 @@
-# DAG de domínio e archtest da app
+# Domain DAG and app archtest
 
-Direção sempre para dentro: adapters/composition → application → domain.
-Domínio: sem `context`, `workflow`, `postgres`, `net/http`, `database/sql`.
+Direction always inward: adapters/composition → application → domain.
+Domain: no `context`, `workflow`, `postgres`, `net/http`, `database/sql`.
 
-Checkout: `value ← support ← order ← checkout`. A **app** copia um
-`internal/archtest` (replace set, purity, DAG). Um módulo kit só na Onda 1,
-com gatilho. Não há layout hexagonal oficial na biblioteca.
+Checkout: `value ← support ← order ← checkout`. The **app** copies an
+`internal/archtest` (replace set, purity, DAG). A kit module only in Wave 1,
+with a trigger. The library has no official hexagonal layout.

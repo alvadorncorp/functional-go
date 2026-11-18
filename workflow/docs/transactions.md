@@ -1,19 +1,19 @@
-# Transações
+# Transactions
 
-Quatro coisas diferentes compartilham a palavra. Elas não são intercambiáveis:
+Four different things share the word. They are not interchangeable:
 
-| Conceito | Responsabilidade |
+| Concept | Responsibility |
 |---|---|
-| `context.Context` | cancelamento, prazo, ciclo de vida da requisição |
-| `functional/state.Transaction` | agrupar mutações puras de um plano `State[T]` |
-| escopo de transação do workflow | fronteira de composição e capacidades escopadas |
-| `postgres.Tx` / `sql.Tx` | a implementação ACID concreta |
+| `context.Context` | cancellation, deadline, request lifecycle |
+| `functional/state.Transaction` | grouping pure mutations of a `State[T]` plan |
+| workflow transaction scope | composition boundary and scoped capabilities |
+| `postgres.Tx` / `sql.Tx` | the concrete ACID implementation |
 
-Somente o último realiza uma transação física. O escopo é uma abstração para
-usá-la sem acoplar-se a ela. `functional/state.Transaction` é um lote puramente
-em memória de mutações e não tem nada a ver com um banco.
+Only the last one performs a physical transaction. The scope is an abstraction
+for using one without coupling to it. `functional/state.Transaction` is a
+purely in-memory batch of mutations and has nothing to do with a database.
 
-## A forma
+## The shape
 
 ```go
 type Boundary[S any] func(context.Context, func(context.Context, S) error) error
@@ -21,57 +21,57 @@ type Boundary[S any] func(context.Context, func(context.Context, S) error) error
 func Within[S, T any](boundary Boundary[S], fn func(S) action.Action[T]) action.Action[T]
 ```
 
-O adaptador fornece `Boundary[S]`; a aplicação define `S`. O handle concreto
-nunca aparece em uma assinatura de workflow e nunca é armazenado em um contexto.
+The adapter supplies `Boundary[S]`; the application defines `S`. The concrete
+handle never appears in a workflow signature and is never stored in a context.
 
-Em execução bem-sucedida, a `Boundary` chama o callback exatamente uma vez, e
-essa chamada termina de forma síncrona antes de a `Boundary` retornar `nil`. Ela
-pode retornar um erro sem chamar o callback, por exemplo quando o `BEGIN` falha.
-`Within` detecta a omissão no sucesso, mas não conta nem impede chamadas
-repetidas: isso continua sendo contrato do adaptador.
+On a successful run, the `Boundary` calls the callback exactly once, and that
+call finishes synchronously before the `Boundary` returns `nil`. It may return
+an error without calling the callback, for example when `BEGIN` fails.
+`Within` detects the omission on success but neither counts nor prevents
+repeated calls: that remains the adapter's contract.
 
-## Estreitamento de capacidades
+## Capability narrowing
 
-Ofereça apenas o que é legal onde é legal:
+Expose each capability only where it is allowed:
 
 ```text
 Outside the transaction:  Accounts { Load }
 Inside the transaction:   TxAccounts { Save }, TxOutbox { Append }
 ```
 
-Uma escrita fora do lugar falha ao compilar em vez de escapar da fronteira em
-runtime.
+A write in the wrong place fails to compile instead of escaping the boundary
+at runtime.
 
-## O que uma fronteira não promete
+## What a boundary does not promise
 
-`Boundary` descreve uma região com semântica transacional definida pelo seu
-provedor. Uma fronteira PostgreSQL dá uma transação ACID local; um fake em
-memória dá uma simulação. Compor duas fronteiras compõe efeitos — não cria uma
-transação distribuída, e nenhuma API aqui aceita mais de uma fronteira.
+A `Boundary` describes a region with transactional semantics defined by its
+provider. A PostgreSQL boundary gives a local ACID transaction; an in-memory
+fake gives a simulation. Composing two boundaries composes effects; it does
+not create a distributed transaction, and no API here accepts more than one
+boundary.
 
-## Leituras dentro ou fora
+## Reads inside or outside
 
-Ambas as estratégias são suportadas e nenhuma é imposta. Otimista: carregar
-fora, decidir, depois `UPDATE ... WHERE version = expected` dentro. Pessimista:
-iniciar, `SELECT ... FOR UPDATE`, decidir, atualizar. Um escopo pode expor uma
-capacidade de leitura quando a forma pessimista for desejada.
+Both strategies are supported and neither is imposed. Optimistic: load
+outside, decide, then `UPDATE ... WHERE version = expected` inside.
+Pessimistic: begin, `SELECT ... FOR UPDATE`, decide, update. A scope can
+expose a read capability when the pessimistic shape is wanted.
 
-## Fronteiras são curtas
+## Boundaries are short
 
-`Within` não é mecanismo para trabalho de longa duração. Manter uma transação
-aberta através de uma chamada remota, um sleep ou uma aprovação humana é um
-erro; isso é coordenação e precisa de outra estratégia. Da mesma forma, uma
-sequência `BEGIN / UPDATE / chamar API externa / publicar no broker / COMMIT` é
-erro: uma transação de banco não torna HTTP ou Kafka transacionais. Persista
-estado e uma linha de outbox, e deixe a entrega acontecer depois.
+`Within` is not a mechanism for long-running work. Holding a transaction open
+across a remote call, a sleep, or a human approval is a bug; that is
+coordination and needs a different strategy. Likewise, a
+`BEGIN / UPDATE / call external API / publish to broker / COMMIT` sequence is
+a bug: a database transaction does not make HTTP or Kafka transactional.
+Persist state and an outbox row, and let delivery happen afterward.
 
-Chamadas aninhadas de `Within` não carregam semântica automática de savepoint ou
-transação aninhada.
+Nested `Within` calls carry no automatic savepoint or nested-transaction
+semantics.
 
-## `Bracket` não é `Within`
+## `Bracket` is not `Within`
 
-`Bracket` descreve acquire/use/release de qualquer recurso e não promete
-atomicidade. `Within` executa uma Action dentro de `Boundary[S]`, cuja
-implementação define begin, commit e rollback. Um adapter pode usar lifecycle
-internamente para implementar sua Boundary, mas os contratos públicos não são
-fundidos.
+`Bracket` describes acquire/use/release for any resource and promises no
+atomicity. `Within` runs an Action inside `Boundary[S]`, whose implementation
+defines begin, commit, and rollback. An adapter may use lifecycle internally
+to implement its Boundary, but the public contracts are not merged.

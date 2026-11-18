@@ -2,43 +2,43 @@
 type: tdd
 id: tdd:workflow:plan-resilience
 context: workflow
-title: Contratos de plan e resilience
+title: Plan and resilience contracts
 status: Accepted
 tags: [workflow, plan, resilience, retry, timeout, context, contracts]
 related: [adr:workflow:plan-as-explicit-non-executable-workflow-description, adr:workflow:explicit-resilience-as-action-transformation, adr:workflow:action-as-deferred-context-bound-computation, tdd:workflow:action, tdd:workflow:core, tdd:workflow:transaction]
 date: 2026-10-23
 ---
-# TDD: Contratos de `plan` e `resilience`
+# TDD: `plan` and `resilience` contracts
 
-## Escopo técnico
+## Technical scope
 
-Este desenho detalha os contratos de dois pacotes de produção do módulo:
-`workflow/plan` (`adr:workflow:plan-as-explicit-non-executable-workflow-description`) e `workflow/resilience` (`adr:workflow:explicit-resilience-as-action-transformation`). Os três pacotes
-restantes — `workflow`, `workflow/action` e `workflow/transaction` — são
-cobertos por [`tdd:workflow:core`](core.md),
-[`tdd:workflow:action`](action.md) e
+This design details the contracts of two production packages of the module:
+`workflow/plan` (`adr:workflow:plan-as-explicit-non-executable-workflow-description`) and `workflow/resilience` (`adr:workflow:explicit-resilience-as-action-transformation`). The three
+remaining packages, `workflow`, `workflow/action`, and `workflow/transaction`,
+are covered by [`tdd:workflow:core`](core.md),
+[`tdd:workflow:action`](action.md), and
 [`tdd:workflow:transaction`](transaction.md).
 
-Não existe SDD do módulo workflow: `docs/sdd/` não existe e nenhum documento
-declara `sdd:workflow:*`. Este TDD é, portanto, ancorado diretamente nos ADRs e
-não referencia um SDD.
+The workflow module has no SDD: `docs/sdd/` does not exist and no document
+declares `sdd:workflow:*`. This TDD therefore anchors directly in the ADRs and
+references no SDD.
 
 ```text
-plan                     (folha: somente slices e strings)
+plan                     (leaf: slices and strings only)
 workflow ──► action ◄── transaction
                  ▲
-                 └────── resilience   (somente context, action e time)
+                 └────── resilience   (context, action, and time only)
 ```
 
-`plan` não importa pacote do módulo; `action` é o sumidouro. `resilience`
-depende exatamente de `context`, `action` e `time`.
+`plan` imports no package of the module; `action` is the sink. `resilience`
+depends on exactly `context`, `action`, and `time`.
 
-## Contratos públicos
+## Public contracts
 
 ```go
 // plan
 type Kind uint8 // KindEmpty, KindStep, KindSequence, KindTransaction
-type Plan struct{ /* campos não exportados */ }
+type Plan struct{ /* unexported fields */ }
 func Step(name string) Plan
 func Sequence(plans ...Plan) Plan
 func Transaction(plans ...Plan) Plan
@@ -59,142 +59,148 @@ func Retry[T any](policy RetryPolicy, source action.Action[T]) action.Action[T]
 func Timeout[T any](duration time.Duration, source action.Action[T]) action.Action[T]
 ```
 
-A superfície exportada é fixada por `TestExactPublicSurface`.
+`TestExactPublicSurface` pins the exported surface.
 
-## Invariantes de `plan`
+## `plan` invariants
 
-Fixadas por `plan/plan_test.go`, `plan/example_test.go` e pelos gates de
-`internal/archtest`:
+Pinned by `plan/plan_test.go`, `plan/example_test.go`, and the
+`internal/archtest` gates:
 
-- o valor zero de `Plan` é `KindEmpty`, sem nome e com `Children() == nil`;
-- `Step("")` entra em pânico com `"workflow/plan: empty step name"`; nomes não
-  vazios são preservados verbatim, inclusive espaços;
-- `Sequence()` e `Sequence(empty)` reduzem a `KindEmpty`; `Sequence(x)` devolve
-  `x`; duas ou mais entradas preservam ordem e aninhamento, sem achatar;
-- `Transaction(...)` sempre preserva o nó, inclusive vazio e com um filho;
-- construtores e `Children()` clonam o slice: mutar a entrada ou o resultado
-  não altera o `Plan`;
-- `Kind.String()` devolve `empty`, `step`, `sequence`, `transaction` e
-  `unknown` para qualquer valor indefinido;
-- `Plan.String()` é canônico e determinístico, por exemplo
-  `sequence(a, b, transaction(c, d))` e `transaction()`, sem escape de nomes e
-  sem promessa de round-trip; chamar `String()` não altera o `Plan`;
-- leituras concorrentes de um mesmo `Plan` são seguras;
-- `Plan` não exporta campos, expõe somente `Children`, `Kind`, `Name` e
-  `String` (`TestPlanIsOpaqueAndNonExecutable`), não tem `Run` nem `Execute` e
-  `plan` importa exatamente `slices` e `strings`: descrever não executa nem
-  abre transação.
+- the zero value of `Plan` is `KindEmpty`, with no name and
+  `Children() == nil`;
+- `Step("")` panics with `"workflow/plan: empty step name"`; non-empty names
+  are preserved verbatim, spaces included;
+- `Sequence()` and `Sequence(empty)` reduce to `KindEmpty`; `Sequence(x)`
+  returns `x`; two or more inputs preserve order and nesting, with no
+  flattening;
+- `Transaction(...)` always preserves the node, including empty and
+  single-child;
+- the constructors and `Children()` clone the slice: mutating the input or the
+  result does not change the `Plan`;
+- `Kind.String()` returns `empty`, `step`, `sequence`, `transaction`, and
+  `unknown` for any undefined value;
+- `Plan.String()` is canonical and deterministic, for example
+  `sequence(a, b, transaction(c, d))` and `transaction()`, with no name
+  escaping and no round-trip promise; calling `String()` does not change the
+  `Plan`;
+- concurrent reads of a single `Plan` are safe;
+- `Plan` exports no fields and exposes only `Children`, `Kind`, `Name`, and
+  `String` (`TestPlanIsOpaqueAndNonExecutable`), has no `Run` or `Execute`, and
+  `plan` imports exactly `slices` and `strings`: describing neither executes
+  nor opens a transaction.
 
-## Invariantes de `resilience`
+## `resilience` invariants
 
-Fixadas por `resilience/retry_test.go`, `retry_attempts_test.go` e
+Pinned by `resilience/retry_test.go`, `retry_attempts_test.go`, and
 `timeout_test.go`.
 
-### Construção
+### Construction
 
-- `Retry` e `Timeout` são lazy: construir não chama a fonte;
-- argumentos inválidos são erro de programação e entram em pânico na
-  construção, com mensagens exatas e sem chamar fonte nem predicado:
+- `Retry` and `Timeout` are lazy: construction does not call the source;
+- invalid arguments are programming errors and panic at construction, with
+  exact messages and without calling the source or the predicate:
   `"workflow/resilience: invalid attempts"` (`Attempts <= 0`),
   `"workflow/resilience: nil predicate"` (`When == nil`),
-  `"workflow/resilience: nil action"` (fonte nula em `Retry` ou `Timeout`) e
-  `"workflow/resilience: invalid timeout"` (duração `<= 0`);
-- `Backoff` nulo é válido.
+  `"workflow/resilience: nil action"` (a nil source in `Retry` or `Timeout`),
+  and `"workflow/resilience: invalid timeout"` (a duration `<= 0`);
+- a nil `Backoff` is valid.
 
 ### `Retry`
 
-- `Attempts` inclui a primeira chamada; a fonte roda no máximo `Attempts`
-  vezes, parando no primeiro sucesso;
-- `When` só é consultado depois de uma falha que ainda tem tentativa
-  restante: com `Attempts` esgotado ele é chamado `Attempts-1` vezes; um
-  predicado falso encerra sem backoff;
-- `Backoff` recebe o número da tentativa que acabou de falhar, base 1
-  (`[1 2]` para três tentativas); `Backoff` nulo e atraso zero tentam de
-  imediato;
-- atraso negativo entra em pânico com `"workflow/resilience: negative backoff"`
-  depois de a fonte e o predicado rodarem uma vez;
-- a ordem de decisão do laço é: (1) verificar `ctx.Err()`; (2) chamar a fonte;
-  (3) sucesso devolve o valor; (4) com `Attempts` esgotado ou `When` falso, o
-  erro da fonte é devolvido diretamente; (5) só então vem o backoff e a próxima
-  tentativa. O erro da fonte sai sem embrulhar nem agregar e o valor é o zero
-  de `T`; não há `errors.Join` entre tentativas nem entre o erro da fonte e o
-  do contexto;
-- o erro da fonte é o resultado somente quando a própria fonte encerra o laço
-  (passo 4). Nesse caso o contexto não é consultado depois da chamada: um
-  cancelamento ou prazo que ocorra durante ou depois da última tentativa, ou
-  depois de `When` falso, não substitui o erro da fonte, e um sucesso da fonte
-  continua sendo devolvido mesmo que o contexto tenha sido cancelado durante a
-  chamada. O cancelamento do pai não sobrepõe um resultado terminal da fonte;
-- `Retry` devolve exatamente `ctx.Err()` — `context.Canceled` ou
-  `context.DeadlineExceeded`, sem embrulho — somente quando observa a parada do
-  contexto pai em um dos dois pontos de verificação: na entrada de uma
-  tentativa (passo 1, inclusive a primeira, sem chamar fonte, predicado nem
-  backoff) ou na espera do backoff (passo 5). Depois de uma falha retentável com
-  tentativa restante, um pai já parado é observado na espera quando há atraso
-  positivo ou zero (atraso zero apenas consulta `ctx.Err()`) e, com `Backoff`
-  nulo, na entrada da tentativa seguinte; em nenhum dos casos a fonte é chamada
-  de novo. O erro retentável anterior é descartado nesse caso;
-- pânicos da fonte, de `When` e de `Backoff` escapam inalterados;
-- o mesmo `Retry` construído pode ser executado concorrentemente.
+- `Attempts` includes the first call; the source runs at most `Attempts`
+  times, stopping at the first success;
+- `When` is consulted only after a failure that still has an attempt left:
+  with `Attempts` exhausted it runs `Attempts-1` times; a false predicate ends
+  the loop without backoff;
+- `Backoff` receives the number of the attempt that just failed, 1-based
+  (`[1 2]` for three attempts); a nil `Backoff` and a zero delay retry
+  immediately;
+- a negative delay panics with `"workflow/resilience: negative backoff"` after
+  the source and the predicate have run once;
+- the loop decides in this order: (1) check `ctx.Err()`; (2) call the source;
+  (3) success returns the value; (4) with `Attempts` exhausted or `When` false,
+  the source error is returned directly; (5) only then come the backoff and the
+  next attempt. The source error comes out unwrapped and unaggregated, and the
+  value is the zero of `T`; there is no `errors.Join` between attempts or
+  between the source error and the context error;
+- the source error is the result only when the source itself ends the loop
+  (step 4). In that case the context is not consulted after the call: a
+  cancellation or deadline that happens during or after the last attempt, or
+  after a false `When`, does not replace the source error, and a source success
+  keeps being returned even if the context was canceled during the call. Parent
+  cancellation does not override a terminal source result;
+- `Retry` returns exactly `ctx.Err()`, `context.Canceled` or
+  `context.DeadlineExceeded` with no wrapping, only when it observes the parent
+  context stopped at one of two checkpoints: entering an attempt (step 1,
+  including the first, without calling the source, the predicate, or the
+  backoff) or waiting out the backoff (step 5). After a retryable failure with
+  an attempt left, an already-stopped parent is observed at the wait when the
+  delay is positive or zero (a zero delay only checks `ctx.Err()`) and, with a
+  nil `Backoff`, at entry to the next attempt; in none of these cases does the
+  source run again. The earlier retryable error is discarded in that case;
+- panics from the source, from `When`, and from `Backoff` escape unchanged;
+- a single constructed `Retry` can run concurrently.
 
 ### `Timeout`
 
-- cada execução deriva um contexto filho com prazo `duration` a partir do
-  `ctx` recebido; valores do contexto pai continuam visíveis;
-- a fonte recebe o filho, nunca o próprio pai, e seu valor e erro retornam sem
-  alteração;
-- um pai cancelado antes da execução chega cancelado à fonte;
-- uma fonte que observa `ctx.Done()` e devolve `ctx.Err()` produz
-  `context.DeadlineExceeded` no prazo;
-- pânicos da fonte escapam inalterados e o mesmo `Timeout` suporta execução
-  concorrente.
+- each execution derives a child context with a `duration` deadline from the
+  received `ctx`; parent context values stay visible;
+- the source receives the child, never the parent itself, and its value and
+  error return unchanged;
+- a parent canceled before execution reaches the source canceled;
+- a source that observes `ctx.Done()` and returns `ctx.Err()` produces
+  `context.DeadlineExceeded` at the deadline;
+- source panics escape unchanged, and a single `Timeout` supports concurrent
+  execution.
 
-## Cancelamento cooperativo
+## Cooperative cancellation
 
-`action.Run` repassa o `ctx` à Action sem alteração e sem verificá-lo
-(`action/action.go`). Nada no módulo interrompe uma função em execução.
-`TestTimeoutDoesNotPreemptIgnoringSource` prova que uma fonte que ignora o
-contexto continua rodando depois do prazo e `Run` só retorna quando ela
-retorna. O cancelamento é cooperativo: a fonte, ou o adaptador que ela chama,
-precisa observar `ctx`. `Retry` é a única exceção parcial, porque verifica
-`ctx.Err()` entre tentativas e durante o backoff, nunca dentro da fonte.
+`action.Run` passes the `ctx` to the Action unchanged and without checking it
+(`action/action.go`). Nothing in the module interrupts a running function.
+`TestTimeoutDoesNotPreemptIgnoringSource` proves that a source ignoring the
+context keeps running past the deadline and that `Run` returns only when it
+returns. Cancellation is cooperative: the source, or the adapter it calls, has
+to observe `ctx`. `Retry` is the only partial exception, because it checks
+`ctx.Err()` between attempts and during the backoff, never inside the source.
 
-Não há goroutine de produção, `recover` nem preempção automática.
+There is no production goroutine, no `recover`, and no automatic preemption.
 
-## Composição de orçamentos
+## Budget composition
 
-Fixada por `TestTimeoutOutsideRetryUsesOneTotalBudget` e
+Pinned by `TestTimeoutOutsideRetryUsesOneTotalBudget` and
 `TestRetryOutsideTimeoutCreatesPerAttemptBudgets`:
 
-- `Timeout(d, Retry(p, src))` cria um único prazo total para todas as
-  tentativas e esperas; com um backoff maior que o prazo, a fonte roda uma vez
-  e o resultado é `context.DeadlineExceeded`;
-- `Retry(p, Timeout(d, src))` cria um filho novo por tentativa, cada um com
-  prazo e contexto próprios.
+- `Timeout(d, Retry(p, src))` creates one total deadline for all attempts and
+  waits; with a backoff longer than the deadline, the source runs once and the
+  result is `context.DeadlineExceeded`;
+- `Retry(p, Timeout(d, src))` creates a new child per attempt, each with its
+  own deadline and context.
 
-A ordem é escolha explícita do chamador; o módulo não oferece política
-combinada.
+The order is the caller's explicit choice; the module offers no combined
+policy.
 
-## Exceção de `context.WithTimeout`
+## The `context.WithTimeout` exception
 
-O gate de contexto (`TestNoHiddenContextPolicy`) proíbe em produção
+The context gate (`TestNoHiddenContextPolicy`) forbids in production
 `Background`, `TODO`, `Value`, `WithValue`, `WithCancel`, `WithDeadline`,
-`WithoutCancel`, `AfterFunc` e `WithTimeout`, incluindo as variantes `Cause`.
-A única exceção é `context.WithTimeout` dentro do pacote `resilience`, usado
-por `Timeout`. Nenhum outro pacote cria, cancela ou protege contexto.
+`WithoutCancel`, `AfterFunc`, and `WithTimeout`, including the `Cause`
+variants. The only exception is `context.WithTimeout` inside the `resilience`
+package, used by `Timeout`. No other package creates, cancels, or shields a
+context.
 
-## O que estes pacotes não fazem
+## What these packages do not do
 
-- `Plan` não executa, não compila para `Action`, não registra nem agenda;
-- `Retry` e `Timeout` não são motor de execução: não persistem estado nem
-  agendam, e não incluem jitter, circuit breaker ou classificação de erros
-  (`adr:workflow:explicit-resilience-as-action-transformation`);
-- `Retry` não torna uma operação idempotente; repetir efeitos exige que a
-  operação, ou seu adaptador, seja segura para repetição.
+- `Plan` does not execute, does not compile to an `Action`, and neither
+  registers nor schedules;
+- `Retry` and `Timeout` are not an execution engine: they persist no state and
+  schedule nothing, and they include no jitter, circuit breaker, or error
+  classification (`adr:workflow:explicit-resilience-as-action-transformation`);
+- `Retry` does not make an operation idempotent; repeating effects requires
+  the operation, or its adapter, to be safe to repeat.
 
-## Nota sobre os gates de documentação
+## Note on the documentation gates
 
-`TestDocumentationSpine` verifica apenas que este arquivo existe e que a
-frontmatter tem as chaves obrigatórias, status `Aceito` e nenhum `deciders`.
-O gate é de presença: ele não prova que a lista de documentos é uma allowlist
-exata nem que o texto corresponde aos testes citados acima.
+`TestDocumentationSpine` checks only that this file exists and that the
+frontmatter carries the required keys, the status `Accepted`, and no `deciders`
+key. The gate checks presence: it proves neither that the document list is an
+exact allowlist nor that the text matches the tests cited above.

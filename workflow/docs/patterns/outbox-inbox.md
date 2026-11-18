@@ -1,22 +1,23 @@
-# Outbox e inbox como composição da aplicação
+# Outbox and inbox as application composition
 
-Publicar num broker dentro da TX é o erro que o outbox existe para evitar
-(`adr:workflow:transactional-outbox-as-application-composition`). `Outbox`, `OutboxRepository` e `Inbox` são nomes
-proibidos no núcleo. A aplicação define `OutboxMessage` e `EventEncoder`.
+Publishing to a broker inside the TX is the error the outbox exists to prevent
+(`adr:workflow:transactional-outbox-as-application-composition`). `Outbox`, `OutboxRepository` and `Inbox` are forbidden names
+in the core. The application defines `OutboxMessage` and `EventEncoder`.
 
-Invariant: claim (se houver MessageID), writes de estado e appends de
-outbox compartilham um `transaction.Boundary`. Eventos na ordem de
-`Decision.Events()`; zero eventos ⇒ zero linhas.
+Invariant: the claim (when there is a MessageID), the state writes and the
+outbox appends share one `transaction.Boundary`. Events in `Decision.Events()`
+order; zero events ⇒ zero rows.
 
-Inbox (checkout `TxInbox.Claim`, crosscontext distributed): at-least-once
-no consumidor; Duplicate curto-circuita sem reaplicar o domínio. Não
-promova a primitivo até um terceiro domínio concordar no `MessageID`.
+Inbox (see the checkout `TxInbox.Claim`, crosscontext distributed):
+at-least-once on the consumer; Duplicate short-circuits without reapplying
+the domain. Don't promote it to a primitive until a third domain agrees on
+`MessageID`.
 
-## Traverse para appends ordenados
+## Traverse for ordered appends
 
-O laço repetido de [load → decide → confirm](load-decide-confirm.md) —
-codificar e fazer append de cada evento, parando no primeiro erro — é
-`action.Traverse` sobre os eventos materializados:
+The repeated loop from [load → decide → confirm](load-decide-confirm.md),
+encoding and appending each event and stopping at the first error, is
+`action.Traverse` over the materialized events:
 
 ```go
 action.Traverse(slices.Collect(decision.Events()),
@@ -25,8 +26,8 @@ action.Traverse(slices.Collect(decision.Events()),
     })
 ```
 
-Encode e append ficam intercalados por evento, em ordem de índice; o erro do
-encoder mantém identidade e os appends seguintes não rodam. Zero eventos ⇒
-zero appends e slice vazio. A ordem vem da execução sequencial, não do
-`iter.Seq`: `slices.Collect` só fixa o que cada `Run` percorre
+Encode and append stay interleaved per event, in index order; an encoder
+error keeps its identity and later appends don't run. Zero events ⇒ zero
+appends and an empty slice. The order comes from sequential execution, not
+from `iter.Seq`: `slices.Collect` only pins down what each `Run` walks
 (`adr:workflow:sequential-traverse-over-slices`).

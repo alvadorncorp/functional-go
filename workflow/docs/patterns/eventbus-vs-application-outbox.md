@@ -1,8 +1,9 @@
-# Eventos operacionais e mensagens de integração
+# Operational events and integration messages
 
-Eventos operacionais descrevem o que aconteceu durante a execução. Mensagens
-de integração definem fatos do domínio que outras aplicações podem consumir.
+Operational events describe what happened during execution. Integration
+messages define domain facts that other applications can consume.
 
-Não unifique os contratos por padrão: os donos e as garantias são diferentes.
-Quando a mensagem precisa ser atômica com a alteração de negócio, grave-a no
-outbox da aplicação dentro da mesma transação (`adr:workflow:transactional-outbox-as-application-composition`).
+Don't unify the contracts by default: the owners and the guarantees differ.
+When the message must be atomic with the business change, write it to the
+application outbox inside the same transaction
+(`adr:workflow:transactional-outbox-as-application-composition`).

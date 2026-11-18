@@ -1,6 +1,6 @@
-# Composição
+# Composition
 
-Workflows se constroem em um vocabulário:
+Workflows build up a vocabulary:
 
 ```text
 LoadUser  +  RequireActive        =  LoadActiveUser
@@ -8,49 +8,50 @@ LoadActiveUser  +  LoadPermissions =  AuthorizedUser
 AuthorizedUser  +  ChangeEmail     =  ChangeEmailWorkflow
 ```
 
-`LoadActiveUser` é um `Workflow` ordinário. Nada o marca como composto, e
-workflows maiores não conseguem distinguir — que é exatamente por que o
-vocabulário cresce sem o consumidor aprender uma árvore interna.
+`LoadActiveUser` is an ordinary `Workflow`. Nothing marks it as composed, and
+larger workflows cannot tell the difference, which is exactly why the
+vocabulary can grow without consumers learning an internal tree.
 
 ```go
 loadActiveUser := workflow.Then(loadUser, requireActive)
 ```
 
-## A composição é binária
+## Composition is binary
 
-Os genéricos de Go não preservam um tipo intermediário que muda ao longo de uma
-lista variádica, então `Then` recebe dois workflows. Encadeie-os:
+Go generics do not preserve an intermediate type that changes across a
+variadic list, so `Then` takes two workflows. Chain them:
 
 ```go
 ab  := workflow.Then(a, b)
 abc := workflow.Then(ab, c)
 ```
 
-## Nem tudo deve ser um workflow
+## Not everything should be a workflow
 
-Uma função pura permanece função. `func NormalizeEmail(string) string` não ganha
-nada virando um `Workflow`. Use um quando houver efeito, orquestração
-reutilizável, captura de dependência, composição entre capacidades ou ciclo de
-vida de execução. Uniformidade não vale perder significado.
+A pure function stays a function. `func NormalizeEmail(string) string` gains
+nothing by becoming a `Workflow`. Reach for one when there is an effect,
+reusable orchestration, dependency capture, composition across capabilities,
+or an execution lifecycle. Uniformity is not worth losing meaning.
 
-Da mesma forma, uma função de domínio pura que retorna `modeling.Decision` deve
-permanecer função de domínio pura; `MapFallible` existe para que ela entre em um
-workflow sem se disfarçar de efeito.
+Likewise, a pure domain function that returns a `modeling.Decision` should
+stay a pure domain function; `MapFallible` exists so it can enter a workflow
+without disguising itself as an effect.
 
-## Adaptar e fornecer input
+## Adapting and supplying input
 
-`Contramap(wf, mapper)` transforma `Workflow[I,O]` em `Workflow[A,O]` por uma
-projeção `A → I`. O mapper roda quando o workflow é aplicado. `Provide(wf, input)`
-elimina a entrada e retorna `Action[O]`; não chama `Run`.
+`Contramap(wf, mapper)` turns `Workflow[I,O]` into `Workflow[A,O]` through a
+projection `A → I`. The mapper runs when the workflow is applied.
+`Provide(wf, input)` eliminates the input and returns `Action[O]`; it does not
+call `Run`.
 
-## Dependência, independência e paralelismo
+## Dependency, independence, and parallelism
 
-| Operação | Relação | Resultado |
+| Operation | Relation | Result |
 |---|---|---|
-| `FlatMap` | a segunda Action depende do primeiro valor | `Action[B]` |
-| `Zip` | resultados independentes, execução sequencial | `Action[Pair[A,B]]` |
-| `Both` | resultados independentes, execução sequencial | `Action[C]` |
-| `Traverse` | uma Action por item, em ordem de índice, para no primeiro erro | `Action[[]B]` |
+| `FlatMap` | the second Action depends on the first value | `Action[B]` |
+| `Zip` | independent results, sequential execution | `Action[Pair[A,B]]` |
+| `Both` | independent results, sequential execution | `Action[C]` |
+| `Traverse` | one Action per item, in index order, stops at the first error | `Action[[]B]` |
 
-Independência descreve data flow, não concorrência. A ordem continua esquerda →
-direita, sem goroutines.
+Independence describes data flow, not concurrency. Order remains left →
+right, with no goroutines.

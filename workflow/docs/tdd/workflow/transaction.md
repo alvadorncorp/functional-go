@@ -8,9 +8,9 @@ tags: [workflow, transaction, boundary, scope, outbox, postgres]
 related: [adr:workflow:explicit-transaction-scopes, adr:workflow:no-distributed-transaction-abstraction, adr:workflow:transactional-outbox-as-application-composition, tdd:workflow:core]
 date: 2026-08-10
 ---
-# TDD: Fronteira de transação e capacidades escopadas
+# TDD: Transaction boundary and scoped capabilities
 
-## Escopo técnico
+## Technical scope
 
 ```text
 transaction provider (adapter)
@@ -26,58 +26,58 @@ Action[T]
 commit / rollback
 ```
 
-A abstração — `Boundary[S]` e `Within[S,T]` — pertence a este módulo. A
-implementação pertence a um adaptador, e a forma de `S` pertence à aplicação.
+The abstraction, `Boundary[S]` and `Within[S,T]`, belongs to this module. The
+implementation belongs to an adapter, and the shape of `S` belongs to the
+application.
 
-## Contratos públicos
+## Public contracts
 
 ```go
 type Boundary[S any] func(context.Context, func(context.Context, S) error) error
 func Within[S, T any](boundary Boundary[S], fn func(S) action.Action[T]) action.Action[T]
 ```
 
-`Within` carrega `T` para fora através de um callback que só retorna `error`
-atribuindo-o no closure interno, o que permite a um resultado tipado atravessar
-uma fronteira cuja assinatura devolve apenas `error`.
+`Within` carries `T` out through a callback that returns only `error` by
+assigning it in the inner closure, which lets a typed result cross a boundary
+whose signature returns only `error`.
 
-## Invariantes impostas por testes
+## Invariants enforced by tests
 
-- construir `Within` não inicia transação;
-- cada execução recebe um escopo novo;
-- o commit ocorre só no sucesso; qualquer erro reverte;
-- um erro de commit descarta o resultado e retorna o erro original;
-- retornar sucesso sem executar o callback causa o pânico exato
+- building `Within` starts no transaction;
+- every execution receives a fresh scope;
+- commit happens only on success; any error rolls back;
+- a commit error discards the result and returns the original error;
+- returning success without running the callback triggers the exact panic
   `"workflow/transaction: boundary returned without running fn"`;
-- um erro da fronteira tem precedência sobre essa verificação, permanece
-  inalterado e não executa `fn` quando o callback foi omitido;
-- um pânico reverte e é então reerguido com seu valor original;
-- o cancelamento chega ao adaptador e nunca vira erro de negócio;
-- o escopo é inalcançável através do contexto.
+- a boundary error takes precedence over that check, stays unchanged, and does
+  not run `fn` when the callback was omitted;
+- a panic rolls back and is then re-raised with its original value;
+- cancellation reaches the adapter and never becomes a business error;
+- the scope is unreachable through the context.
 
-## Obrigações do adaptador
+## Adapter obligations
 
-Em execução bem-sucedida, o adaptador deve executar o callback exatamente uma
-vez, e a chamada deve ter terminado de forma síncrona antes de o adaptador
-retornar `nil`. Pode retornar um erro sem executar o callback, por exemplo quando
-não consegue iniciar a transação. `Within` detecta a omissão no sucesso; não
-conta nem impede chamadas repetidas, que continuam sendo uma violação do
-contrato do adaptador.
+On a successful run, the adapter must run the callback exactly once, and the
+call must have finished synchronously before the adapter returns `nil`. It may
+return an error without running the callback, for example when it cannot start
+the transaction. `Within` detects the omission on success; it neither counts
+nor prevents repeated calls, which remain a violation of the adapter contract.
 
-`postgres.InTx` satisfaz `Boundary` depois de fechar sobre `db`. Ele inicia,
-confirma em erro nulo e reverte a partir de um `defer` usando um contexto
-desacoplado do cancelamento, para que o rollback ainda rode após desconexão do
-cliente. Também instala a transação como valor ambiente de contexto — esse é o
-mecanismo próprio do módulo `postgres` para participação aninhada, e é ortogonal
-a este módulo, que nem escreve nem lê valores de contexto.
+`postgres.InTx` satisfies `Boundary` after closing over `db`. It begins,
+commits on a nil error, and rolls back from a `defer`, using a context
+decoupled from cancellation so the rollback still runs after the client
+disconnects. It also installs the transaction as an ambient context value.
+That is the `postgres` module's own mechanism for nested participation and is
+orthogonal to this module, which neither writes nor reads context values.
 
-## Separação de conceitos
+## Separation of concerns
 
-| Conceito | Responsabilidade |
+| Concept | Responsibility |
 |---|---|
-| `context.Context` | cancelamento, prazo, ciclo de vida da requisição |
-| `functional/state.Transaction` | agrupar mutações puras de um plano `State[T]` |
-| escopo de transação do workflow | fronteira de composição e capacidades escopadas |
-| `postgres.Tx` / `sql.Tx` | a implementação ACID concreta |
+| `context.Context` | cancellation, deadline, request lifecycle |
+| `functional/state.Transaction` | grouping pure mutations of a `State[T]` plan |
+| workflow transaction scope | composition boundary and scoped capabilities |
+| `postgres.Tx` / `sql.Tx` | the concrete ACID implementation |
 
-Somente o último realiza uma transação física. `functional/state.Transaction` é
-não relacionado e nunca é reutilizado para este propósito.
+Only the last one performs a physical transaction. `functional/state.Transaction`
+is unrelated and is never reused for this purpose.

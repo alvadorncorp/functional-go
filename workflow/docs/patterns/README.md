@@ -1,16 +1,16 @@
-# Padrões hexagonais
+# Hexagonal patterns
 
-Receitas de aplicação sobre `functional`, `modeling` e `workflow`. Não são
-tipos de biblioteca.
+Application recipes on top of `functional`, `modeling` and `workflow`. Not
+library types.
 
 1. [Handle COW](cow-handle.md)
 2. [Load → decide → confirm](load-decide-confirm.md)
-3. [Capacidades](capabilities.md)
-4. [Outbox e inbox](outbox-inbox.md)
-5. [DAG de domínio e archtest da app](domain-dag.md)
-6. [ACL entre bounded contexts](acl.md)
-7. [Tempo como dado](time-as-data.md)
-8. [Optics e Change](optics-and-change.md)
-9. [Eventos operacionais e mensagens de integração](eventbus-vs-application-outbox.md)
+3. [Capabilities](capabilities.md)
+4. [Outbox and inbox](outbox-inbox.md)
+5. [Domain DAG and app archtest](domain-dag.md)
+6. [ACL between bounded contexts](acl.md)
+7. [Time as data](time-as-data.md)
+8. [Optics and Change](optics-and-change.md)
+9. [Operational events and integration messages](eventbus-vs-application-outbox.md)
 
-Ver também [no ddd runtime module](../adr/workflow/no-ddd-runtime-module.md) e o padrão [Decider](../../../docs/modeling/patterns/decider.md) do modeling.
+See also [no ddd runtime module](../adr/workflow/no-ddd-runtime-module.md) and the modeling [Decider](../../../docs/modeling/patterns/decider.md) pattern.

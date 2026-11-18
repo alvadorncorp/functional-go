@@ -8,31 +8,31 @@ tags: [workflow, core, module, architecture, archtest]
 related: [adr:workflow:workflow-as-reusable-effectful-composition, adr:workflow:functional-integration-without-effect-duplication, adr:workflow:composition-and-resource-safety, adr:workflow:plan-as-explicit-non-executable-workflow-description, adr:workflow:explicit-resilience-as-action-transformation, adr:workflow:ast-evidence-for-exercised-surface-gate, tdd:workflow:action, tdd:workflow:composition, tdd:workflow:plan-resilience]
 date: 2026-08-11
 ---
-# TDD: Núcleo do módulo workflow
+# TDD: Workflow module core
 
-## Escopo técnico
+## Technical scope
 
-O módulo mantém cinco pacotes de produção e um pacote interno de gates:
+The module keeps five production packages and one internal gate package:
 `workflow`, `workflow/action`, `workflow/plan`, `workflow/resilience`,
-`workflow/transaction` e `workflow/internal/archtest`.
+`workflow/transaction`, and `workflow/internal/archtest`.
 
 ```text
 workflow ──► action ◄── transaction
                 ▲
                 └────── resilience
 
-plan   (folha, sem dependência intramódulo)
+plan   (leaf, no intra-module dependency)
 ```
 
-`action` é o sumidouro e importa exatamente `context` e `errors`. A segunda
-dependência existe somente para preservar duas falhas independentes em `Ensure`
-e `Bracket`; ambas continuam dentro da biblioteca padrão. `plan` importa
-somente `slices` e `strings`; `resilience` importa exatamente `context`,
-`action` e `time`. Os contratos de `plan` e `resilience` estão em
-[`plan-resilience.md`](plan-resilience.md). `go.mod` não contém `require` nem
+`action` is the sink and imports exactly `context` and `errors`. The second
+dependency exists only to preserve two independent failures in `Ensure` and
+`Bracket`; both stay in the standard library. `plan` imports only `slices` and
+`strings`; `resilience` imports exactly `context`, `action`, and `time`. The
+`plan` and `resilience` contracts are in
+[`plan-resilience.md`](plan-resilience.md). `go.mod` contains no `require` or
 `replace`.
 
-## Contratos públicos
+## Public contracts
 
 ```go
 type Workflow[I, O any] func(I) action.Action[O]
@@ -40,39 +40,40 @@ type Action[T any] func(context.Context) (T, error)
 type Boundary[S any] func(context.Context, func(context.Context, S) error) error
 ```
 
-As superfícies completas são fixadas por `TestExactPublicSurface`; mudanças de
-nome, assinatura, field shape ou arquivo precisam alterar o gate na mesma fase.
+`TestExactPublicSurface` pins the complete surfaces; a change to a name,
+signature, field shape, or file must change the gate in the same phase.
 
-## Invariantes impostas por testes
+## Invariants enforced by tests
 
-- fecho transitivo = stdlib + este módulo;
-- DAG intramódulo exatamente `workflow -> action`, `transaction -> action` e
-  `resilience -> action`, com `plan` folha e `action` sumidouro;
-- nenhum `require`, `replace`, package novo ou global mutável;
-- nenhuma goroutine de produção, chamada a `recover` ou criação, derivação,
-  proteção ou leitura de valores de contexto (`Background`, `TODO`,
-  `WithCancel`, `WithDeadline`, `WithValue`, `Value`, `WithoutCancel`,
-  `AfterFunc`); a única exceção é `context.WithTimeout` no pacote `resilience`;
-- `Pair` e `AttemptResult` possuem somente os campos decididos e zero métodos;
-- cada export possui consumo exercitado fora do próprio pacote, provado por
-  `go/parser` sem tipos (`adr:workflow:ast-evidence-for-exercised-surface-gate`): seletor exato de import path e
-  símbolo, com alias resolvido, dot import de pacote rastreado rejeitado, import
-  em branco ignorado e identificadores sombreados descartados; comentário,
-  string, prefixo e pacote estrangeiro não contam. Uma função consumida alcança
-  só os tipos locais de seus resultados e um tipo consumido, os tipos de seus
-  campos exportados; constantes exigem seletor direto. Os consumidores são a
-  produção do módulo e os `example_test.go` externos, exceto
-  `internal/archtest`. `go vet ./...` verifica a compilação dos consumidores;
-  `go test ./...` executa os exemplos com saída declarada;
-- superfícies e arquivos de produção são allowlists exatas; a lista de
-  documentos exigidos é verificada somente por presença, junto com chaves de
-  frontmatter e tokens selecionados;
-- todo gate possui evidência negativa de que pode falhar.
+- the transitive closure is stdlib plus this module;
+- the intra-module DAG is exactly `workflow -> action`, `transaction -> action`,
+  and `resilience -> action`, with `plan` a leaf and `action` the sink;
+- no `require`, no `replace`, no new package, no mutable global;
+- no production goroutine, no call to `recover`, and no creating, deriving,
+  shielding, or reading of context values (`Background`, `TODO`, `WithCancel`,
+  `WithDeadline`, `WithValue`, `Value`, `WithoutCancel`, `AfterFunc`); the only
+  exception is `context.WithTimeout` in the `resilience` package;
+- `Pair` and `AttemptResult` carry exactly the decided fields and zero methods;
+- every export has exercised consumption outside its own package, proven by
+  `go/parser` without type information (`adr:workflow:ast-evidence-for-exercised-surface-gate`): an exact selector
+  of import path and symbol, with aliases resolved; a dot import of a tracked
+  package is rejected, a blank import is ignored, and shadowed identifiers are
+  discarded; comments, strings, prefixes, and foreign packages do not count. A
+  consumed function reaches only the local types of its results, and a consumed
+  type, the types of its exported fields; constants require a direct selector.
+  The consumers are the module's production code and the external
+  `example_test.go` files, except `internal/archtest`. `go vet ./...` checks
+  that the consumers compile; `go test ./...` runs the examples with declared
+  output;
+- production surfaces and files are exact allowlists; the required-documents
+  list is checked for presence only, along with frontmatter keys and selected
+  tokens;
+- every gate carries negative evidence that it can fail.
 
-## Características de execução
+## Execution characteristics
 
-Construção e composição são lazy; `Run` é a única passagem para efeitos e
-repassa o `ctx` à Action sem alteração. Não há preempção automática: o
-cancelamento é cooperativo e depende de a Action observar o contexto.
-Actions são reexecutáveis, sem memoização nem runtime. Um closure por combinador
-é medido por benchmark, sem promessa universal de zero allocation.
+Construction and composition are lazy; `Run` is the only path to effects, and
+it passes the `ctx` to the Action unchanged. There is no automatic preemption:
+cancellation is cooperative and depends on the Action observing the context.
+Actions are re-runnable, with no memoization and no runtime. One closure per
+combinator is measured by benchmark, with no universal zero-allocation promise.

@@ -1,10 +1,11 @@
-# Capacidades como structs de funções
+# Capabilities as structs of functions
 
-Dependências são funções e structs pequenos montados na composition root
-(`adr:workflow:functional-dependency-injection-through-capabilities`). Exemplo checkout: `Orders{ Load func(...) action.Action[Order] }`.
-Escritas só existem em `TxScope` dentro de `transaction.Within`.
+Dependencies are functions and small structs assembled at the composition root
+(`adr:workflow:functional-dependency-injection-through-capabilities`). Checkout
+example: `Orders{ Load func(...) action.Action[Order] }`. Writes exist only in
+`TxScope` inside `transaction.Within`.
 
-Interfaces continuam corretas onde há polimorfismo genuíno; não são o
-mecanismo mandatório de injeção. Nomes `Repository`, `Store`, `CommandBus`
-são proibidos no núcleo de `workflow` e não devem ser reintroduzidos como
-kit de aplicação.
+Interfaces stay correct where there is genuine polymorphism; they are not the
+mandatory injection mechanism. The names `Repository`, `Store`, `CommandBus`
+are forbidden in the `workflow` core and must not be reintroduced as an
+application kit.

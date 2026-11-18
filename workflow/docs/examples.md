@@ -1,18 +1,19 @@
-# Exemplos executáveis
+# Runnable examples
 
-Os exemplos usam a API pública e não dependem de banco, broker ou serviços.
-Execute `go test ./...` a partir do módulo `workflow` para compilá-los e
-conferir a saída documentada.
+The examples use the public API and depend on no database, broker, or external
+service. Run `go test ./...` from the `workflow` module to compile them and
+check the documented output.
 
-- [Composição e injeção de dependências](../example_test.go): a construção
-  recebe as capacidades; `action.Run` só executa efeitos depois de aplicar
-  o workflow à entrada.
-- [Ações, composição e finalização](../action/example_test.go): use `Attempt`
-  para tratar uma falha como dado e `Bracket` para delimitar um recurso.
-- [Fronteira de transação em memória](../transaction/example_test.go): o
-  adaptador fornece capacidades escopadas a `transaction.Within`; o mesmo
-  exemplo mostra sucesso e erro de domínio.
-- [Planos](../plan/example_test.go): descreva passos e transações sem executá-los.
-- [Resiliência](../resilience/example_test.go): `resilience.Retry` repete a
-  ação conforme uma política explícita; a posição de `Timeout` decide entre
-  um orçamento total e um por tentativa.
+- [Composition and dependency injection](../example_test.go): the constructor
+  receives the capabilities; `action.Run` runs effects only after the workflow
+  is applied to the input.
+- [Actions, composition, and finalization](../action/example_test.go): use
+  `Attempt` to handle a failure as data and `Bracket` to scope a resource.
+- [In-memory transaction boundary](../transaction/example_test.go): the
+  adapter supplies capabilities scoped to `transaction.Within`; the same
+  example shows success and a domain error.
+- [Plans](../plan/example_test.go): describe steps and transactions without
+  executing them.
+- [Resilience](../resilience/example_test.go): `resilience.Retry` repeats the
+  action according to an explicit policy; where `Timeout` sits decides between
+  a total budget and a per-attempt one.

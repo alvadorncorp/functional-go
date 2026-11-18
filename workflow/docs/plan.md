@@ -1,11 +1,11 @@
 # Plan
 
-`workflow/plan` representa a estrutura conceitual de uma operação como dado Go
-imutável e inspecionável.
+`workflow/plan` represents the conceptual structure of an operation as
+immutable, inspectable Go data.
 
-> Plan descreve. Workflow constrói. Action adia. Run executa.
+> Plan describes. Workflow builds. Action defers. Run executes.
 
-## Superfície inicial
+## Initial surface
 
 ```go
 var CreateOrderPlan = plan.Sequence(
@@ -19,43 +19,45 @@ var CreateOrderPlan = plan.Sequence(
 )
 ```
 
-O valor zero é `KindEmpty`. `Sequence()` também é Empty e `Sequence(p)` devolve
-`p`. Com dois ou mais filhos, Sequence preserva ordem e aninhamento.
-Transaction preserva o nó declarado porque a fronteira conceitual é informação.
+The zero value is `KindEmpty`. `Sequence()` is also Empty, and `Sequence(p)`
+returns `p`. With two or more children, Sequence preserves order and nesting.
+Transaction preserves the declared node because the conceptual boundary is
+information.
 
-`Step` rejeita somente nome vazio. Nomes são destinados a humanos e tooling;
-não são UUIDs nem package paths.
+`Step` rejects only an empty name. Names are for humans and tooling; they are
+not UUIDs or package paths.
 
-## Inspeção e imutabilidade
+## Inspection and immutability
 
-`Kind()`, `Name()`, `Children()` e `String()` são as operações de leitura de
-Plan. `Kind.String()` devolve `empty`, `step`, `sequence` ou `transaction`;
-valores de Kind não definidos devolvem `unknown`.
-Os construtores copiam slices recebidos, e `Children()` devolve cópia defensiva.
-Uma árvore pronta pode ser lida concorrentemente sem locks; `String()` não
-modifica a árvore nem snapshots obtidos por `Children()`.
+`Kind()`, `Name()`, `Children()`, and `String()` are Plan's read operations.
+`Kind.String()` returns `empty`, `step`, `sequence`, or `transaction`;
+undefined Kind values return `unknown`. Constructors copy the slices they
+receive, and `Children()` returns a defensive copy. A finished tree can be
+read concurrently without locks; `String()` modifies neither the tree nor
+snapshots taken through `Children()`.
 
-`Plan.String()` descreve a estrutura declarada em uma forma canônica:
+`Plan.String()` renders the declared structure in a canonical form:
 
 ```go
 fmt.Println(CreateOrderPlan.String())
 // sequence(load-customer, load-product, decide-order, transaction(save-order, append-outbox))
 ```
 
-O valor zero e `Sequence()` produzem `empty`; um Step produz seu nome sem
-alterações. Sequence mantém as regras do construtor: um único filho é reduzido
-ao próprio filho, e sequências aninhadas com dois ou mais filhos permanecem
-aninhadas. Transaction preserva sua fronteira, inclusive `transaction()` sem
-filhos. Nomes aparecem literalmente, sem escape; a descrição não promete parsing
-ou round-trip e não acrescenta semântica de execução.
+The zero value and `Sequence()` produce `empty`; a Step produces its name
+unchanged. Sequence keeps the constructor's rules: a single child collapses to
+that child, and nested sequences with two or more children stay nested.
+Transaction keeps its boundary, including childless `transaction()`. Names
+appear literally, unescaped; the description promises no parsing or
+round-trip and adds no execution semantics.
 
-## O que Plan não faz
+## What Plan does not do
 
-Plan não executa Action, não recebe `context.Context`, não chama `Run`, não abre
-transação, não aplica retry/timeout e não realiza I/O. Plan não é uma
-`modeling.Specification`: Specification classifica um valor de domínio; Plan
-descreve a estrutura operacional declarada pela aplicação.
+Plan does not execute Actions, does not take a `context.Context`, does not
+call `Run`, does not open a transaction, does not apply retry or timeout, and
+performs no I/O. Plan is not a `modeling.Specification`: a Specification
+classifies a domain value; Plan describes the operational structure the
+application declares.
 
-Plan não é compilado para Action e Action não é decompilada para Plan. A
-aplicação pode declarar os dois artefatos lado a lado, ou usar qualquer um
-isoladamente.
+Plan is not compiled into an Action, and an Action is not decompiled into
+Plan. An application can declare both artifacts side by side, or use either
+one alone.

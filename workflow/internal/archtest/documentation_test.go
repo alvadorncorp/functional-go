@@ -110,22 +110,22 @@ func assertFrontmatter(t *testing.T, relative, content string) {
 
 func requiredDocumentationTokens() map[string][]string {
 	return map[string][]string{
-		"README.md": {"Contramap", "Provide", "Bracket", "plan.Plan", "resilience", "Run executa"},
+		"README.md": {"Contramap", "Provide", "Bracket", "plan.Plan", "resilience", "action.Run"},
 		"docs/overview.md": {
-			"Plan", "Resilience", "Boundary", "Run", "Dados de negócio", "ctx.Value",
+			"Plan", "Resilience", "Boundary", "Run", "explicit input", "ctx.Value",
 		},
 		"docs/architecture.md": {
-			"plan", "resilience", "resilience -> action", "WithTimeout", "preempção",
+			"plan", "resilience", "resilience -> action", "WithTimeout", "preempt",
 		},
 		"docs/actions.md": {"errors.Join", "Attempt", "Bracket"},
-		"docs/plan.md":    {"Plan descreve", "não executa", "KindEmpty", "defensiva", "Specification"},
+		"docs/plan.md":    {"does not execute Actions", "KindEmpty", "defensive", "Specification"},
 		"docs/resilience.md": {
-			"Attempts", "1-based", "idempot", "cooperativo", "Timeout(Retry", "Retry(Timeout",
+			"Attempts", "1-based", "idempot", "cooperat", "Timeout(Retry", "Retry(Timeout",
 		},
 		"docs/composition.md":              {"FlatMap", "Zip", "Both", "Traverse"},
-		"docs/dependency-injection.md":     {"fornece input", "Container"},
+		"docs/dependency-injection.md":     {"supplies input, not dependencies", "Container"},
 		"docs/examples.md":                 {"action.Run", "transaction.Within", "resilience.Retry"},
-		"docs/transactions.md":             {"Bracket", "Within", "atomicidade"},
+		"docs/transactions.md":             {"Bracket", "Within", "atomic"},
 		"docs/tdd/workflow/action.md":      {"AcquireUseRelease", "errors.Join", "panic", "Traverse"},
 		"docs/tdd/workflow/composition.md": {"Contramap", "Provide", "DI container"},
 	}
@@ -136,11 +136,11 @@ func requiredDocumentationTokens() map[string][]string {
 // non-goals is out of scope for these narrow phrases.
 func forbiddenDocumentationPhrases() []string {
 	return []string{
-		"Plan executa Action",
-		"Plan compila para Action",
-		"Timeout preempta",
-		"Timeout interrompe goroutine",
-		"retry está embutido em action",
+		"Plan executes an Action",
+		"Plan compiles to an Action",
+		"Timeout preempts",
+		"Timeout stops goroutines",
+		"retry is built into action",
 	}
 }
 
@@ -180,18 +180,18 @@ func TestRequiredDocumentationTerminology(t *testing.T) {
 func TestDocumentationTerminologyGateCanFail(t *testing.T) {
 	missing := missingDocumentationTokens(
 		"Contramap and Provide without plan.Plan",
-		[]string{"Contramap", "plan.Plan", "Run executa"},
+		[]string{"Contramap", "plan.Plan", "action.Run"},
 	)
-	if len(missing) != 1 || missing[0] != "Run executa" {
-		t.Fatalf("missing tokens = %v, want [Run executa]", missing)
+	if len(missing) != 1 || missing[0] != "action.Run" {
+		t.Fatalf("missing tokens = %v, want [action.Run]", missing)
 	}
 
 	found := foundForbiddenPhrases(
-		"legacy note: Plan executa Action when misused",
-		[]string{"Plan executa Action", "Timeout preempta"},
+		"Plan executes an Action",
+		[]string{"Plan executes an Action", "Timeout preempts"},
 	)
-	if len(found) != 1 || found[0] != "Plan executa Action" {
-		t.Fatalf("forbidden phrases = %v, want [Plan executa Action]", found)
+	if len(found) != 1 || found[0] != "Plan executes an Action" {
+		t.Fatalf("forbidden phrases = %v, want [Plan executes an Action]", found)
 	}
 }
 

@@ -1,6 +1,7 @@
-# ACL entre bounded contexts
+# ACL between bounded contexts
 
-Uma função pura traduz os dados de um contexto para o vocabulário do outro.
-Nenhum contexto precisa conhecer as regras de negócio do outro. Bounded
-context não implica uma fronteira de transação distinta (`adr:workflow:no-distributed-transaction-abstraction`).
-Não extraia um tipo `ACL` para a biblioteca.
+A pure function translates one context's data into the other's vocabulary.
+Neither context needs to know the other's business rules. A bounded context
+does not imply a separate transaction boundary
+(`adr:workflow:no-distributed-transaction-abstraction`).
+Don't extract an `ACL` type into the library.

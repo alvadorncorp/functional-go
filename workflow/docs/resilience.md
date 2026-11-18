@@ -1,10 +1,10 @@
 # Resilience
 
-`workflow/resilience` transforma uma `action.Action[T]` sem executá-la. A
-política permanece visível no adapter que conhece o orçamento e a classe de
-falha operacional.
+`workflow/resilience` transforms an `action.Action[T]` without running it. The
+policy stays visible in the adapter that knows the budget and the operational
+failure class.
 
-## Retry seletivo
+## Selective retry
 
 ```go
 policy := resilience.RetryPolicy{
@@ -16,7 +16,8 @@ program := resilience.Retry(policy, source)
 value, err := action.Run(ctx, program)
 ```
 
-O adapter pode limitar o backoff antes do shift, usando `math/bits` da stdlib:
+The adapter can cap the backoff before the shift, using `math/bits` from the
+standard library:
 
 ```go
 func exponentialBackoff(attempt int) time.Duration {
@@ -32,28 +33,31 @@ func exponentialBackoff(attempt int) time.Duration {
 }
 ```
 
-O limite antes do shift impede overflow mesmo com um número alto de tentativas.
+The cap before the shift prevents overflow even with a high attempt count.
 
-`Attempts` inclui a chamada inicial. O argumento de Backoff é o número 1-based
-da tentativa que falhou. `When` não roda depois da última falha. Backoff nil ou
-espera zero são imediatos; espera negativa causa panic. Cancelamento antes da
-tentativa ou durante a espera devolve o erro exato do contexto e o zero de T.
+`Attempts` includes the initial call. The Backoff argument is the 1-based
+number of the attempt that failed. `When` does not run after the final
+failure. A nil Backoff or a zero wait is immediate; a negative wait panics.
+Cancellation before an attempt or during the wait returns the exact context
+error and the zero value of T.
 
-Retry não torna uma operação segura. Use-o somente quando o efeito é idempotente,
-deduplicado, transacional no limite necessário, ou quando repetição parcial foi
-modelada. O predicado de classificação pertence ao adapter, não ao pacote.
+Retry does not make an operation safe. Use it only when the effect is
+idempotent, deduplicated, transactional at the required boundary, or when
+partial repetition has been modeled. The classification predicate belongs to
+the adapter, not the package.
 
-## Timeout cooperativo
+## Cooperative timeout
 
 ```go
 program := resilience.Timeout(3*time.Second, source)
 value, err := action.Run(request.Context(), program)
 ```
 
-Timeout deriva um contexto filho e chama a origem no mesmo goroutine. Ele é
-cooperativo: se a origem ignora o contexto, não há preempção mágica.
+Timeout derives a child context and calls the source on the same goroutine. It
+is cooperative: if the source ignores the context, there is no magic
+preemption.
 
-## Ordem de composição
+## Composition order
 
 ```go
 totalBudget := resilience.Timeout(30*time.Second,
@@ -69,15 +73,16 @@ perAttemptBudget := resilience.Retry(perAttemptPolicy,
 )
 ```
 
-`Timeout(Retry(source))` limita o conjunto das tentativas e backoffs.
-`Retry(Timeout(source))` renova o orçamento de cada tentativa; por isso o segundo
-predicado também aceita `context.DeadlineExceeded` do contexto filho. O
-`ctx.Err()` antes de cada tentativa e a espera cancelável de Retry continuam
-respeitando o contexto pai: se o orçamento total dele acabar, não há nova
-tentativa. O timeout permanece cooperativo se a origem ignorar o contexto.
+`Timeout(Retry(source))` bounds the whole set of attempts and backoffs.
+`Retry(Timeout(source))` renews the budget for each attempt, which is why the
+second predicate also accepts `context.DeadlineExceeded` from the child
+context. Retry's `ctx.Err()` check before each attempt and its cancelable wait
+keep respecting the parent context: once its total budget runs out, there is
+no new attempt. The timeout stays cooperative even if the source ignores the
+context.
 
-## Transparência
+## Transparency
 
-A construção é lazy. O pacote não inicia goroutine, não recupera panic, não
-embrulha erros, não registra métricas e não armazena estado global. Plan descreve
-estrutura; Resilience transforma Action; somente Run executa.
+Construction is lazy. The package starts no goroutine, recovers no panic,
+wraps no errors, records no metrics, and stores no global state. Plan
+describes structure; Resilience transforms Actions; only Run executes.

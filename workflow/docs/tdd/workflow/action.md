@@ -8,15 +8,16 @@ tags: [workflow, action, composition, resources, context, errors, panic]
 related: [adr:workflow:action-as-deferred-context-bound-computation, adr:workflow:composition-and-resource-safety, adr:workflow:sequential-traverse-over-slices, tdd:workflow:core, tdd:workflow:composition]
 date: 2026-08-11
 ---
-# TDD: Representação e execução de Action
+# TDD: Action representation and execution
 
-## Escopo técnico
+## Technical scope
 
-`Action[T] = func(context.Context) (T, error)`. É um valor reexecutável e sem
-estado interno; somente `Run` executa o closure. Todo combinador encaminha o
-mesmo contexto e nunca cria goroutine, runtime, memoização ou recovery.
+`Action[T] = func(context.Context) (T, error)`. It is a re-runnable value with
+no internal state; only `Run` executes the closure. Every combinator forwards
+the same context and never creates a goroutine, a runtime, memoization, or a
+recovery.
 
-## Contratos públicos
+## Public contracts
 
 ```go
 func Run[T any](context.Context, Action[T]) (T, error)
@@ -40,49 +41,50 @@ func Bracket[R, T any](Action[R], func(R) Action[T], func(R) Action[struct{}]) A
 func AcquireUseRelease[R, T any](Action[R], func(R) Action[T], func(R) Action[struct{}]) Action[T]
 ```
 
-`Do` adapta funções com resultado; `Exec` adapta efeitos que retornam apenas
-erro, sem introduzir outro tipo unitário. Nenhum deles executa a função durante
-a construção: somente `Run` a chama, uma vez por execução. `Exec` rejeita função
-nil imediatamente com `workflow/action: nil function`, como `Do`, e preserva o
-contexto recebido, a identidade do erro e qualquer panic. Não checa cancelamento
-antes de chamar a função: a cooperação com o contexto permanece no callback.
+`Do` adapts functions with a result; `Exec` adapts effects that return only an
+error, without introducing another unit type. Neither executes the function at
+construction time: only `Run` calls it, once per execution. `Exec` rejects a
+nil function immediately with `workflow/action: nil function`, like `Do`, and
+preserves the received context, the error identity, and any panic. It does not
+check for cancellation before calling the function: cooperation with the
+context stays in the callback.
 
-## Ordem e curto-circuito
+## Ordering and short-circuiting
 
-`Zip` e `Both` executam primeiro a Action esquerda e depois a direita. `Both`
-chama o combiner somente após dois sucessos. `Tap` chama o efeito somente após o
-sucesso da source. Independência de valores não significa paralelismo.
+`Zip` and `Both` run the left Action first, then the right one. `Both` calls
+the combiner only after two successes. `Tap` runs the effect only after the
+source succeeds. Value independence does not imply parallelism.
 
-`Traverse` vincula e executa um item por vez, em ordem de índice: o binder do
-item seguinte só é chamado depois do sucesso da Action do item anterior. Cada
-`Run` percorre os itens de novo. Sucesso devolve um slice novo, não nil, com
-`len(items)` valores na ordem dos itens; entrada nil ou vazia devolve slice vazio
-não nil sem chamar o binder. A primeira falha devolve `(nil, err)` com o erro
-inalterado, sem chamar o binder para os itens restantes. Não há checagem de
-contexto entre itens. A construção copia `items` (cópia rasa: elementos ponteiro
-continuam compartilhados).
+`Traverse` binds and runs one item at a time, in index order: the binder for
+the next item runs only after the previous item's Action succeeds. Every `Run`
+walks the items again. Success returns a new, non-nil slice with `len(items)`
+values in item order; nil or empty input returns an empty, non-nil slice
+without calling the binder. The first failure returns `(nil, err)` with the
+error unchanged and does not call the binder for the remaining items. There is
+no context check between items. Construction copies `items` (a shallow copy:
+pointer elements stay shared).
 
-Perfil de alocação de `Traverse`: uma cópia de `items` na construção, um slice de
-resultado por `Run` e as alocações feitas pelo binder e pelas Actions que ele
-devolve.
+`Traverse` allocation profile: one copy of `items` at construction, one result
+slice per `Run`, and whatever the binder and the Actions it returns allocate.
 
-## Erros e finalização
+## Errors and finalization
 
-Erros únicos preservam identidade. `Ensure` executa o finalizer depois de todo
-retorno normal da source. `Bracket` executa release se e somente se acquire
-retornar sucesso e também depois de um erro normal de use. Quando source/use e
-finalizer/release falham, `errors.Join(primaryErr, finalizerErr)` preserva ambos
-para `errors.Is`/`errors.As`; qualquer erro produz zero `T`.
+A lone error keeps its identity. `Ensure` runs the finalizer after every normal
+return of the source. `Bracket` runs release if and only if acquire succeeds,
+and also after a normal use error. When both source/use and finalizer/release
+fail, `errors.Join(primaryErr, finalizerErr)` keeps both for
+`errors.Is`/`errors.As`; any error yields a zero `T`.
 
-`Attempt` transforma o par normal `(value, err)` em `AttemptResult` e retorna
-erro externo nil. Não recupera panic nem implementa política best-effort.
+`Attempt` turns the normal `(value, err)` pair into an `AttemptResult` and
+returns a nil outer error. It recovers no panic and implements no best-effort
+policy.
 
-## Contexto, panic e nil
+## Context, panic, and nil
 
-O contexto de `Run`, inclusive cancelado, chega inalterado a toda etapa.
-Shielding pertence ao adapter. Nenhum combinador chama `recover`; `Ensure` não
-promete finalizer depois de panic e `Bracket` não promete release depois de
-panic. Actions/callbacks nil falham na construção; callbacks que retornam Action
-nil falham durante execução com `workflow/action: nil action`. O binder nil de
-`Traverse` falha na construção com `workflow/action: nil binder`, mesmo com
-`items` nil.
+The context that `Run` receives, canceled or not, reaches every step unchanged.
+Shielding belongs to the adapter. No combinator calls `recover`; `Ensure`
+promises no finalizer after a panic, and `Bracket` promises no release after a
+panic. Nil actions and callbacks fail at construction; callbacks that return a
+nil Action fail during execution with `workflow/action: nil action`. A nil
+`Traverse` binder fails at construction with `workflow/action: nil binder`,
+even with nil `items`.

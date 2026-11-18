@@ -1,6 +1,6 @@
-# Injeção de dependências
+# Dependency injection
 
-Uma capacidade é um pequeno struct de funções:
+A capability is a small struct of functions:
 
 ```go
 type Users struct {
@@ -9,14 +9,14 @@ type Users struct {
 }
 ```
 
-Um construtor de workflow recebe o que precisa e devolve um valor:
+A workflow constructor takes what it needs and returns a value:
 
 ```go
 func ChangeEmail(users Users, clock Clock) workflow.Workflow[ChangeEmailCommand, User]
 ```
 
-A composition root é o único lugar que conhece várias implementações concretas de
-uma vez:
+The composition root is the only place that knows several concrete
+implementations at once:
 
 ```text
 PostgreSQL   SMTP   Clock
@@ -31,30 +31,30 @@ PostgreSQL   SMTP   Clock
    HTTP adapters
 ```
 
-## Por que isto não é um service locator
+## Why this is not a service locator
 
-Nada é registrado e nada é resolvido. Uma dependência ausente é erro de
-compilação, não pânico em runtime. O grafo de dependências de uma operação é
-legível a partir da assinatura do construtor, e um workflow construído com um
-conjunto de capacidades continua usá-las — não há resolução tardia que as
-substitua.
+Nothing is registered and nothing is resolved. A missing dependency is a
+compile error, not a runtime panic. The dependency graph of an operation is
+readable from the constructor's signature, and a workflow built with one set
+of capabilities keeps using them; nothing resolves them late and swaps them
+out.
 
-## Nem toda dependência é um efeito
+## Not every dependency is an effect
 
-Um relógio e um gerador de identificadores não precisam de contexto, então são
-funções simples:
+A clock and an identifier generator need no context, so they are plain
+functions:
 
 ```go
 type Clock func() time.Time
 type NewMessageID func() MessageID
 ```
 
-Use a forma mais simples que preserve testabilidade. Embrulhar `Clock` em uma
-`Action` adicionaria cerimônia e nenhuma informação.
+Use the simplest form that keeps things testable. Wrapping `Clock` in an
+`Action` would add ceremony and no information.
 
-## Testar sem framework
+## Testing without a framework
 
-Um literal de struct com closures é o dublê:
+A struct literal with closures is the test double:
 
 ```go
 users := Users{
@@ -63,9 +63,9 @@ users := Users{
 }
 ```
 
-## `Provide` fornece input, não dependência
+## `Provide` supplies input, not dependencies
 
-`workflow.Provide(loadUser, id)` aplica um input já conhecido a um workflow e
-retorna uma Action. Não registra, busca nem substitui capacidades. Dependências
-continuam entrando explicitamente no construtor; `Inject`, `Resolve`, `Container`
-e `Registry` permanecem proibidos.
+`workflow.Provide(loadUser, id)` applies a known input to a workflow and
+returns an Action. It does not register, look up, or replace capabilities.
+Dependencies still enter explicitly through the constructor; `Inject`,
+`Resolve`, `Container`, and `Registry` remain forbidden.

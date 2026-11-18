@@ -1,20 +1,20 @@
-# Documentação do workflow
+# Workflow documentation
 
-## Guias
+## Guides
 
-- [Visão geral](overview.md) — a tríade, os três momentos e o glossário
-- [Arquitetura](architecture.md) — camadas, propriedade e núcleo funcional / casca com efeitos
-- [Actions](actions.md) — execução adiada, contexto, composição, saída de emergência
-- [Plan](plan.md) — descrição estrutural explícita, imutável e não executável
-- [Resilience](resilience.md) — Retry e Timeout como transformações explícitas de Action
-- [Composição](composition.md) — construindo um vocabulário reutilizável de workflows
-- [Injeção de dependências](dependency-injection.md) — capacidades e a composition root
-- [Transações](transactions.md) — fronteiras, escopos e as quatro coisas chamadas "transação"
-- [Integração com modeling](modeling.md) — carregar, decidir, confirmar
-- [Exemplos executáveis](examples.md) — composição, transação em memória e resiliência
-- [Padrões hexagonais](patterns/README.md) — receitas de aplicação (não tipos de biblioteca)
+- [Overview](overview.md) — the triad, the three moments, and the glossary
+- [Architecture](architecture.md) — layers, ownership, and the functional core / effectful shell
+- [Actions](actions.md) — deferred execution, context, composition, and the escape hatch
+- [Plan](plan.md) — an explicit, immutable, non-executable structural description
+- [Resilience](resilience.md) — Retry and Timeout as explicit Action transformations
+- [Composition](composition.md) — building a reusable workflow vocabulary
+- [Dependency injection](dependency-injection.md) — capabilities and the composition root
+- [Transactions](transactions.md) — boundaries, scopes, and the four things called "transaction"
+- [modeling integration](modeling.md) — load, decide, confirm
+- [Runnable examples](examples.md) — composition, an in-memory transaction, and resilience
+- [Hexagonal patterns](patterns/README.md) — application recipes (not library types)
 
-## Decisões de arquitetura
+## Architecture decisions
 
 - [Workflow as reusable effectful composition](adr/workflow/workflow-as-reusable-effectful-composition.md)
 - [Action as deferred context-bound computation](adr/workflow/action-as-deferred-context-bound-computation.md)
@@ -31,11 +31,11 @@
 - [Sequential Traverse over slices](adr/workflow/sequential-traverse-over-slices.md)
 - [AST evidence for the exercised-surface gate](adr/workflow/ast-evidence-for-exercised-surface-gate.md)
 
-## Desenhos técnicos
+## Technical designs
 
-- [Núcleo](tdd/workflow/core.md)
+- [Core](tdd/workflow/core.md)
 - [Action](tdd/workflow/action.md)
-- [Composição](tdd/workflow/composition.md)
-- [Transação](tdd/workflow/transaction.md)
-- [Integração com modeling](tdd/workflow/modeling-integration.md)
-- [Plan e Resilience](tdd/workflow/plan-resilience.md)
+- [Composition](tdd/workflow/composition.md)
+- [Transaction](tdd/workflow/transaction.md)
+- [modeling integration](tdd/workflow/modeling-integration.md)
+- [Plan and Resilience](tdd/workflow/plan-resilience.md)
