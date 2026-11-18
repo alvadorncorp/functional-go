@@ -3,7 +3,7 @@ package lazy_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/lazy"
+	"go.alvadorn.org/functional/structural/lazy"
 )
 
 var lazyBenchmarkInt int

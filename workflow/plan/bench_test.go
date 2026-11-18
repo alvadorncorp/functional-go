@@ -3,7 +3,7 @@ package plan_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/workflow/plan"
+	"go.alvadorn.org/functional/workflow/plan"
 )
 
 var (

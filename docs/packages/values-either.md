@@ -1,6 +1,6 @@
 # Package `values/either`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/values/either`
+**Import path:** `go.alvadorn.org/functional/values/either`
 
 `Either[L, R]` is a neutral disjoint union: it holds a value in either its
 Left branch or its Right branch. The names describe positions only. Neither

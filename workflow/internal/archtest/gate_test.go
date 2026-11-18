@@ -14,7 +14,7 @@ import (
 // eroded.
 func TestGateCanFail(t *testing.T) {
 	t.Run("dependencyAllowed rejects a foreign module", func(t *testing.T) {
-		foreign := listedPackage{ImportPath: "github.com/alvadorncorp/gopackages/modeling"}
+		foreign := listedPackage{ImportPath: "go.alvadorn.org/functional/modeling"}
 		if dependencyAllowed(&foreign) {
 			t.Error("dependencyAllowed accepted a foreign module")
 		}

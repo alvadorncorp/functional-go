@@ -3,7 +3,7 @@ package reducer_test
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/modeling/reducer"
+	"go.alvadorn.org/functional/modeling/reducer"
 )
 
 type accountEventKind uint8

@@ -3,7 +3,7 @@ package tuple_test
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/tuple"
+	"go.alvadorn.org/functional/structural/tuple"
 )
 
 func ExampleOf2() {

@@ -3,7 +3,7 @@ package change_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling/change"
+	"go.alvadorn.org/functional/modeling/change"
 )
 
 type compositionBuilder[S any] func(...change.Change[S]) change.Change[S]

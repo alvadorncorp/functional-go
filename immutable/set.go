@@ -3,8 +3,8 @@ package immutable
 import (
 	"iter"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/transient"
-	"github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
+	"go.alvadorn.org/functional/internal/core/transient"
+	"go.alvadorn.org/functional/internal/engine/hamt"
 )
 
 // Set is an immutable collection of distinct, comparable values. Every write

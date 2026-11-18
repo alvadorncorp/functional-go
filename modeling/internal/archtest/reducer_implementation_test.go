@@ -108,7 +108,7 @@ func TestFunctionalTypeDetectionSelfCheck(t *testing.T) {
 		t.Fatal("public-signature gate rejected a standard-library type")
 	}
 	aliasFile, err := parser.ParseFile(token.NewFileSet(), "synthetic.go", `package synthetic
-import "github.com/alvadorncorp/gopackages/functional/immutable"
+import "go.alvadorn.org/functional/immutable"
 type eventList = immutable.List[int]
 func Events() eventList { panic("unreachable") }
 `, 0)

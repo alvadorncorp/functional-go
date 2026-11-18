@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	pkgFunction  = "github.com/alvadorncorp/gopackages/functional/primitives/function"
-	pkgPredicate = "github.com/alvadorncorp/gopackages/functional/primitives/predicate"
-	pkgOrder     = "github.com/alvadorncorp/gopackages/functional/primitives/order"
-	pkgFold      = "github.com/alvadorncorp/gopackages/functional/primitives/fold"
+	pkgFunction  = "go.alvadorn.org/functional/primitives/function"
+	pkgPredicate = "go.alvadorn.org/functional/primitives/predicate"
+	pkgOrder     = "go.alvadorn.org/functional/primitives/order"
+	pkgFold      = "go.alvadorn.org/functional/primitives/fold"
 )
 
 // primitivePackages is the growing inventory of root-level functional

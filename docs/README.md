@@ -14,15 +14,15 @@ The module root [README](../README.md) is a short **index**. Content lives here.
 | [packages/lazy.md](packages/lazy.md) | `structural/lazy` — concurrent deferred memoization over `sync.OnceValue`; stdlib-only |
 | [packages/iterator.md](packages/iterator.md) | `structural/iterator` — `iter.Seq` adapters; imports only `structural/tuple`; `FromSlice`/`FromValues`/`Collect` Deprecated |
 | [packages/optics.md](packages/optics.md) | `structural/optics` — typed Lens; stdlib-only |
-| [packages/immutable.md](packages/immutable.md) | Public API of `github.com/alvadorncorp/gopackages/functional/immutable` (`List`, `Map`, `Set`, `SortedMap`), including measured Append-loop vs. Builder benchmarks |
-| [packages/state.md](packages/state.md) | Public API of `github.com/alvadorncorp/gopackages/functional/state` (pure `State[T]`, lineage, Tx, Diff); frozen, not deprecated |
+| [packages/immutable.md](packages/immutable.md) | Public API of `go.alvadorn.org/functional/immutable` (`List`, `Map`, `Set`, `SortedMap`), including measured Append-loop vs. Builder benchmarks |
+| [packages/state.md](packages/state.md) | Public API of `go.alvadorn.org/functional/state` (pure `State[T]`, lineage, Tx, Diff); frozen, not deprecated |
 | [packages/core.md](packages/core.md) | Maintainer guide for `internal/core` (ownership, cow, transient) |
 | [packages/values.md](packages/values.md) | Family guide: choice by semantics, zero values, dependency boundary, and cost model |
-| [packages/values-optional.md](packages/values-optional.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/optional` |
-| [packages/values-result.md](packages/values-result.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/result` |
-| [packages/values-either.md](packages/values-either.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/either` |
-| [packages/values-nonempty.md](packages/values-nonempty.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/nonempty` |
-| [packages/values-validated.md](packages/values-validated.md) | Public API of `github.com/alvadorncorp/gopackages/functional/values/validated` |
+| [packages/values-optional.md](packages/values-optional.md) | Public API of `go.alvadorn.org/functional/values/optional` |
+| [packages/values-result.md](packages/values-result.md) | Public API of `go.alvadorn.org/functional/values/result` |
+| [packages/values-either.md](packages/values-either.md) | Public API of `go.alvadorn.org/functional/values/either` |
+| [packages/values-nonempty.md](packages/values-nonempty.md) | Public API of `go.alvadorn.org/functional/values/nonempty` |
+| [packages/values-validated.md](packages/values-validated.md) | Public API of `go.alvadorn.org/functional/values/validated` |
 | [patterns/value-objects.md](patterns/value-objects.md) | What a value object needs from this module vs. what plain Go already covers |
 | [patterns/cow-handles.md](patterns/cow-handles.md) | Small value handles over private payloads when hugeParam bites |
 | [adr/functional/](adr/functional/) | Architecture decisions (`adr:functional:NNN`) |

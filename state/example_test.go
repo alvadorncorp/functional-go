@@ -3,7 +3,7 @@ package state_test
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/state"
+	"go.alvadorn.org/functional/state"
 )
 
 // ExampleOf shows the core loop: Of seeds a Version-0 plan, Apply records

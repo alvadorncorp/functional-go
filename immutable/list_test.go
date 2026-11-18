@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
+	"go.alvadorn.org/functional/immutable"
 )
 
 func TestListOf(t *testing.T) {

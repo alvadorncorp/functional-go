@@ -3,7 +3,7 @@ package state_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/state"
+	"go.alvadorn.org/functional/state"
 )
 
 func TestDiffBetweenLinearChainLenAndApply(t *testing.T) {

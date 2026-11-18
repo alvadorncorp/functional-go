@@ -3,7 +3,7 @@ package modeling
 import (
 	"iter"
 
-	internaldecision "github.com/alvadorncorp/gopackages/modeling/internal/decision"
+	internaldecision "go.alvadorn.org/functional/modeling/internal/decision"
 )
 
 // Decision is the successful result of a domain decision: the next state and

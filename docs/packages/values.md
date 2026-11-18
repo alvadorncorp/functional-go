@@ -11,11 +11,11 @@ for the boundary that keeps the family independently usable.
 
 | Import path | Type |
 |---|---|
-| `github.com/alvadorncorp/gopackages/functional/values/optional` | `optional.Optional[T]` |
-| `github.com/alvadorncorp/gopackages/functional/values/result` | `result.Result[T, E]` |
-| `github.com/alvadorncorp/gopackages/functional/values/either` | `either.Either[L, R]` |
-| `github.com/alvadorncorp/gopackages/functional/values/nonempty` | `nonempty.NonEmpty[T]` |
-| `github.com/alvadorncorp/gopackages/functional/values/validated` | `validated.Validated[T, E]` |
+| `go.alvadorn.org/functional/values/optional` | `optional.Optional[T]` |
+| `go.alvadorn.org/functional/values/result` | `result.Result[T, E]` |
+| `go.alvadorn.org/functional/values/either` | `either.Either[L, R]` |
+| `go.alvadorn.org/functional/values/nonempty` | `nonempty.NonEmpty[T]` |
+| `go.alvadorn.org/functional/values/validated` | `validated.Validated[T, E]` |
 
 Each package has its own contract: [Optional](values-optional.md),
 [Result](values-result.md), [Either](values-either.md),

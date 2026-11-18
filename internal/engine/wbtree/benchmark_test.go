@@ -6,7 +6,7 @@ import (
 	"math/bits"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 // Engine micro-benchmark sizes, matching hamt and vector so the engines

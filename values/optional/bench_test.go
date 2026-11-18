@@ -3,7 +3,7 @@ package optional_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/values/optional"
+	"go.alvadorn.org/functional/values/optional"
 )
 
 func BenchmarkOptionalSome(b *testing.B) {

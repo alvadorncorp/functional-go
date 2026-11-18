@@ -1,6 +1,6 @@
 # Package `values/nonempty`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/values/nonempty`
+**Import path:** `go.alvadorn.org/functional/values/nonempty`
 
 `NonEmpty[T]` is a value container whose cardinality is always at least one.
 It is useful where the domain requires a first value and optionally permits

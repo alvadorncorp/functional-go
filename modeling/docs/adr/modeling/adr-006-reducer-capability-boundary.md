@@ -73,7 +73,7 @@ types. `immutable.List.Values()` supplies ordered iteration directly; using
 
 ## Decision
 
-Add public package `github.com/alvadorncorp/gopackages/modeling/reducer` with
+Add public package `go.alvadorn.org/functional/modeling/reducer` with
 exactly:
 
 ```go

@@ -5,7 +5,7 @@ package modeling_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling"
+	"go.alvadorn.org/functional/modeling"
 )
 
 const decisionAllocRuns = 100

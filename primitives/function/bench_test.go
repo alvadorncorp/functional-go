@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/function"
+	"go.alvadorn.org/functional/primitives/function"
 )
 
 var benchmarkFunctionResult int

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/workflow/action"
-	"github.com/alvadorncorp/gopackages/workflow/transaction"
+	"go.alvadorn.org/functional/workflow/action"
+	"go.alvadorn.org/functional/workflow/transaction"
 )
 
 // readAccounts is what the application holds OUTSIDE a transaction: it can load

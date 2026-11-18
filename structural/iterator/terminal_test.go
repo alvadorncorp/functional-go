@@ -5,8 +5,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/iterator"
-	"github.com/alvadorncorp/gopackages/functional/structural/tuple"
+	"go.alvadorn.org/functional/structural/iterator"
+	"go.alvadorn.org/functional/structural/tuple"
 )
 
 func tracked(values []int, yielded, stopped *int) iter.Seq[int] {

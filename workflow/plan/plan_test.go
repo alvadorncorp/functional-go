@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/workflow/plan"
+	"go.alvadorn.org/functional/workflow/plan"
 )
 
 func TestZeroPlanIsEmpty(t *testing.T) {

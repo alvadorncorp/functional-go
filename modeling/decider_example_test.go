@@ -6,8 +6,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling"
-	"github.com/alvadorncorp/gopackages/modeling/reducer"
+	"go.alvadorn.org/functional/modeling"
+	"go.alvadorn.org/functional/modeling/reducer"
 )
 
 // The identifiers below back the recipes in docs/patterns/decide-evolve-law.md

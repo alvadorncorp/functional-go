@@ -65,7 +65,7 @@ functional module. Existing root consumers are unaffected.
 
 ## Decision
 
-Create `github.com/alvadorncorp/gopackages/modeling/change` with exactly:
+Create `go.alvadorn.org/functional/modeling/change` with exactly:
 
 ```go
 type Change[S any] func(S) S

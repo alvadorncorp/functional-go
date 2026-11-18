@@ -2,7 +2,7 @@
 
 `modeling` is an explicit, compile-time-safe Go metamodel for application-owned
 domain types and behavior. It sits above selected public capabilities in
-[`functional`](../functional/) and below concrete application domains.
+[`functional`](../README.md) and below concrete application domains.
 
 The module intentionally contains no reflection, runtime registry, dispatcher,
 state manager, infrastructure, persistence, or concrete business model.

@@ -3,8 +3,8 @@ package policy
 import (
 	"slices"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/predicate"
-	"github.com/alvadorncorp/gopackages/functional/values/optional"
+	"go.alvadorn.org/functional/primitives/predicate"
+	"go.alvadorn.org/functional/values/optional"
 )
 
 const (

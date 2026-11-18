@@ -9,7 +9,7 @@
 // AnyRule and AnyRequirement are non-empty ordered first-success composition.
 //
 // Pure S-to-S state evolution lives in the separate public subpackage
-// github.com/alvadorncorp/gopackages/modeling/change. The root package does not
+// go.alvadorn.org/functional/modeling/change. The root package does not
 // re-export Change or manage its execution.
 //
 // The policy subpackage derives pure domain results from an explicit context.

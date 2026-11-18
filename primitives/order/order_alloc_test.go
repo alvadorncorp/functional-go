@@ -5,7 +5,7 @@ package order_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/order"
+	"go.alvadorn.org/functional/primitives/order"
 )
 
 var orderTestResult int

@@ -9,8 +9,8 @@ aplicação.
 
 ```go
 import (
-    "github.com/alvadorncorp/gopackages/workflow"
-    "github.com/alvadorncorp/gopackages/workflow/action"
+    "go.alvadorn.org/functional/workflow"
+    "go.alvadorn.org/functional/workflow/action"
 )
 
 type Users struct {
@@ -39,11 +39,11 @@ entra na execução. Construir e compor workflows não realiza I/O; apenas
 
 | Caminho de importação | Conteúdo |
 |---|---|
-| `github.com/alvadorncorp/gopackages/workflow` | `Workflow[I,O]`, `From`, `Map`, `MapFallible`, `Then`, `Provide`, `Contramap` |
-| `github.com/alvadorncorp/gopackages/workflow/action` | `Action[T]`, construção, transformação, combinação sequencial, observação, finalização, error reification e resource safety |
-| `github.com/alvadorncorp/gopackages/workflow/plan` | `plan.Plan` — descrição estrutural explícita, imutável e não executável |
-| `github.com/alvadorncorp/gopackages/workflow/resilience` | `Retry`, `Timeout` e política de backoff como transformações explícitas de Action |
-| `github.com/alvadorncorp/gopackages/workflow/transaction` | `Boundary[S]`, `Within` |
+| `go.alvadorn.org/functional/workflow` | `Workflow[I,O]`, `From`, `Map`, `MapFallible`, `Then`, `Provide`, `Contramap` |
+| `go.alvadorn.org/functional/workflow/action` | `Action[T]`, construção, transformação, combinação sequencial, observação, finalização, error reification e resource safety |
+| `go.alvadorn.org/functional/workflow/plan` | `plan.Plan` — descrição estrutural explícita, imutável e não executável |
+| `go.alvadorn.org/functional/workflow/resilience` | `Retry`, `Timeout` e política de backoff como transformações explícitas de Action |
+| `go.alvadorn.org/functional/workflow/transaction` | `Boundary[S]`, `Within` |
 
 Plan descreve; Workflow constrói; Action adia; Resilience transforma;
 Boundary delimita; Run executa.
@@ -74,6 +74,5 @@ Comece pela [visão geral](docs/overview.md), depois a
 [docs/README.md](docs/README.md), incluindo [Plan](docs/plan.md),
 [Resilience](docs/resilience.md), ADRs e desenhos técnicos.
 
-Os cenários executáveis de ponta a ponta vivem no módulo separado
-`examples/workflow`: um fluxo de saque com outbox transacional e uma transferência
-cross-context nas topologias de banco compartilhado e de bancos independentes.
+Os [exemplos executáveis](docs/examples.md) usam somente a API pública e
+adaptadores em memória.

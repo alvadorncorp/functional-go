@@ -1,6 +1,6 @@
 package workflow
 
-import "github.com/alvadorncorp/gopackages/workflow/action"
+import "go.alvadorn.org/functional/workflow/action"
 
 // Provide fixes the input of wf and returns its deferred Action. It applies the
 // workflow immediately but does not run the Action. Provide panics with

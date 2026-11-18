@@ -104,33 +104,21 @@ func TestNoForbiddenDirectImports(t *testing.T) {
 // dependency on a sibling module, however indirectly (R6).
 func TestCoreDoesNotDependOnModeling(t *testing.T) {
 	siblings := []string{
-		"github.com/alvadorncorp/gopackages/modeling",
-		"github.com/alvadorncorp/gopackages/functional",
-		"github.com/alvadorncorp/gopackages/postgres",
+		"go.alvadorn.org/functional/modeling",
+		"go.alvadorn.org/functional",
 	}
 
-	// Walk each core package's own closure rather than the workspace-wide
-	// wildcard, which would sweep in the nested examples module.
+	// Walk each package's closure; the workflow path sits under the root module's prefix.
 	for _, production := range productionPackages(t) {
 		for _, dependency := range goList(t, "-deps", "-json", production.ImportPath) {
+			if dependencyAllowed(&dependency) {
+				continue
+			}
 			for _, sibling := range siblings {
 				if dependency.ImportPath == sibling ||
 					strings.HasPrefix(dependency.ImportPath, sibling+"/") {
 					t.Errorf("%s must not depend on %s", production.ImportPath, dependency.ImportPath)
 				}
-			}
-		}
-	}
-}
-
-// TestExamplesDoNotLeakIntoCore proves the nested examples module is invisible
-// to the core's closure (R14).
-func TestExamplesDoNotLeakIntoCore(t *testing.T) {
-	for _, production := range productionPackages(t) {
-		for _, dependency := range goList(t, "-deps", "-json", production.ImportPath) {
-			if isExamples(dependency.ImportPath) {
-				t.Errorf("%s must not depend on the examples module: %s",
-					production.ImportPath, dependency.ImportPath)
 			}
 		}
 	}

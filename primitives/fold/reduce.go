@@ -1,8 +1,8 @@
 package fold
 
 import (
-	"github.com/alvadorncorp/gopackages/functional/values/nonempty"
-	"github.com/alvadorncorp/gopackages/functional/values/optional"
+	"go.alvadorn.org/functional/values/nonempty"
+	"go.alvadorn.org/functional/values/optional"
 )
 
 // Reduce combines values from left to right, using the first value as the

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/workflow/action"
-	"github.com/alvadorncorp/gopackages/workflow/transaction"
+	"go.alvadorn.org/functional/workflow/action"
+	"go.alvadorn.org/functional/workflow/transaction"
 )
 
 // ExampleWithin shows the shape an adapter provides and the shape a workflow
@@ -18,7 +18,9 @@ func ExampleWithin() {
 
 	// The adapter. A real one would begin a database transaction here and build
 	// the scope from its handle.
-	boundary := func(ctx context.Context, fn func(context.Context, accounts) error) error {
+	var boundary transaction.Boundary[accounts] = func(
+		ctx context.Context, fn func(context.Context, accounts) error,
+	) error {
 		log = append(log, "BEGIN")
 		scoped := accounts{
 			Save: func(amount int) action.Action[struct{}] {

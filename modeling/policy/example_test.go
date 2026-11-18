@@ -3,8 +3,8 @@ package policy_test
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/predicate"
-	"github.com/alvadorncorp/gopackages/modeling/policy"
+	"go.alvadorn.org/functional/modeling/policy"
+	"go.alvadorn.org/functional/primitives/predicate"
 )
 
 type discountContext struct {

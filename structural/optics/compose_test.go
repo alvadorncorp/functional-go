@@ -3,7 +3,7 @@ package optics_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/optics"
+	"go.alvadorn.org/functional/structural/optics"
 )
 
 type location struct {

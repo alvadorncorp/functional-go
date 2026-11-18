@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling/policy"
+	"go.alvadorn.org/functional/modeling/policy"
 )
 
 func TestComposeRunsFirstThenSecond(t *testing.T) {

@@ -1,6 +1,6 @@
 package vector
 
-import "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+import "go.alvadorn.org/functional/internal/core/ownership"
 
 const (
 	bitsPerLevel = 5

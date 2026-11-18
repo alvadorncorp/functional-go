@@ -1,4 +1,4 @@
-module github.com/alvadorncorp/gopackages/functional
+module go.alvadorn.org/functional
 
 go 1.27
 

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/alvadorncorp/gopackages/workflow/action"
-	"github.com/alvadorncorp/gopackages/workflow/resilience"
+	"go.alvadorn.org/functional/workflow/action"
+	"go.alvadorn.org/functional/workflow/resilience"
 )
 
 func ExampleRetry() {

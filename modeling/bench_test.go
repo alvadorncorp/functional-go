@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling"
+	"go.alvadorn.org/functional/modeling"
 )
 
 var (

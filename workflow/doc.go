@@ -9,7 +9,7 @@
 // would happen.
 //
 // Execution is explicit and lives in
-// github.com/alvadorncorp/gopackages/workflow/action, whose Action[T] is a
+// go.alvadorn.org/functional/workflow/action, whose Action[T] is a
 // deferred, context-bound computation and whose Run is the single passage from
 // description to execution. An Action is re-executable, never memoized, and
 // never started in the background.
@@ -25,14 +25,14 @@
 // cancellation, or recovers panics.
 //
 // Transactional composition lives in
-// github.com/alvadorncorp/gopackages/workflow/transaction, which models a
+// go.alvadorn.org/functional/workflow/transaction, which models a
 // boundary supplied by an adapter and the scoped capabilities it provides. The
 // module defines no transaction implementation and no concrete scope type.
 //
 // Explicit non-executable structure lives in
-// github.com/alvadorncorp/gopackages/workflow/plan. Plan describes a workflow
+// go.alvadorn.org/functional/workflow/plan. Plan describes a workflow
 // without executing it. Explicit Action transformations live in
-// github.com/alvadorncorp/gopackages/workflow/resilience, which offers
+// go.alvadorn.org/functional/workflow/resilience, which offers
 // selective Retry and cooperative Timeout over an Action without becoming an
 // engine. Only Run remains the execution passage.
 //

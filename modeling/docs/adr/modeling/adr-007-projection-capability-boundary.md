@@ -74,7 +74,7 @@ and delivers the complete minimum API without a runtime.
 
 ## Decision
 
-Add public package `github.com/alvadorncorp/gopackages/modeling/projection` with
+Add public package `go.alvadorn.org/functional/modeling/projection` with
 exactly:
 
 ```go

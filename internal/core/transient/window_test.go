@@ -3,8 +3,8 @@ package transient_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
-	"github.com/alvadorncorp/gopackages/functional/internal/core/transient"
+	"go.alvadorn.org/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/transient"
 )
 
 func TestOpenProvidesOwner(t *testing.T) {

@@ -1,6 +1,6 @@
 package hamt
 
-import "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+import "go.alvadorn.org/functional/internal/core/ownership"
 
 // bitmapNode is an array-mapped trie node (branching factor 32).
 // children is dense over the set bits of bitmap (popcount packing).

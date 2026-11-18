@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/workflow/action"
+	"go.alvadorn.org/functional/workflow/action"
 )
 
 const (

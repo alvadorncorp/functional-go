@@ -4,7 +4,7 @@ import (
 	"hash/maphash"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
+	"go.alvadorn.org/functional/internal/engine/keyhash"
 )
 
 func TestHashDeterministicSameSeed(t *testing.T) {

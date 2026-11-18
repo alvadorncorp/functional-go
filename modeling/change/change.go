@@ -10,7 +10,7 @@
 // functional composition internally without exposing functional types.
 package change
 
-import "github.com/alvadorncorp/gopackages/functional/primitives/function"
+import "go.alvadorn.org/functional/primitives/function"
 
 // Change transforms state while preserving its type.
 type Change[S any] func(S) S

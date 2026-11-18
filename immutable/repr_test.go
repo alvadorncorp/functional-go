@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
+	"go.alvadorn.org/functional/immutable"
 )
 
 // Comparable()/TypeOf below go through reflect.TypeOf(zeroValue) rather

@@ -3,7 +3,7 @@ package function_test
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/function"
+	"go.alvadorn.org/functional/primitives/function"
 )
 
 func ExampleCompose() {

@@ -3,7 +3,7 @@ package reducer_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling/reducer"
+	"go.alvadorn.org/functional/modeling/reducer"
 )
 
 type reducerAccount struct {

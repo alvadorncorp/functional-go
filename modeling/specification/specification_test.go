@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling/specification"
+	"go.alvadorn.org/functional/modeling/specification"
 )
 
 var _ specification.Specification[int] = func(value int) bool { return value > 0 }

@@ -1,6 +1,6 @@
 package modeling
 
-import internaldecision "github.com/alvadorncorp/gopackages/modeling/internal/decision"
+import internaldecision "go.alvadorn.org/functional/modeling/internal/decision"
 
 // MapState transforms a Decision state while preserving its events.
 func MapState[S, T, E any](decision Decision[S, E], mapper func(S) T) Decision[T, E] {

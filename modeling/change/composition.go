@@ -1,6 +1,6 @@
 package change
 
-import "github.com/alvadorncorp/gopackages/functional/primitives/function"
+import "go.alvadorn.org/functional/primitives/function"
 
 // Compose composes changes right to left.
 //

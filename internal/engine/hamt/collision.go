@@ -1,6 +1,6 @@
 package hamt
 
-import "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+import "go.alvadorn.org/functional/internal/core/ownership"
 
 // entry is one key/value pair inside a collision bucket.
 type entry[K comparable, V any] struct {

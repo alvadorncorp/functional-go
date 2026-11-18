@@ -3,7 +3,7 @@ package vector
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 func TestTransientMultiAppendThenPublish(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alvadorncorp/gopackages/workflow/action"
+	"go.alvadorn.org/functional/workflow/action"
 )
 
 const answer = 42

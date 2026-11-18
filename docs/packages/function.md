@@ -1,6 +1,6 @@
 # Package `primitives/function`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/primitives/function`
+**Import path:** `go.alvadorn.org/functional/primitives/function`
 
 `function` provides small, stateless generic utilities for ordinary Go function
 values, including a named homogeneous transform type. It is a standard-library-only

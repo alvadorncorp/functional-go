@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/values/optional"
+	"go.alvadorn.org/functional/values/optional"
 )
 
 func TestOptional(t *testing.T) {

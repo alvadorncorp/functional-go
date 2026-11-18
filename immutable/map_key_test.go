@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
+	"go.alvadorn.org/functional/immutable"
 )
 
 func assertStoredZero(t *testing.T, m immutable.Map[float64, string], negative bool, value string) {

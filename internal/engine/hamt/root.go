@@ -4,8 +4,8 @@ import (
 	"hash/maphash"
 	"iter"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
-	"github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
+	"go.alvadorn.org/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/engine/keyhash"
 )
 
 // Root is an immutable hash-array-mapped trie of comparable keys.

@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling"
+	"go.alvadorn.org/functional/modeling"
 )
 
 // Local aliases keep compile-time signature checks under the lll budget while

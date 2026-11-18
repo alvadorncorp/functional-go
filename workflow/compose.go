@@ -1,6 +1,6 @@
 package workflow
 
-import "github.com/alvadorncorp/gopackages/workflow/action"
+import "go.alvadorn.org/functional/workflow/action"
 
 // Map transforms the output of wf with a pure function, leaving failures
 // untouched.

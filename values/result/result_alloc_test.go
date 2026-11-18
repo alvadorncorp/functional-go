@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/values/result"
+	"go.alvadorn.org/functional/values/result"
 )
 
 func TestZeroAllocations(t *testing.T) {

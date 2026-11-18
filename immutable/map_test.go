@@ -4,7 +4,7 @@ import (
 	"maps"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
+	"go.alvadorn.org/functional/immutable"
 )
 
 func TestMapOf(t *testing.T) {

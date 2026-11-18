@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/tuple"
+	"go.alvadorn.org/functional/structural/tuple"
 )
 
 func TestTuple2ConstructionAndTransforms(t *testing.T) {

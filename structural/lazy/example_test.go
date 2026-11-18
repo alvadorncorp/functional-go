@@ -3,7 +3,7 @@ package lazy_test
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/lazy"
+	"go.alvadorn.org/functional/structural/lazy"
 )
 
 func ExampleMap() {

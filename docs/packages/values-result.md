@@ -1,6 +1,6 @@
 # Package `values/result`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/values/result`
+**Import path:** `go.alvadorn.org/functional/values/result`
 
 `Result[T, E]` represents an operation that has either succeeded with a value
 of type `T` (`Ok`) or failed with a value of type `E` (`Err`). It models

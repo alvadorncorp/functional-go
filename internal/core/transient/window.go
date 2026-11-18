@@ -1,6 +1,6 @@
 package transient
 
-import "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+import "go.alvadorn.org/functional/internal/core/ownership"
 
 // panicUsedAfterFreeze is the stable message for a nil window, a zero-value
 // window, or any use after Freeze.

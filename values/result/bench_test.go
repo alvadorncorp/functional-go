@@ -3,7 +3,7 @@ package result_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/values/result"
+	"go.alvadorn.org/functional/values/result"
 )
 
 func BenchmarkResultOk(b *testing.B) {

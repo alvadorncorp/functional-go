@@ -1,7 +1,7 @@
 package workflow
 
 import (
-	"github.com/alvadorncorp/gopackages/workflow/action"
+	"go.alvadorn.org/functional/workflow/action"
 )
 
 // Workflow is a reusable operation that turns an input into a deferred

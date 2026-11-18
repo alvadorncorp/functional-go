@@ -3,7 +3,7 @@ package nonempty_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/values/nonempty"
+	"go.alvadorn.org/functional/values/nonempty"
 )
 
 func TestNonEmptyZeroAndConstructors(t *testing.T) {

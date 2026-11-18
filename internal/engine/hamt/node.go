@@ -3,7 +3,7 @@ package hamt
 import (
 	"math/bits"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 const (

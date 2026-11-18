@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 // Engine micro-benchmark sizes. Focus is path-copy / depth cost, not product

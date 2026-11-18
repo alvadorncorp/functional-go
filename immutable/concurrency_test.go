@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
+	"go.alvadorn.org/functional/immutable"
 )
 
 // numReaders is the number of concurrent reader goroutines each

@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
+	"go.alvadorn.org/functional/immutable"
 )
 
 // Benchmark sizes for Baseline B (path-copy engines).

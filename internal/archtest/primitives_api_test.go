@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/tuple"
+	"go.alvadorn.org/functional/structural/tuple"
 )
 
 var expectedPrimitiveAPI = map[string][]string{

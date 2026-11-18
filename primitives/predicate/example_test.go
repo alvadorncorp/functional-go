@@ -3,7 +3,7 @@ package predicate_test
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/predicate"
+	"go.alvadorn.org/functional/primitives/predicate"
 )
 
 func ExampleAnd() {

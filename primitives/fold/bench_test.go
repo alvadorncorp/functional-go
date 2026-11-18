@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/fold"
-	"github.com/alvadorncorp/gopackages/functional/values/optional"
+	"go.alvadorn.org/functional/primitives/fold"
+	"go.alvadorn.org/functional/values/optional"
 )
 
 var (

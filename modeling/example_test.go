@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
-	"github.com/alvadorncorp/gopackages/functional/state"
-	"github.com/alvadorncorp/gopackages/modeling"
+	"go.alvadorn.org/functional/immutable"
+	"go.alvadorn.org/functional/modeling"
+	"go.alvadorn.org/functional/state"
 )
 
 type (

@@ -3,8 +3,8 @@ package state_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
-	"github.com/alvadorncorp/gopackages/functional/state"
+	"go.alvadorn.org/functional/immutable"
+	"go.alvadorn.org/functional/state"
 )
 
 // Store is a domain-shaped value whose fields are immutable collections.

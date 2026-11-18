@@ -3,8 +3,8 @@ package hamt
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
-	"github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
+	"go.alvadorn.org/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/engine/keyhash"
 )
 
 func TestDeleteMissingNoOp(t *testing.T) {

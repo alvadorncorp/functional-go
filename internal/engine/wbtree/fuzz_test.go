@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 // maxFuzzOps bounds how many instructions one fuzz input decodes into.

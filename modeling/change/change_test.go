@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling/change"
+	"go.alvadorn.org/functional/modeling/change"
 )
 
 type order struct {

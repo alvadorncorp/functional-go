@@ -3,7 +3,7 @@ package fold_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/fold"
+	"go.alvadorn.org/functional/primitives/fold"
 )
 
 func TestFoldScanLaws(t *testing.T) {

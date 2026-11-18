@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling"
+	"go.alvadorn.org/functional/modeling"
 )
 
 type decisionState struct {

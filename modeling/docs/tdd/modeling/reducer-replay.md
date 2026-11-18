@@ -13,7 +13,7 @@ date: 2026-08-12
 ## Escopo técnico
 
 Este desenho descreve o pacote importável
-`github.com/alvadorncorp/gopackages/modeling/reducer`. Decision, Transition,
+`go.alvadorn.org/functional/modeling/reducer`. Decision, Transition,
 FallibleTransition, Invariant, Rule, Requirement, composição, métodos, caminhos
 de import da raiz, `modeling/internal/decision`, `modeling/change` e
 `modeling/policy` permanecem contratos separados.

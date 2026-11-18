@@ -5,7 +5,7 @@ package decision
 import (
 	"iter"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
+	"go.alvadorn.org/functional/immutable"
 )
 
 // Value stores a Decision state and its ordered persistent events.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/alvadorncorp/gopackages/workflow/action"
+	"go.alvadorn.org/functional/workflow/action"
 )
 
 // Timeout returns a lazy Action that gives source a cooperative child deadline.

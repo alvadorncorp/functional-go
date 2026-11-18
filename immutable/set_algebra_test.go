@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
+	"go.alvadorn.org/functional/immutable"
 )
 
 // setAlgebraCase pairs two operands with the independently written sorted

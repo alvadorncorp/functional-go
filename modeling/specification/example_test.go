@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/modeling"
-	"github.com/alvadorncorp/gopackages/modeling/policy"
-	"github.com/alvadorncorp/gopackages/modeling/specification"
+	"go.alvadorn.org/functional/modeling"
+	"go.alvadorn.org/functional/modeling/policy"
+	"go.alvadorn.org/functional/modeling/specification"
 )
 
 type customer struct {

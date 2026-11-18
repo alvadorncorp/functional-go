@@ -1,6 +1,6 @@
 # Package `projection`
 
-**Import path:** `github.com/alvadorncorp/gopackages/modeling/projection`
+**Import path:** `go.alvadorn.org/functional/modeling/projection`
 
 Projection deriva read models, sumários, índices e estatísticas de propriedade
 da aplicação a partir de fatos. É uma capability de modelagem síncrona e pura,

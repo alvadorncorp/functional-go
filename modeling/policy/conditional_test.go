@@ -3,9 +3,9 @@ package policy_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/predicate"
-	"github.com/alvadorncorp/gopackages/functional/values/optional"
-	"github.com/alvadorncorp/gopackages/modeling/policy"
+	"go.alvadorn.org/functional/modeling/policy"
+	"go.alvadorn.org/functional/primitives/predicate"
+	"go.alvadorn.org/functional/values/optional"
 )
 
 type conditionalPolicy[I, O any] = func(I) optional.Optional[O]

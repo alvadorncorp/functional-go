@@ -26,33 +26,32 @@ import (
 	"testing"
 )
 
-// functionalModulePrefix is the import-path prefix every non-stdlib
-// dependency of a functional subpackage must fall under: the module cannot
-// depend on anything outside itself.
-const functionalModulePrefix = "github.com/alvadorncorp/gopackages/functional/"
+// functionalModulePrefix identifies the root module's package namespace for
+// per-package edge checks. Module identity is checked separately below.
+const functionalModulePrefix = "go.alvadorn.org/functional/"
 
 const (
-	pkgOwnership       = "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
-	pkgCow             = "github.com/alvadorncorp/gopackages/functional/internal/core/cow"
-	pkgTransient       = "github.com/alvadorncorp/gopackages/functional/internal/core/transient"
-	pkgEq              = "github.com/alvadorncorp/gopackages/functional/internal/eq"
-	pkgKeyhash         = "github.com/alvadorncorp/gopackages/functional/internal/engine/keyhash"
-	pkgHamt            = "github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
-	pkgVector          = "github.com/alvadorncorp/gopackages/functional/internal/engine/vector"
-	pkgWbtree          = "github.com/alvadorncorp/gopackages/functional/internal/engine/wbtree"
-	pkgTuple           = "github.com/alvadorncorp/gopackages/functional/structural/tuple"
-	pkgLazy            = "github.com/alvadorncorp/gopackages/functional/structural/lazy"
-	pkgIterator        = "github.com/alvadorncorp/gopackages/functional/structural/iterator"
-	pkgOptics          = "github.com/alvadorncorp/gopackages/functional/structural/optics"
-	pkgImmutable       = "github.com/alvadorncorp/gopackages/functional/immutable"
-	pkgState           = "github.com/alvadorncorp/gopackages/functional/state"
-	pkgValuesOptional  = "github.com/alvadorncorp/gopackages/functional/values/optional"
-	pkgValuesResult    = "github.com/alvadorncorp/gopackages/functional/values/result"
-	pkgValuesEither    = "github.com/alvadorncorp/gopackages/functional/values/either"
-	pkgValuesNonEmpty  = "github.com/alvadorncorp/gopackages/functional/values/nonempty"
-	pkgValuesValidated = "github.com/alvadorncorp/gopackages/functional/values/validated"
-	corePrefix         = "github.com/alvadorncorp/gopackages/functional/internal/core/"
-	enginePrefix       = "github.com/alvadorncorp/gopackages/functional/internal/engine/"
+	pkgOwnership       = "go.alvadorn.org/functional/internal/core/ownership"
+	pkgCow             = "go.alvadorn.org/functional/internal/core/cow"
+	pkgTransient       = "go.alvadorn.org/functional/internal/core/transient"
+	pkgEq              = "go.alvadorn.org/functional/internal/eq"
+	pkgKeyhash         = "go.alvadorn.org/functional/internal/engine/keyhash"
+	pkgHamt            = "go.alvadorn.org/functional/internal/engine/hamt"
+	pkgVector          = "go.alvadorn.org/functional/internal/engine/vector"
+	pkgWbtree          = "go.alvadorn.org/functional/internal/engine/wbtree"
+	pkgTuple           = "go.alvadorn.org/functional/structural/tuple"
+	pkgLazy            = "go.alvadorn.org/functional/structural/lazy"
+	pkgIterator        = "go.alvadorn.org/functional/structural/iterator"
+	pkgOptics          = "go.alvadorn.org/functional/structural/optics"
+	pkgImmutable       = "go.alvadorn.org/functional/immutable"
+	pkgState           = "go.alvadorn.org/functional/state"
+	pkgValuesOptional  = "go.alvadorn.org/functional/values/optional"
+	pkgValuesResult    = "go.alvadorn.org/functional/values/result"
+	pkgValuesEither    = "go.alvadorn.org/functional/values/either"
+	pkgValuesNonEmpty  = "go.alvadorn.org/functional/values/nonempty"
+	pkgValuesValidated = "go.alvadorn.org/functional/values/validated"
+	corePrefix         = "go.alvadorn.org/functional/internal/core/"
+	enginePrefix       = "go.alvadorn.org/functional/internal/engine/"
 )
 
 // publicPackages are every public subpackage of functional, by import path.
@@ -66,8 +65,8 @@ var publicPackages = []string{
 	pkgLazy,
 	pkgIterator,
 	pkgOptics,
-	"github.com/alvadorncorp/gopackages/functional/immutable",
-	"github.com/alvadorncorp/gopackages/functional/state",
+	"go.alvadorn.org/functional/immutable",
+	"go.alvadorn.org/functional/state",
 	pkgValuesOptional,
 	pkgValuesResult,
 	pkgValuesEither,
@@ -101,7 +100,7 @@ var publicPackagesNoCore = []string{
 	pkgLazy,
 	pkgIterator,
 	pkgOptics,
-	"github.com/alvadorncorp/gopackages/functional/state",
+	"go.alvadorn.org/functional/state",
 	pkgValuesOptional,
 	pkgValuesResult,
 	pkgValuesEither,
@@ -124,35 +123,6 @@ var enginePackages = []string{
 	pkgWbtree,
 }
 
-// allPackages is every production package whose non-stdlib dependency set
-// must stay inside the functional module: public packages, internal/eq,
-// internal/core, and internal/engine packages.
-var allPackages = []string{
-	pkgFunction,
-	pkgPredicate,
-	pkgOrder,
-	pkgFold,
-	pkgTuple,
-	pkgLazy,
-	pkgIterator,
-	pkgOptics,
-	"github.com/alvadorncorp/gopackages/functional/immutable",
-	"github.com/alvadorncorp/gopackages/functional/state",
-	pkgValuesOptional,
-	pkgValuesResult,
-	pkgValuesEither,
-	pkgValuesNonEmpty,
-	pkgValuesValidated,
-	pkgEq,
-	pkgOwnership,
-	pkgCow,
-	pkgTransient,
-	pkgKeyhash,
-	pkgHamt,
-	pkgVector,
-	pkgWbtree,
-}
-
 // coreAllowedEdges is the only permitted non-self edge set among core
 // packages: a star into ownership. Peer edges and reverse edges are forbidden.
 var coreAllowedEdges = map[string][]string{
@@ -169,8 +139,8 @@ var coreForbiddenTargets = []string{
 	pkgHamt,
 	pkgVector,
 	pkgWbtree,
-	"github.com/alvadorncorp/gopackages/functional/immutable",
-	"github.com/alvadorncorp/gopackages/functional/state",
+	"go.alvadorn.org/functional/immutable",
+	"go.alvadorn.org/functional/state",
 }
 
 // hamtAllowedFunctional is the only permitted set of functional-module
@@ -204,8 +174,8 @@ var wbtreeAllowedFunctional = []string{
 var engineForbiddenTargets = []string{
 	pkgTransient,
 	pkgEq,
-	"github.com/alvadorncorp/gopackages/functional/immutable",
-	"github.com/alvadorncorp/gopackages/functional/state",
+	"go.alvadorn.org/functional/immutable",
+	"go.alvadorn.org/functional/state",
 }
 
 // TestNoNonStdlibDependencies proves the module has zero dependencies
@@ -213,15 +183,17 @@ var engineForbiddenTargets = []string{
 // promise doc.go makes for the whole module.
 func TestNoNonStdlibDependencies(t *testing.T) {
 	t.Parallel()
-	for _, pkg := range allPackages {
-		t.Run(pkg, func(t *testing.T) {
-			t.Parallel()
-			for _, dep := range deps(t, pkg) {
-				if !strings.HasPrefix(dep, functionalModulePrefix) {
-					t.Errorf("%s must not depend on %s", pkg, dep)
-				}
-			}
-		})
+	const ownModule = "go.alvadorn.org/functional"
+	command := exec.Command("go", "list", "-deps", "-f", "{{if not .Standard}}{{.Module.Path}}{{end}}", "./...")
+	command.Dir = "../.."
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("list functional dependency modules: %v\n%s", err, output)
+	}
+	for _, path := range strings.Fields(string(output)) {
+		if path != ownModule {
+			t.Errorf("functional must not depend on module %s", path)
+		}
 	}
 }
 

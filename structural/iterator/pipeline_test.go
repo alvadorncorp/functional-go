@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/iterator"
-	"github.com/alvadorncorp/gopackages/functional/structural/tuple"
+	"go.alvadorn.org/functional/structural/iterator"
+	"go.alvadorn.org/functional/structural/tuple"
 )
 
 func counted(values []int, yielded *int) iter.Seq[int] {

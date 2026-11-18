@@ -4,9 +4,9 @@ import (
 	"iter"
 	"maps"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/transient"
-	"github.com/alvadorncorp/gopackages/functional/internal/engine/hamt"
-	"github.com/alvadorncorp/gopackages/functional/internal/eq"
+	"go.alvadorn.org/functional/internal/core/transient"
+	"go.alvadorn.org/functional/internal/engine/hamt"
+	"go.alvadorn.org/functional/internal/eq"
 )
 
 // Map is an immutable key-value collection. Every write method returns a

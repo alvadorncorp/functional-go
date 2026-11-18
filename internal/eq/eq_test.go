@@ -3,7 +3,7 @@ package eq_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/eq"
+	"go.alvadorn.org/functional/internal/eq"
 )
 
 // fixedEqual has its own Equal method that always returns a fixed result,

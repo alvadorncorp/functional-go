@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/workflow/action"
+	"go.alvadorn.org/functional/workflow/action"
 )
 
 const fallbackValue = 7

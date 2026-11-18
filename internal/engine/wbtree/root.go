@@ -3,7 +3,7 @@ package wbtree
 import (
 	"iter"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 // Root is an immutable weight-balanced search tree ordered by its comparator.

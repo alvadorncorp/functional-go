@@ -1,6 +1,6 @@
 # Package `primitives/predicate`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/primitives/predicate`
+**Import path:** `go.alvadorn.org/functional/primitives/predicate`
 
 `Predicate[T]` names an ordinary `func(T) bool`. `Not`, `And`, and `Or` compose
 predicates with left-to-right short-circuiting. Empty `And` is true and empty

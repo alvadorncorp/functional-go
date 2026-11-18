@@ -3,8 +3,8 @@ package validated_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/values/nonempty"
-	"github.com/alvadorncorp/gopackages/functional/values/validated"
+	"go.alvadorn.org/functional/values/nonempty"
+	"go.alvadorn.org/functional/values/validated"
 )
 
 func BenchmarkValidatedValid(b *testing.B) {

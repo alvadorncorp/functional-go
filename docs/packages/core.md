@@ -4,9 +4,9 @@
 
 | Package | Path |
 |---|---|
-| ownership | `github.com/alvadorncorp/gopackages/functional/internal/core/ownership` |
-| cow | `github.com/alvadorncorp/gopackages/functional/internal/core/cow` |
-| transient | `github.com/alvadorncorp/gopackages/functional/internal/core/transient` |
+| ownership | `go.alvadorn.org/functional/internal/core/ownership` |
+| cow | `go.alvadorn.org/functional/internal/core/cow` |
+| transient | `go.alvadorn.org/functional/internal/core/transient` |
 
 Maintainer guide for the thin immutability substrate: three packages
 (`ownership`, `cow`, `transient`). Callers outside

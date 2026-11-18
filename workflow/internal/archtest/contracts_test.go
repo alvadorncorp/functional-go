@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/alvadorncorp/gopackages/workflow"
-	"github.com/alvadorncorp/gopackages/workflow/action"
-	"github.com/alvadorncorp/gopackages/workflow/plan"
-	"github.com/alvadorncorp/gopackages/workflow/resilience"
+	"go.alvadorn.org/functional/workflow"
+	"go.alvadorn.org/functional/workflow/action"
+	"go.alvadorn.org/functional/workflow/plan"
+	"go.alvadorn.org/functional/workflow/resilience"
 )
 
 var (

@@ -239,29 +239,10 @@ em linha da tabela ou em semente `f.Add` e não versione o corpus.
 
 ## Observação parcial
 
-`examples/workflow/checkout` mostra por que a lei é enunciada sobre `obs`.
-`ReduceOrder` (`internal/ordering/domain/checkout/reducer.go`) reaplica
-`OrderCheckedOut` e `DiscountApplied`, mas não reconstrói o pedido inteiro.
-O exemplo tinha duas lacunas:
+Por exemplo, num catálogo, o replay pode reconstruir título e versão a
+partir dos eventos, mas não uma nota de edição que nunca foi registrada em
+evento. A observação `obs` deve excluir a nota e explicar o motivo.
 
-- **Cupom sem evento: limite declarado.** `Decide` grava o cupom no estado
-  (`ApplyCoupon`), e nenhum evento o carrega, então Replay nunca o restaura.
-  Aqui a observação parcial é a resposta honesta: `obs` exclui `Coupon`, e o
-  teste documenta a exclusão. Levar o cupom nos eventos mudaria o esquema de
-  eventos do checkout e fica fora do exemplo.
-- **Promoção premium-loyalty sem `DiscountApplied`: corrigida.**
-  `Money.Percentage` trunca (`cents * percent / 100`), então um subtotal
-  pequeno produz desconto zero com motivo `premium-loyalty`. `DiscountApplied`,
-  o evento que carrega `Promotion`, só é emitido quando o desconto não é zero,
-  mas `Decide` registrava a promoção (`AddPromotionChange`) mesmo assim. O
-  estado ganhava uma promoção que nenhum evento carregava, o que viola o
-  corolário 1. Agora `Decide` só registra a promoção quando emite
-  `DiscountApplied` com ela. `Promotions` continua na observação: tirá-la
-  esconderia o defeito em vez de declarar um limite.
-
-`TestReplayOrderReconstructsCheckoutState`
-(`internal/ordering/domain/checkout/reducer_projection_test.go`) é a tabela da
-lei no checkout. A observação `sameReplayedOrder` compara status, quantidade de
-itens, subtotal, desconto, total, promoções e versão, sem cupom. Os casos são
-cliente padrão sem desconto, premium-loyalty, cupom `SAVE20` e premium-loyalty
-com subtotal de 10 centavos, cujo desconto trunca para zero.
+Se o campo faz parte do contrato de replay, excluí-lo da comparação esconderia
+um defeito: nesse caso, escreva o teste com o campo e corrija a decisão ou o
+evento que deveria carregar a informação.

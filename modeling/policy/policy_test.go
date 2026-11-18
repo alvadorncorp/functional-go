@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling/policy"
+	"go.alvadorn.org/functional/modeling/policy"
 )
 
 var _ policy.Policy[int, string] = func(input int) string {

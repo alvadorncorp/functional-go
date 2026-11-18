@@ -5,8 +5,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/workflow"
-	"github.com/alvadorncorp/gopackages/workflow/action"
+	"go.alvadorn.org/functional/workflow"
+	"go.alvadorn.org/functional/workflow/action"
 )
 
 const (

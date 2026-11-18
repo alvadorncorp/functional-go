@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling"
+	"go.alvadorn.org/functional/modeling"
 )
 
 func addTransition(state, input int) int {

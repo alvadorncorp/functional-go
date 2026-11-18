@@ -1,6 +1,6 @@
 package cow
 
-import "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+import "go.alvadorn.org/functional/internal/core/ownership"
 
 // EnsureEditable returns node when it is already exclusively owned by owner.
 // Otherwise it returns the result of clone, which the caller must implement

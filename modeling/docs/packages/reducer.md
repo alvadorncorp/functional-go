@@ -1,6 +1,6 @@
 # Package `reducer`
 
-**Import path:** `github.com/alvadorncorp/gopackages/modeling/reducer`
+**Import path:** `go.alvadorn.org/functional/modeling/reducer`
 
 Reducer evolui estado de domínio a partir de fatos já ocorridos. É uma
 capability de modelagem síncrona e pura, não um runtime de Event Sourcing.

@@ -3,8 +3,8 @@ package cow_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/cow"
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/cow"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 // fakeNode is a test double, not a collection engine.

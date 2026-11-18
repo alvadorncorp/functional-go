@@ -15,8 +15,7 @@ date: 2026-10-20
 
 `values/result` modela sucesso e falha, mas toda API Go devolve `(T, error)`.
 Sem ponte, cada consumidor reescreve `if err != nil { return result.Err... }`
-na entrada e pares `Get`/`ErrValue` na saída; `examples/workflow/checkout`
-mantém um helper `unwrap` local só para isso. Além disso, só `either` tem um
+na entrada e pares `Get`/`ErrValue` na saída. Além disso, só `either` tem um
 eliminador (`Match`); `result`, `optional` e `validated` obrigam o caller a
 ramificar à mão sobre `Get`.
 

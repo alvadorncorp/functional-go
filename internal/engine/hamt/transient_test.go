@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 func TestTransientMultiSetThenPublish(t *testing.T) {

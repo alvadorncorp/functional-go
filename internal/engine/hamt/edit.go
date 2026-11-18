@@ -1,8 +1,8 @@
 package hamt
 
 import (
-	"github.com/alvadorncorp/gopackages/functional/internal/core/cow"
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/cow"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 // ensureEditableLeaf returns l when exclusively owned by owner; otherwise a

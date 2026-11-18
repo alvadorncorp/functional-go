@@ -65,7 +65,7 @@ func TestReplayNameIsReducerOnly(t *testing.T) {
 
 func TestPackageEnumerationIsComplete(t *testing.T) {
 	got := make([]string, 0, 8)
-	for _, pkg := range goList(t, "-json", modelingModule+"/...") {
+	for _, pkg := range goList(t, "-json", "./...") {
 		got = append(got, pkg.ImportPath)
 	}
 	slices.Sort(got)

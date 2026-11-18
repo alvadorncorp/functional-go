@@ -1,6 +1,6 @@
 # Change
 
-Import `github.com/alvadorncorp/gopackages/modeling/change` when a domain needs
+Import `go.alvadorn.org/functional/modeling/change` when a domain needs
 to name and compose pure state evolution of the form `S -> S`.
 
 ## Define a change

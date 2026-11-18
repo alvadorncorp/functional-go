@@ -3,9 +3,9 @@ package immutable
 import (
 	"iter"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/transient"
-	"github.com/alvadorncorp/gopackages/functional/internal/engine/wbtree"
-	"github.com/alvadorncorp/gopackages/functional/internal/eq"
+	"go.alvadorn.org/functional/internal/core/transient"
+	"go.alvadorn.org/functional/internal/engine/wbtree"
+	"go.alvadorn.org/functional/internal/eq"
 )
 
 // SortedMap is an immutable key-value collection ordered by a caller-supplied

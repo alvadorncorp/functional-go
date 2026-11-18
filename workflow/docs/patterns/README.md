@@ -1,7 +1,7 @@
 # Padrões hexagonais
 
 Receitas de aplicação sobre `functional`, `modeling` e `workflow`. Não são
-tipos de biblioteca. O exemplo canônico é `examples/workflow/checkout`.
+tipos de biblioteca.
 
 1. [Handle COW](cow-handle.md)
 2. [Load → decide → confirm](load-decide-confirm.md)
@@ -11,6 +11,6 @@ tipos de biblioteca. O exemplo canônico é `examples/workflow/checkout`.
 6. [ACL entre bounded contexts](acl.md)
 7. [Tempo como dado](time-as-data.md)
 8. [Optics e Change](optics-and-change.md)
-9. [eventbus/outbox vs outbox da application](eventbus-vs-application-outbox.md)
+9. [Eventos operacionais e mensagens de integração](eventbus-vs-application-outbox.md)
 
 Ver também [ADR-012](../adr/workflow/adr-012-no-ddd-runtime-module.md) e o padrão [Decider](../../../modeling/docs/patterns/decider.md) do modeling.

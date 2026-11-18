@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/workflow/action"
+	"go.alvadorn.org/functional/workflow/action"
 )
 
 func TestPureYieldsItsValueWithoutEffects(t *testing.T) {

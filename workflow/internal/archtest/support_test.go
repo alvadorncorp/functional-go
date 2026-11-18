@@ -13,13 +13,12 @@ import (
 )
 
 const (
-	workflowModule     = "github.com/alvadorncorp/gopackages/workflow"
+	workflowModule     = "go.alvadorn.org/functional/workflow"
 	actionPackage      = workflowModule + "/action"
 	planPackage        = workflowModule + "/plan"
 	resiliencePackage  = workflowModule + "/resilience"
 	transactionPackage = workflowModule + "/transaction"
 	archtestPackage    = workflowModule + "/internal/archtest"
-	examplesModule     = workflowModule + "/examples"
 )
 
 // listedPackage is the subset of `go list -json` this gate reads.
@@ -102,6 +101,7 @@ func goList(t *testing.T, args ...string) []listedPackage {
 	t.Helper()
 
 	command := exec.Command("go", append([]string{"list"}, args...)...)
+	command.Dir = moduleRoot(t)
 	output, err := command.CombinedOutput()
 	if err != nil {
 		t.Fatalf("go %s: %v\n%s", strings.Join(append([]string{"list"}, args...), " "), err, output)
@@ -132,31 +132,19 @@ func goModPath(t *testing.T) string {
 	return strings.TrimSpace(string(output))
 }
 
-// productionPackages lists this module's production packages.
-//
-// The `<module>/...` wildcard is workspace-wide, so once the nested
-// workflow/examples module joins go.work its packages match this pattern too —
-// their import paths start with the same prefix. They are filtered out here so
-// every gate below judges the CORE only. Packages with no GoFiles (the gate
-// package itself is test-only) are skipped for the same reason.
+// productionPackages lists production packages relative to the module root.
 func productionPackages(t *testing.T) []listedPackage {
 	t.Helper()
 
-	packages := goList(t, "-json", workflowModule+"/...")
+	packages := goList(t, "-json", "./...")
 	production := make([]listedPackage, 0, len(packages))
 	for i := range packages {
-		if isExamples(packages[i].ImportPath) ||
-			packages[i].ImportPath == archtestPackage ||
-			len(packages[i].GoFiles) == 0 {
+		if packages[i].ImportPath == archtestPackage || len(packages[i].GoFiles) == 0 {
 			continue
 		}
 		production = append(production, packages[i])
 	}
 	return production
-}
-
-func isExamples(importPath string) bool {
-	return importPath == examplesModule || strings.HasPrefix(importPath, examplesModule+"/")
 }
 
 func dependencyAllowed(pkg *listedPackage) bool {

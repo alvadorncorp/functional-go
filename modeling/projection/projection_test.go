@@ -3,8 +3,8 @@ package projection_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
-	"github.com/alvadorncorp/gopackages/modeling/projection"
+	"go.alvadorn.org/functional/immutable"
+	"go.alvadorn.org/functional/modeling/projection"
 )
 
 type salesSummary struct {

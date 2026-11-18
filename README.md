@@ -1,13 +1,28 @@
-# functional
+# functional-go
 
 An umbrella module for small, dependency-free functional-programming building
 blocks: function composition, predicate algebra, total ordering, algebraic
 values, immutable collections, and pure state evolution.
 
 ```text
-module  github.com/alvadorncorp/gopackages/functional
-go      1.27.1
+module  go.alvadorn.org/functional
+go      1.27
 ```
+
+- [`functional`](#functional) — pure values, composition, and immutable data.
+- [`modeling`](modeling/) — typed domain decisions and state transitions.
+- [`workflow`](workflow/) — composition and execution of deferred effects.
+
+The modules are released independently. From a local checkout, run
+`make test-unit` and `make lint` to check all three. Licensed under
+[Apache 2.0](LICENSE).
+
+For the first release, publish the root module at `v1.3.2`, then run
+`GOWORK=off go mod tidy` in `modeling` and commit the resulting `go.sum`.
+Run `make test-published` before tagging `modeling`. The target checks all three
+modules without the development workspace. `workflow` has no sibling dependency.
+
+## functional
 
 **The root package exports nothing.** `functional` is documentation only —
 this README and the file it mirrors, [`doc.go`](doc.go). Concepts live one
@@ -42,23 +57,23 @@ This README is the **documentation index**. Guides live under
 
 | Document | Package |
 |---|---|
-| [docs/packages/function.md](docs/packages/function.md) | `github.com/alvadorncorp/gopackages/functional/primitives/function` |
-| [docs/packages/predicate.md](docs/packages/predicate.md) | `github.com/alvadorncorp/gopackages/functional/primitives/predicate` |
-| [docs/packages/order.md](docs/packages/order.md) | `github.com/alvadorncorp/gopackages/functional/primitives/order` |
-| [docs/packages/fold.md](docs/packages/fold.md) | `github.com/alvadorncorp/gopackages/functional/primitives/fold` |
-| [docs/packages/tuple.md](docs/packages/tuple.md) | `github.com/alvadorncorp/gopackages/functional/structural/tuple` |
-| [docs/packages/lazy.md](docs/packages/lazy.md) | `github.com/alvadorncorp/gopackages/functional/structural/lazy` |
-| [docs/packages/iterator.md](docs/packages/iterator.md) | `github.com/alvadorncorp/gopackages/functional/structural/iterator` |
-| [docs/packages/optics.md](docs/packages/optics.md) | `github.com/alvadorncorp/gopackages/functional/structural/optics` |
-| [docs/packages/immutable.md](docs/packages/immutable.md) | `github.com/alvadorncorp/gopackages/functional/immutable` |
-| [docs/packages/state.md](docs/packages/state.md) | `github.com/alvadorncorp/gopackages/functional/state` |
+| [docs/packages/function.md](docs/packages/function.md) | `go.alvadorn.org/functional/primitives/function` |
+| [docs/packages/predicate.md](docs/packages/predicate.md) | `go.alvadorn.org/functional/primitives/predicate` |
+| [docs/packages/order.md](docs/packages/order.md) | `go.alvadorn.org/functional/primitives/order` |
+| [docs/packages/fold.md](docs/packages/fold.md) | `go.alvadorn.org/functional/primitives/fold` |
+| [docs/packages/tuple.md](docs/packages/tuple.md) | `go.alvadorn.org/functional/structural/tuple` |
+| [docs/packages/lazy.md](docs/packages/lazy.md) | `go.alvadorn.org/functional/structural/lazy` |
+| [docs/packages/iterator.md](docs/packages/iterator.md) | `go.alvadorn.org/functional/structural/iterator` |
+| [docs/packages/optics.md](docs/packages/optics.md) | `go.alvadorn.org/functional/structural/optics` |
+| [docs/packages/immutable.md](docs/packages/immutable.md) | `go.alvadorn.org/functional/immutable` |
+| [docs/packages/state.md](docs/packages/state.md) | `go.alvadorn.org/functional/state` |
 | [docs/packages/core.md](docs/packages/core.md) | `internal/core` (ownership, cow, transient) — maintainers |
 | [docs/packages/values.md](docs/packages/values.md) | Family guide for the five `functional/values/*` packages |
-| [docs/packages/values-optional.md](docs/packages/values-optional.md) | `github.com/alvadorncorp/gopackages/functional/values/optional` |
-| [docs/packages/values-result.md](docs/packages/values-result.md) | `github.com/alvadorncorp/gopackages/functional/values/result` |
-| [docs/packages/values-either.md](docs/packages/values-either.md) | `github.com/alvadorncorp/gopackages/functional/values/either` |
-| [docs/packages/values-nonempty.md](docs/packages/values-nonempty.md) | `github.com/alvadorncorp/gopackages/functional/values/nonempty` |
-| [docs/packages/values-validated.md](docs/packages/values-validated.md) | `github.com/alvadorncorp/gopackages/functional/values/validated` |
+| [docs/packages/values-optional.md](docs/packages/values-optional.md) | `go.alvadorn.org/functional/values/optional` |
+| [docs/packages/values-result.md](docs/packages/values-result.md) | `go.alvadorn.org/functional/values/result` |
+| [docs/packages/values-either.md](docs/packages/values-either.md) | `go.alvadorn.org/functional/values/either` |
+| [docs/packages/values-nonempty.md](docs/packages/values-nonempty.md) | `go.alvadorn.org/functional/values/nonempty` |
+| [docs/packages/values-validated.md](docs/packages/values-validated.md) | `go.alvadorn.org/functional/values/validated` |
 
 ### Patterns
 
@@ -127,13 +142,13 @@ keep working and are not removed in v1; see
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/function"
-	"github.com/alvadorncorp/gopackages/functional/primitives/fold"
-	"github.com/alvadorncorp/gopackages/functional/primitives/order"
-	"github.com/alvadorncorp/gopackages/functional/primitives/predicate"
-	"github.com/alvadorncorp/gopackages/functional/immutable"
-	"github.com/alvadorncorp/gopackages/functional/state"
-	"github.com/alvadorncorp/gopackages/functional/values/optional"
+	"go.alvadorn.org/functional/primitives/function"
+	"go.alvadorn.org/functional/primitives/fold"
+	"go.alvadorn.org/functional/primitives/order"
+	"go.alvadorn.org/functional/primitives/predicate"
+	"go.alvadorn.org/functional/immutable"
+	"go.alvadorn.org/functional/state"
+	"go.alvadorn.org/functional/values/optional"
 )
 
 port := optional.Some("8080")

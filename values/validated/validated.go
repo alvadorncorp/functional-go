@@ -1,6 +1,6 @@
 package validated
 
-import "github.com/alvadorncorp/gopackages/functional/values/nonempty"
+import "go.alvadorn.org/functional/values/nonempty"
 
 // Validated holds either a valid value or one or more validation errors.
 // Unlike Result's fail-fast sequencing, Validated accumulates errors with Map2.

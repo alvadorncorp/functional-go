@@ -1,8 +1,8 @@
 package wbtree
 
 import (
-	"github.com/alvadorncorp/gopackages/functional/internal/core/cow"
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/cow"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 // node is one entry of the tree. size counts the entries of the subtree

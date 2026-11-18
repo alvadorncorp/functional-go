@@ -9,7 +9,7 @@ for runnable sketches see [examples.md](examples.md).
 
 ## What it is
 
-`github.com/alvadorncorp/gopackages/functional` is an umbrella module for
+`go.alvadorn.org/functional` is an umbrella module for
 small, general-purpose functional-programming building blocks with **zero
 dependencies outside the standard library, permanently**.
 

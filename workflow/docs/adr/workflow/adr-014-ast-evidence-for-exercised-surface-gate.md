@@ -100,22 +100,18 @@ não muda.
 
 ### Conjunto de consumidores
 
-O conjunto aceito não muda, apenas passa a ser lido como AST:
+O gate lê estes consumidores como AST:
 
 - arquivos `.go` de produção deste módulo — um pacote irmão que usa o símbolo
   conta, como já documenta `TestSurfaceIsExercised`;
 - os `example_test.go` externos do próprio módulo. Eles são exemplos compilados
   e executáveis em `package x_test`, ou seja, uso real feito pela API pública, e
-  por isso são aceitos;
-- todos os arquivos `.go` de `examples/workflow`, inclusive testes.
+  por isso são aceitos.
 
 Ficam de fora `internal/archtest` e os testes unitários comuns do próprio
 módulo: um símbolo usado só pelos testes escritos para ele não tem consumidor e
-contar esses testes tornaria o gate vacuoso. O percurso é feito por duas raízes
-separadas, com filtro por caminho relativo, para que um checkout cujo caminho
-absoluto contenha `/examples/` não reintroduza testes unitários. O `go vet
-./...` a partir da raiz do módulo continua rodando: um consumidor que não
-compila não é consumidor.
+contar esses testes tornaria o gate vacuoso. O filtro usa caminhos relativos
+ao módulo, e `go vet ./...` também verifica se os consumidores compilam.
 
 ## Alternativas consideradas
 
@@ -129,12 +125,9 @@ compila não é consumidor.
 - **AST sem tipos, com escopo lexical limitado (escolhida).** Preserva import
   path exato, alias e sombreamento sem loader nem dependência, no estilo dos
   parsers que `support_test.go` e `context_test.go` já usam.
-- **Aceitar só `examples/workflow` e rejeitar os `example_test.go` do módulo.**
-  Rejeitada: os exemplos compilados do próprio módulo são a documentação
-  executável da API (`ExampleMap` agora existe de verdade) e removê-los
-  empurraria todo símbolo novo para um módulo externo separado. O custo aceito é
-  que o autor do pacote também escreve esse consumidor; por isso o gate exige
-  seletor exato e rejeita comentário e string.
+- **Rejeitar os `example_test.go` do módulo.** Rejeitada: os exemplos
+  compilados são documentação executável. O gate exige seletor exato e
+  rejeita comentários e strings como evidência.
 - **Exigir um `var _ = pacote.Nome` dentro de `internal/archtest`.** Rejeitada:
   o próprio gate seria o consumidor, exatamente o vacuous pass que a exclusão de
   `internal/archtest` evita.
@@ -156,11 +149,8 @@ carriers.
 - A análise é sintática e sem tipos. O gate prova que existe um seletor para o
   import path e o símbolo corretos, não que o uso tem tipos válidos nem que o
   código é executado: selecionar um símbolo não significa execução dinâmica.
-  Validade de tipos vem de `go vet` na raiz do módulo e de compilar e testar
-  cada módulo de `examples/workflow` (`createorder`, `crosscontext`, `checkout`,
-  `withdraw`) em build separado e isolado. Essa compilação separada é uma
-  condição do gate, não parte dele: se não rodar, um consumidor com erro de tipo
-  pode ser visto como evidência.
+  `go vet ./...` verifica os tipos, e `go test ./...` executa os exemplos
+  com saída declarada.
 - O cálculo de escopo lexical é código próprio que aproxima as regras de Go
   apenas para nomes que colidem com os aliases rastreados. Não há tabela de
   símbolos geral, loader nem framework; redeclaração de um nome já local é

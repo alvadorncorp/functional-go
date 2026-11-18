@@ -1,6 +1,6 @@
 # Package `immutable`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/immutable`
+**Import path:** `go.alvadorn.org/functional/immutable`
 
 Immutable collections — `List[T]`, `Map[K,V]`, `Set[T]`, `SortedMap[K,V]` —
 that write functionally: every update method returns a new collection and

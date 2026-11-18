@@ -5,9 +5,9 @@ package fold_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/fold"
-	"github.com/alvadorncorp/gopackages/functional/values/nonempty"
-	"github.com/alvadorncorp/gopackages/functional/values/optional"
+	"go.alvadorn.org/functional/primitives/fold"
+	"go.alvadorn.org/functional/values/nonempty"
+	"go.alvadorn.org/functional/values/optional"
 )
 
 var (

@@ -1,6 +1,6 @@
 package hamt
 
-import "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+import "go.alvadorn.org/functional/internal/core/ownership"
 
 // leaf stores a single key/value at a known full hash.
 type leaf[K comparable, V any] struct {

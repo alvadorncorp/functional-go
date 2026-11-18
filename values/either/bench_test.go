@@ -3,7 +3,7 @@ package either_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/values/either"
+	"go.alvadorn.org/functional/values/either"
 )
 
 func BenchmarkEitherLeft(b *testing.B) {

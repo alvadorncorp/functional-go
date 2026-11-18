@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
+	"go.alvadorn.org/functional/immutable"
 )
 
 // ExampleListOf shows constructing a List with ListOf.

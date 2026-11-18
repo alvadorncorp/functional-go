@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
+	"go.alvadorn.org/functional/immutable"
 )
 
 type rejectingValue int

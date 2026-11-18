@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/alvadorncorp/gopackages/workflow/action"
+	"go.alvadorn.org/functional/workflow/action"
 )
 
 // Retry returns a lazy Action that repeats source according to policy.

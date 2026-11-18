@@ -1,6 +1,6 @@
 # Package `primitives/order`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/primitives/order`
+**Import path:** `go.alvadorn.org/functional/primitives/order`
 
 `Order[T]` returns an integer whose sign means less, equivalent, or greater;
 implementations need not normalize to -1/0/1. `Natural` delegates to

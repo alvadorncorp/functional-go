@@ -59,7 +59,7 @@ package catalog
 import (
 	"errors"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
+	"go.alvadorn.org/functional/immutable"
 )
 
 // Money is a value object: an amount in cents plus a set of tags, both

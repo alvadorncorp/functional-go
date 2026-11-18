@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/lazy"
+	"go.alvadorn.org/functional/structural/lazy"
 )
 
 func TestMapAndFlatMapStayLazyAndMemoized(t *testing.T) {

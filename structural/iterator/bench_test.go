@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/iterator"
+	"go.alvadorn.org/functional/structural/iterator"
 )
 
 var iteratorBenchmarkSlice []int

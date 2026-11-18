@@ -1,8 +1,8 @@
 package vector
 
 import (
-	"github.com/alvadorncorp/gopackages/functional/internal/core/cow"
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/cow"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 // cloneBranch returns a shallow copy of an internal node (child pointers

@@ -3,7 +3,7 @@ package optional_test
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/values/optional"
+	"go.alvadorn.org/functional/values/optional"
 )
 
 func ExampleSome() {

@@ -35,7 +35,7 @@ default.
 ```go
 package config
 
-import "github.com/alvadorncorp/gopackages/functional/values/optional"
+import "go.alvadorn.org/functional/values/optional"
 
 func resolvePort(flagValue, envValue optional.Optional[string]) string {
 	if value, ok := flagValue.Get(); ok {
@@ -62,7 +62,7 @@ package config
 import (
 	"strconv"
 
-	"github.com/alvadorncorp/gopackages/functional/values/optional"
+	"go.alvadorn.org/functional/values/optional"
 )
 
 func parsePort(raw optional.Optional[string]) (optional.Optional[int], error) {
@@ -91,7 +91,7 @@ methods on a field you intend as a pure snapshot.
 ```go
 package catalog
 
-import "github.com/alvadorncorp/gopackages/functional/immutable"
+import "go.alvadorn.org/functional/immutable"
 
 type Product struct {
 	sku  string
@@ -126,7 +126,7 @@ seed it once, batch every write under exclusive ownership, and call
 ```go
 package pipeline
 
-import "github.com/alvadorncorp/gopackages/functional/immutable"
+import "go.alvadorn.org/functional/immutable"
 
 func collectEven(items []int) immutable.List[int] {
 	builder := immutable.ListOf[int]().Builder()
@@ -159,7 +159,7 @@ derive new collections.
 ```go
 package catalog
 
-import "github.com/alvadorncorp/gopackages/functional/immutable"
+import "go.alvadorn.org/functional/immutable"
 
 func scoreboard() (immutable.Map[string, int], immutable.Set[string]) {
 	scores := immutable.MapOf(map[string]int{
@@ -190,7 +190,7 @@ lazy; Commit does not Materialize).
 ```go
 package counter
 
-import "github.com/alvadorncorp/gopackages/functional/state"
+import "go.alvadorn.org/functional/state"
 
 func evolve() (int, state.Version) {
 	s := state.Of(0).
@@ -234,8 +234,8 @@ package registration
 import (
 	"strconv"
 
-	"github.com/alvadorncorp/gopackages/functional/values/result"
-	"github.com/alvadorncorp/gopackages/functional/values/validated"
+	"go.alvadorn.org/functional/values/result"
+	"go.alvadorn.org/functional/values/validated"
 )
 
 type person struct {
@@ -298,7 +298,7 @@ package presentation
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/function"
+	"go.alvadorn.org/functional/primitives/function"
 )
 
 func printDoubledLength() {
@@ -322,7 +322,7 @@ package eligibility
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/predicate"
+	"go.alvadorn.org/functional/primitives/predicate"
 )
 
 func printPositiveEven() {
@@ -349,7 +349,7 @@ package people
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/order"
+	"go.alvadorn.org/functional/primitives/order"
 )
 
 type person struct{ age int }
@@ -373,7 +373,7 @@ package counters
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/fold"
+	"go.alvadorn.org/functional/primitives/fold"
 )
 
 func printRunningTotals() {
@@ -391,7 +391,7 @@ func printRunningTotals() {
 ```go
 package pipeline
 
-import "github.com/alvadorncorp/gopackages/functional/structural/tuple"
+import "go.alvadorn.org/functional/structural/tuple"
 
 func tupleCarrier() tuple.Tuple2[int, string] {
 	pair := tuple.Of2("Ada", 36)
@@ -409,7 +409,7 @@ the generic parameters are inferred from the constructor arguments.
 ```go
 package config
 
-import "github.com/alvadorncorp/gopackages/functional/structural/lazy"
+import "go.alvadorn.org/functional/structural/lazy"
 
 type Config struct{ Name string }
 
@@ -437,8 +437,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/iterator"
-	"github.com/alvadorncorp/gopackages/functional/structural/tuple"
+	"go.alvadorn.org/functional/structural/iterator"
+	"go.alvadorn.org/functional/structural/tuple"
 )
 
 func zipPeople(ids []int, names []string) []tuple.Tuple2[int, string] {
@@ -462,8 +462,8 @@ package pipeline
 import (
 	"slices"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/fold"
-	"github.com/alvadorncorp/gopackages/functional/structural/iterator"
+	"go.alvadorn.org/functional/primitives/fold"
+	"go.alvadorn.org/functional/structural/iterator"
 )
 
 func sums(values []int) (fromSeq, fromSlice int) {
@@ -481,7 +481,7 @@ func sums(values []int) (fromSeq, fromSlice int) {
 ```go
 package people
 
-import "github.com/alvadorncorp/gopackages/functional/structural/optics"
+import "go.alvadorn.org/functional/structural/optics"
 
 type Address struct{ City string }
 
@@ -527,7 +527,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/alvadorncorp/gopackages/functional/values/result"
+	"go.alvadorn.org/functional/values/result"
 )
 
 func parsePort(raw string) (int, error) {

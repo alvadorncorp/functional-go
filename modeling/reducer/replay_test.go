@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling/reducer"
+	"go.alvadorn.org/functional/modeling/reducer"
 )
 
 type replayFunc[S, E any] func(

@@ -1,6 +1,6 @@
 # Package `state`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/state`
+**Import path:** `go.alvadorn.org/functional/state`
 
 Semantic evolution layer for values of type `T` (any). `State[T]` holds a
 base value and an immutable **plan** of pure mutations; each evolution

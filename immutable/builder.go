@@ -1,6 +1,6 @@
 package immutable
 
-import "github.com/alvadorncorp/gopackages/functional/internal/core/transient"
+import "go.alvadorn.org/functional/internal/core/transient"
 
 // checkBuilderWindow panics with panicBuilderUsedAfterBuild when win is nil.
 // Builders clear win after Freeze so post-Build methods never call into

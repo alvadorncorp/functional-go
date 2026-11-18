@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/function"
+	"go.alvadorn.org/functional/primitives/function"
 )
 
 type user struct {

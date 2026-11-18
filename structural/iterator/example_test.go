@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/iterator"
+	"go.alvadorn.org/functional/structural/iterator"
 )
 
 func ExampleMap() {

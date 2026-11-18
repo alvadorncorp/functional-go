@@ -3,7 +3,7 @@ package specification_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling/specification"
+	"go.alvadorn.org/functional/modeling/specification"
 )
 
 func TestContramapAdaptsInputOnce(t *testing.T) {

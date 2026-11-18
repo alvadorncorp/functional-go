@@ -3,7 +3,7 @@ package function_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/function"
+	"go.alvadorn.org/functional/primitives/function"
 )
 
 func FuzzComposePipeIdentities(f *testing.F) {

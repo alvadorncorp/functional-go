@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/fold"
-	"github.com/alvadorncorp/gopackages/functional/values/nonempty"
+	"go.alvadorn.org/functional/primitives/fold"
+	"go.alvadorn.org/functional/values/nonempty"
 )
 
 func add(total, value int) int { return total + value }

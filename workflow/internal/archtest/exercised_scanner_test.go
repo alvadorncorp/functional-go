@@ -208,24 +208,21 @@ var _ = a.Map[int,int]`, true},
 
 func TestConsumerFileBoundary(t *testing.T) {
 	for _, test := range []struct {
-		path     string
-		examples bool
-		want     bool
+		path string
+		want bool
 	}{
-		{"compose.go", false, true},
-		{"action/construct.go", false, true},
-		{"example_test.go", false, true},
-		{"action/example_test.go", false, true},
-		{"action/action_test.go", false, false},
-		{"internal/archtest/exercised_test.go", false, false},
-		{"internal/archtest/example_test.go", false, false},
-		{"docs/example.md", false, false},
-		{"checkout/main.go", true, true},
-		{"checkout/main_test.go", true, true},
+		{"compose.go", true},
+		{"action/construct.go", true},
+		{"example_test.go", true},
+		{"action/example_test.go", true},
+		{"action/action_test.go", false},
+		{"internal/archtest/exercised_test.go", false},
+		{"internal/archtest/example_test.go", false},
+		{"docs/example.md", false},
 	} {
 		t.Run(test.path, func(t *testing.T) {
-			if got := consumerFile(filepath.FromSlash(test.path), test.examples); got != test.want {
-				t.Errorf("consumerFile(%q, %v) = %v, want %v", test.path, test.examples, got, test.want)
+			if got := consumerFile(filepath.FromSlash(test.path)); got != test.want {
+				t.Errorf("consumerFile(%q) = %v, want %v", test.path, got, test.want)
 			}
 		})
 	}
@@ -246,13 +243,8 @@ func TestConsumerWalkUsesRelativeModuleBoundary(t *testing.T) {
 		}
 	}
 	consumed := map[surfaceSymbol]bool{}
-	scanConsumerTree(t, root, false, consumed)
+	scanConsumerTree(t, root, consumed)
 	assertConsumedSymbols(t, consumed, []surfaceSymbol{{actionPackage, "Zip"}, {actionPackage, "Action"}})
-	consumed = map[surfaceSymbol]bool{}
-	scanConsumerTree(t, root, true, consumed)
-	assertConsumedSymbols(t, consumed, []surfaceSymbol{
-		{actionPackage, "Map"}, {actionPackage, "Zip"}, {actionPackage, "Action"},
-	})
 }
 
 func TestSurfaceResultAndFieldReachability(t *testing.T) {

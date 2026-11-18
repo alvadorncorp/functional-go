@@ -9,7 +9,7 @@ import (
 
 func TestRootPackageRemainsDocOnly(t *testing.T) {
 	t.Parallel()
-	out, err := exec.Command("go", "list", "-json", "github.com/alvadorncorp/gopackages/functional").Output()
+	out, err := exec.Command("go", "list", "-json", "go.alvadorn.org/functional").Output()
 	if err != nil {
 		t.Fatalf("go list root package: %v", err)
 	}

@@ -1,7 +1,7 @@
-module github.com/alvadorncorp/gopackages/modeling
+module go.alvadorn.org/functional/modeling
 
 go 1.27
 
 toolchain go1.27.4
 
-require github.com/alvadorncorp/gopackages/functional v1.3.1
+require go.alvadorn.org/functional v1.3.2

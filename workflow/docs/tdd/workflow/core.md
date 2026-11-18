@@ -61,11 +61,9 @@ nome, assinatura, field shape ou arquivo precisam alterar o gate na mesma fase.
   string, prefixo e pacote estrangeiro não contam. Uma função consumida alcança
   só os tipos locais de seus resultados e um tipo consumido, os tipos de seus
   campos exportados; constantes exigem seletor direto. Os consumidores são a
-  produção do módulo, os `example_test.go` externos do próprio módulo e todo
-  `.go` de `examples/workflow`, exceto `internal/archtest` e os testes unitários
-  do módulo; `go vet ./...` na raiz do módulo continua rodando. O gate não
-  checa tipos nem execução: os quatro módulos de exemplo exigem build isolado
-  separado;
+  produção do módulo e os `example_test.go` externos, exceto
+  `internal/archtest`. `go vet ./...` verifica a compilação dos consumidores;
+  `go test ./...` executa os exemplos com saída declarada;
 - superfícies e arquivos de produção são allowlists exatas; a lista de
   documentos exigidos é verificada somente por presença, junto com chaves de
   frontmatter e tokens selecionados;

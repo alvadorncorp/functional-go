@@ -1,6 +1,6 @@
 # Specification
 
-**Import path:** `github.com/alvadorncorp/gopackages/modeling/specification`
+**Import path:** `go.alvadorn.org/functional/modeling/specification`
 
 `Specification[T]` é uma classificação booleana com significado explícito no
 vocabulário do domínio. Ela responde **este valor pertence a esta categoria?**

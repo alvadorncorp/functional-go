@@ -1,6 +1,6 @@
 # Package `structural/lazy`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/structural/lazy`
+**Import path:** `go.alvadorn.org/functional/structural/lazy`
 
 `Lazy[T]` is a pointer handle for a deferred, memoized computation built on
 `sync.OnceValue`. New rejects a nil initializer immediately. Get runs the

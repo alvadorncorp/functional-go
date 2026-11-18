@@ -3,7 +3,7 @@ package vector
 import (
 	"iter"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 // Root is an immutable 32-way persistent vector.

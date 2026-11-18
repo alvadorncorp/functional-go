@@ -73,7 +73,7 @@ inside `state`.
 
 ## Decision
 
-**Chosen: Option 3** — introduce `github.com/alvadorncorp/gopackages/functional/state`
+**Chosen: Option 3** — introduce `go.alvadorn.org/functional/state`
 as the semantic evolution layer for `T any`.
 
 ### Pure State[T]

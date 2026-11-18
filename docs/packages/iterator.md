@@ -1,6 +1,6 @@
 # Package `structural/iterator`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/structural/iterator`
+**Import path:** `go.alvadorn.org/functional/structural/iterator`
 
 `iterator` is a thin adapter and terminal layer over Go's `iter.Seq`; it does
 not define an Iterator type. Map, Filter, FilterMap, FlatMap, Flatten, Take,

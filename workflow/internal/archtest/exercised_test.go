@@ -34,14 +34,10 @@ func shortPackageName(importPath string) string {
 }
 
 // Module production files and own examples count; ordinary own tests do not.
-// Runnable monorepo examples count in full, including their tests.
-func consumerFile(relative string, examples bool) bool {
+func consumerFile(relative string) bool {
 	relative = filepath.ToSlash(relative)
 	if !strings.HasSuffix(relative, ".go") {
 		return false
-	}
-	if examples {
-		return true
 	}
 	if strings.HasPrefix(relative, "internal/archtest/") {
 		return false
@@ -52,12 +48,10 @@ func consumerFile(relative string, examples bool) bool {
 func consumerSelectors(t *testing.T) map[surfaceSymbol]bool {
 	t.Helper()
 	root := moduleRoot(t)
-	examplesRoot := filepath.Join(filepath.Dir(root), "examples", "workflow")
 	consumed := map[surfaceSymbol]bool{}
-	scanConsumerTree(t, root, false, consumed)
-	scanConsumerTree(t, examplesRoot, true, consumed)
+	scanConsumerTree(t, root, consumed)
 
-	// Vet checks module consumers; main separately builds all runnable examples.
+	// Vet checks that the consumers compile.
 	vet := exec.Command("go", "vet", "./...")
 	vet.Dir = root
 	if output, err := vet.CombinedOutput(); err != nil {
@@ -67,7 +61,7 @@ func consumerSelectors(t *testing.T) map[surfaceSymbol]bool {
 	return consumed
 }
 
-func scanConsumerTree(t *testing.T, root string, examples bool, consumed map[surfaceSymbol]bool) {
+func scanConsumerTree(t *testing.T, root string, consumed map[surfaceSymbol]bool) {
 	t.Helper()
 	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -80,7 +74,7 @@ func scanConsumerTree(t *testing.T, root string, examples bool, consumed map[sur
 		if relErr != nil {
 			return relErr
 		}
-		if !consumerFile(relative, examples) {
+		if !consumerFile(relative) {
 			return nil
 		}
 		file, parseErr := parser.ParseFile(token.NewFileSet(), path, nil, parser.SkipObjectResolution)

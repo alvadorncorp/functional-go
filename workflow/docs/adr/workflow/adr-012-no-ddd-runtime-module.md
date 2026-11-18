@@ -13,10 +13,9 @@ date: 2026-08-24
 
 ## Contexto e problema
 
-Aplicações neste workspace já se constroem com `functional` (valores),
-`modeling` (decisão pura) e `workflow` (efeitos), compostos pela aplicação,
-como demonstra `examples/workflow/checkout`. A tentação seguinte é um quarto
-módulo com `Aggregate`, `Entity`, `Repository`, `UnitOfWork` ou `CommandBus`.
+Aplicações podem compor `functional` (valores), `modeling` (decisão pura) e
+`workflow` (efeitos). A tentação seguinte é um quarto módulo com `Aggregate`,
+`Entity`, `Repository`, `UnitOfWork` ou `CommandBus`.
 
 ## Drivers da decisão
 

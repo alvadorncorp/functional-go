@@ -16,9 +16,9 @@ date: 2026-08-10
 O módulo `functional` expunha dois pacotes públicos sem consumidores de
 produção no monorepo:
 
-- `github.com/alvadorncorp/gopackages/functional/optional` — API legada de
+- `go.alvadorn.org/functional/optional` — API legada de
   `Optional[T]`, mantida em paralelo a `values/optional` (ADR-007).
-- `github.com/alvadorncorp/gopackages/functional/valueobject` — helper
+- `go.alvadorn.org/functional/valueobject` — helper
   reflexivo de teste (`Check`/`Inspect`), sem uso de produção.
 
 A presença de dois Optional e de um helper de teste no inventário público
@@ -66,7 +66,7 @@ overview. Escrever este ADR como fonte da decisão de retirement.
 ### Negativas / trade-offs
 
 - Breaking change: imports de
-  `github.com/alvadorncorp/gopackages/functional/optional` e
+  `go.alvadorn.org/functional/optional` e
   `.../valueobject` deixam de compilar.
 - Consumidores externos precisam migrar para `values/optional` ou copiar o
   helper de value-object localmente.

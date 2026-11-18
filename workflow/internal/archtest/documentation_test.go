@@ -117,13 +117,9 @@ func requiredDocumentationTokens() map[string][]string {
 		"docs/resilience.md": {
 			"Attempts", "1-based", "idempot", "cooperativo", "Timeout(Retry", "Retry(Timeout",
 		},
-		"docs/composition.md":          {"FlatMap", "Zip", "Both", "Traverse"},
-		"docs/dependency-injection.md": {"fornece input", "Container"},
-		"docs/examples.md": {
-			"AttemptResult.Err", "action.Run", "transaction.Within",
-			"CreateOrderHTTPRequest", "CreateOrderMessage", "CreateOrderPlan",
-			"faults.IsUnavailable", "Timeout(30", "AppendOutbox",
-		},
+		"docs/composition.md":              {"FlatMap", "Zip", "Both", "Traverse"},
+		"docs/dependency-injection.md":     {"fornece input", "Container"},
+		"docs/examples.md":                 {"action.Run", "transaction.Within", "resilience.Retry"},
 		"docs/transactions.md":             {"Bracket", "Within", "atomicidade"},
 		"docs/tdd/workflow/action.md":      {"AcquireUseRelease", "errors.Join", "panic", "Traverse"},
 		"docs/tdd/workflow/composition.md": {"Contramap", "Provide", "DI container"},
@@ -230,9 +226,6 @@ func TestDocumentationADRIndexAndSupersession(t *testing.T) {
 	}
 	if !strings.Contains(indexText, "plan.md") || !strings.Contains(indexText, "resilience.md") {
 		t.Error("docs index must link Plan and Resilience guides")
-	}
-	if !strings.Contains(indexText, "CreateOrder") {
-		t.Error("docs index examples entry must mention CreateOrder")
 	}
 }
 

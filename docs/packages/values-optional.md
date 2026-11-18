@@ -1,6 +1,6 @@
 # Package `values/optional`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/values/optional`
+**Import path:** `go.alvadorn.org/functional/values/optional`
 
 `Optional[T]` represents a value that may be present (`Some`) or absent
 (`None`). It is a small value type for modelling explicit absence without

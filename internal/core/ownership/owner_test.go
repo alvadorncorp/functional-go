@@ -3,7 +3,7 @@ package ownership_test
 import (
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+	"go.alvadorn.org/functional/internal/core/ownership"
 )
 
 func TestNewReturnsNonNilDistinctActive(t *testing.T) {

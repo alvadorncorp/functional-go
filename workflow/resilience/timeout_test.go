@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alvadorncorp/gopackages/workflow/action"
-	"github.com/alvadorncorp/gopackages/workflow/resilience"
+	"go.alvadorn.org/functional/workflow/action"
+	"go.alvadorn.org/functional/workflow/resilience"
 )
 
 type ctxKey string

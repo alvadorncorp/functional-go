@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/workflow/plan"
+	"go.alvadorn.org/functional/workflow/plan"
 )
 
 func TestPlanIsOpaqueAndNonExecutable(t *testing.T) {

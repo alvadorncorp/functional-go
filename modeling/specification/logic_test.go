@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling/specification"
+	"go.alvadorn.org/functional/modeling/specification"
 )
 
 func TestAllAndAnyEmptyIdentities(t *testing.T) {

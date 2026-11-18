@@ -17,17 +17,7 @@ A confirmação de uma decisão percorre os eventos emitidos e, para cada um,
 executa uma Action (codificar e fazer append no outbox), parando no primeiro
 erro. A álgebra de `action` não tem combinador para "uma Action por item, em
 ordem", então cada aplicação escreve o mesmo laço manual com `action.Run`
-dentro de uma Action externa. A regra de três já foi atingida nos exemplos:
-
-- checkout: `appendOutbox` em
-  `examples/workflow/checkout/internal/ordering/application/checkout.go:142-162`
-  codifica, faz append e ainda coleta as mensagens para o resultado;
-- withdraw: `appendOutbox` em
-  `examples/workflow/withdraw/application/workflow.go:103-118`;
-- crosscontext: `appendAll` em
-  `examples/workflow/crosscontext/shared/workflow.go:139-158`, com um laço por
-  decisão, e o laço de `appendIntegrationMessages` em
-  `examples/workflow/crosscontext/distributed/workflow.go:61-78`.
+dentro de uma Action externa.
 
 O guia de padrões já nomeia a repetição
 (`docs/patterns/load-decide-confirm.md:17`): iterar `decision.Events()` e fazer

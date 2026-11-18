@@ -1,6 +1,6 @@
 # Package `values/validated`
 
-**Import path:** `github.com/alvadorncorp/gopackages/functional/values/validated`
+**Import path:** `go.alvadorn.org/functional/values/validated`
 
 `Validated[T, E]` represents either a valid value or one or more validation
 errors. Use it for independent checks that should report all known problems in

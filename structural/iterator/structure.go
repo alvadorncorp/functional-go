@@ -3,7 +3,7 @@ package iterator
 import (
 	"iter"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/tuple"
+	"go.alvadorn.org/functional/structural/tuple"
 )
 
 func Zip[A, B any](left iter.Seq[A], right iter.Seq[B]) iter.Seq[tuple.Tuple2[A, B]] {

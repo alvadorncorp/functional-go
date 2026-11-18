@@ -1,6 +1,6 @@
 # Policy
 
-**Import path:** `github.com/alvadorncorp/gopackages/modeling/policy`
+**Import path:** `go.alvadorn.org/functional/modeling/policy`
 
 `Policy[I,O]` é uma estratégia pura que deriva um resultado ou escolha de
 política a partir de um contexto explícito. Ela responde **qual resultado ou

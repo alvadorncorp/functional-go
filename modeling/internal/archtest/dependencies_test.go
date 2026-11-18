@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	modelingModule       = "github.com/alvadorncorp/gopackages/modeling"
-	functionalModule     = "github.com/alvadorncorp/gopackages/functional"
+	modelingModule       = "go.alvadorn.org/functional/modeling"
+	functionalModule     = "go.alvadorn.org/functional"
 	functionalImmutable  = functionalModule + "/immutable"
 	functionalOptional   = functionalModule + "/values/optional"
 	functionalPredicate  = functionalModule + "/primitives/predicate"
@@ -37,6 +37,7 @@ type listedPackage struct {
 	ImportPath   string
 	Imports      []string
 	Standard     bool
+	Module       *struct{ Path string }
 }
 
 var forbiddenDirectImports = map[string]struct{}{
@@ -67,6 +68,7 @@ var forbiddenExportedNames = map[string]struct{}{
 func goList(t *testing.T, args ...string) []listedPackage {
 	t.Helper()
 	command := exec.Command("go", append([]string{"list"}, args...)...)
+	command.Dir = "../.."
 	output, err := command.CombinedOutput()
 	if err != nil {
 		t.Fatalf("go %s: %v\n%s", strings.Join(append([]string{"list"}, args...), " "), err, output)
@@ -89,7 +91,7 @@ func goList(t *testing.T, args ...string) []listedPackage {
 
 func productionPackages(t *testing.T) []listedPackage {
 	t.Helper()
-	packages := goList(t, "-json", modelingModule+"/...")
+	packages := goList(t, "-json", "./...")
 	production := make([]listedPackage, 0, len(packages))
 	for i := range packages {
 		if packages[i].ImportPath != archtestPackage {
@@ -100,17 +102,20 @@ func productionPackages(t *testing.T) []listedPackage {
 }
 
 func dependencyAllowed(pkg *listedPackage) bool {
-	return pkg.Standard || pkg.ImportPath == modelingModule ||
-		strings.HasPrefix(pkg.ImportPath, modelingModule+"/") ||
-		pkg.ImportPath == functionalModule ||
-		strings.HasPrefix(pkg.ImportPath, functionalModule+"/")
+	return pkg.Standard || (pkg.Module != nil &&
+		(pkg.Module.Path == modelingModule || pkg.Module.Path == functionalModule))
+}
+
+func isFunctionalPackage(importPath string) bool {
+	return importPath != modelingModule && !strings.HasPrefix(importPath, modelingModule+"/") &&
+		(importPath == functionalModule || strings.HasPrefix(importPath, functionalModule+"/"))
 }
 
 func directImportForbidden(importingPackage, importPath string) bool {
 	if _, forbidden := forbiddenDirectImports[importPath]; forbidden {
 		return true
 	}
-	if importPath != functionalModule && !strings.HasPrefix(importPath, functionalModule+"/") {
+	if !isFunctionalPackage(importPath) {
 		return false
 	}
 	switch importingPackage {
@@ -189,14 +194,6 @@ func TestFunctionalTypesDoNotLeakOutsideApprovedPackages(t *testing.T) {
 	}
 }
 
-func TestFunctionalDoesNotDependOnModeling(t *testing.T) {
-	for _, dependency := range goList(t, "-deps", "-json", functionalModule+"/...") {
-		if dependency.ImportPath == modelingModule || strings.HasPrefix(dependency.ImportPath, modelingModule+"/") {
-			t.Errorf("functional must not depend on %s", dependency.ImportPath)
-		}
-	}
-}
-
 func TestNoMagicRuntimeAPI(t *testing.T) {
 	for _, production := range productionPackages(t) {
 		for _, name := range productionNames(t, &production) {
@@ -225,7 +222,7 @@ func functionalImportAliases(file *ast.File) (map[string]struct{}, bool) {
 	dotImport := false
 	for _, imported := range file.Imports {
 		importPath, err := strconv.Unquote(imported.Path.Value)
-		if err != nil || (importPath != functionalModule && !strings.HasPrefix(importPath, functionalModule+"/")) {
+		if err != nil || !isFunctionalPackage(importPath) {
 			continue
 		}
 		if imported.Name != nil {

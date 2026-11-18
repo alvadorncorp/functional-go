@@ -1,6 +1,6 @@
 package wbtree
 
-import "github.com/alvadorncorp/gopackages/functional/internal/core/ownership"
+import "go.alvadorn.org/functional/internal/core/ownership"
 
 // Straka's balance parameters for weight = size+1 ("Adams' Trees Revisited",
 // 2011): the only integer pair for which one rotation per level restores

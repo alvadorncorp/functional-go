@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/alvadorncorp/gopackages/functional/values/result"
+	"go.alvadorn.org/functional/values/result"
 )
 
 func ExampleMap() {

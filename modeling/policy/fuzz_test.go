@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/modeling/policy"
+	"go.alvadorn.org/functional/modeling/policy"
 )
 
 func FuzzPolicyCompositionLaws(f *testing.F) {

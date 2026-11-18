@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/workflow"
-	"github.com/alvadorncorp/gopackages/workflow/action"
+	"go.alvadorn.org/functional/workflow"
+	"go.alvadorn.org/functional/workflow/action"
 )
 
 // Example shows the three moments the module separates: dependencies enter at

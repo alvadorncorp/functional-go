@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/primitives/order"
+	"go.alvadorn.org/functional/primitives/order"
 )
 
 func sign(value int) int {

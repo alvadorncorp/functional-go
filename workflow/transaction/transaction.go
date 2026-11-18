@@ -22,7 +22,7 @@ package transaction
 import (
 	"context"
 
-	"github.com/alvadorncorp/gopackages/workflow/action"
+	"go.alvadorn.org/functional/workflow/action"
 )
 
 // Panic messages are stable, unexported constants.

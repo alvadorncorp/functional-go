@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/alvadorncorp/gopackages/functional/immutable"
-	"github.com/alvadorncorp/gopackages/functional/state"
+	"go.alvadorn.org/functional/immutable"
+	"go.alvadorn.org/functional/state"
 )
 
 // Plan sizes for marginal Apply cost. A true O(1) reverse-linked prepend

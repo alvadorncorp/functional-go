@@ -3,7 +3,7 @@ package optics_test
 import (
 	"fmt"
 
-	"github.com/alvadorncorp/gopackages/functional/structural/optics"
+	"go.alvadorn.org/functional/structural/optics"
 )
 
 type exampleAddress struct{ City string }
