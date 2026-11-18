@@ -57,4 +57,8 @@ support: `encoding/json` encodes it as `{}`.
 From the repository root, run `make test-unit` and `make lint`.
 Use `make test-published` to test without the workspace.
 
+[GitHub Actions](.github/workflows/ci.yml) runs the Make targets `test-unit`,
+`test-race`, `test-published`, `vet`, and `lint` in parallel for each module.
+Run `make bench` separately for benchmarks.
+
 Licensed under the [Apache License 2.0](LICENSE).
