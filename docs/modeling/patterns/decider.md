@@ -1,29 +1,30 @@
 # Decider
 
-Padrão de modelagem, não tipo de biblioteca. Um Decider descreve um agregado
-com três peças: `decide` (comando e estado viram eventos), `evolve` (estado e
-evento viram o próximo estado) e o estado inicial. modeling já tem uma forma
-para cada peça, e a aplicação as compõe com funções ordinárias.
+A modeling pattern, not a library type. A Decider describes an aggregate with
+three pieces: `decide` (command and state become events), `evolve` (state and
+event become the next state), and the initial state. modeling already has a
+shape for each piece, and the application composes them with ordinary
+functions.
 
-Todo código desta página é trecho de
-[`decider_example_test.go`](../../../modeling/decider_example_test.go), que `go test`
-compila e executa no módulo. A lei que liga `decide` a `evolve` está em
-[Lei decide/evolve](decide-evolve-law.md).
+All code on this page is an excerpt from
+[`decider_example_test.go`](../../../modeling/decider_example_test.go), which `go test`
+compiles and runs in the module. The law that ties `decide` to `evolve` is in
+the [decide/evolve law](decide-evolve-law.md).
 
-## Mapeamento
+## Mapping
 
-| Decider | modeling | No exemplo |
+| Decider | modeling | In the example |
 |---|---|---|
-| `decide: C → S → [E]` | `modeling.FallibleTransition[S, C, modeling.Decision[S, E]]`, ou `Transition` quando o comando não falha | `decideDeposit`, `decidePoints`, `decideWallet` |
+| `decide: C → S → [E]` | `modeling.FallibleTransition[S, C, modeling.Decision[S, E]]`, or `Transition` when the command cannot fail | `decideDeposit`, `decidePoints`, `decideWallet` |
 | `evolve: S → E → S` | `reducer.Reducer[S, E]` | `evolveAccount`, `evolvePoints`, `evolveWallet` |
-| `initialState: S` | valor da aplicação | `deciderAccountInitial`, `deciderPointsInitial`, `deciderWalletInitial` |
-| fold do histórico | `reducer.Replay(initial, events, evolve)` | `reducer.Replay` dentro de `decidePoints` |
-| comando rejeitado | `error` da aplicação | `errNonPositiveDeposit`, `errNonPositivePoints` |
+| `initialState: S` | application value | `deciderAccountInitial`, `deciderPointsInitial`, `deciderWalletInitial` |
+| history fold | `reducer.Replay(initial, events, evolve)` | `reducer.Replay` inside `decidePoints` |
+| rejected command | the application's `error` | `errNonPositiveDeposit`, `errNonPositivePoints` |
 
-O `decide` canônico devolve só eventos. Em modeling ele devolve uma
-`Decision[S, E]`, que leva o próximo estado junto com os eventos, e a rejeição
-vai no `error`. As formas são tipos de função, então funções comuns da
-aplicação encaixam sem adaptador:
+The canonical `decide` returns only events. In modeling it returns a
+`Decision[S, E]`, which carries the next state along with the events, and
+rejection goes in the `error`. The shapes are function types, so ordinary
+application functions fit without an adapter:
 
 ```go
 var _ modeling.FallibleTransition[account, deposit, modeling.Decision[account, accountDeposited]] = decideDeposit
@@ -31,12 +32,11 @@ var _ modeling.FallibleTransition[account, deposit, modeling.Decision[account, a
 var _ reducer.Reducer[account, accountDeposited] = evolveAccount
 ```
 
-## Dois estilos de decide
+## Two decide styles
 
-**State-first.** `decideDeposit` calcula o próximo estado por conta própria e
-emite o evento que `evolveAccount` precisa reaplicar até o mesmo estado. Quem
-garante que as duas rotas concordam é o teste da
-[lei](decide-evolve-law.md):
+**State-first.** `decideDeposit` computes the next state itself and emits the
+event `evolveAccount` must replay to reach the same state. The test of the
+[law](decide-evolve-law.md) guarantees the two routes agree:
 
 ```go
 func decideDeposit(state account, command deposit) (modeling.Decision[account, accountDeposited], error) {
@@ -48,9 +48,9 @@ func decideDeposit(state account, command deposit) (modeling.Decision[account, a
 }
 ```
 
-**Events-first.** `decidePoints` decide só os eventos e deriva o próximo estado
-reaplicando-os com `evolvePoints`. É o `decide` canônico do Decider, e a lei
-vale por construção, qualquer que seja a observação:
+**Events-first.** `decidePoints` decides only the events and derives the next
+state by replaying them with `evolvePoints`. It is the canonical Decider
+`decide`, and the law holds by construction under any observation:
 
 ```go
 func decidePoints(state points, command earnPoints) (modeling.Decision[points, pointsEarned], error) {
@@ -68,28 +68,29 @@ func evolvePoints(state points, event pointsEarned) points {
 }
 ```
 
-Prefira events-first quando os eventos carregam toda a mudança: o estado da
-Decision sai de `evolve` e não tem como divergir. Use state-first quando o
-próximo estado é mais claro calculado direto, ou quando parte dele não está
-em evento nenhum, como o cupom do checkout em
-[Observação parcial](decide-evolve-law.md#observação-parcial). Nesse caso a
-lei precisa de teste, com a observação declarada. Nos dois estilos a Decision
-já leva o estado pronto, e quem confirma não precisa de Replay.
+Prefer events-first when the events carry the whole change: the Decision state
+comes out of `evolve` and cannot diverge. Use state-first when the next state
+is clearer computed directly, or when part of it is in no event at all, like
+the checkout coupon in
+[Partial observation](decide-evolve-law.md#observação-parcial). Then the law
+needs a test, with the observation declared. In both styles the Decision
+already carries the finished state, and whoever confirms needs no Replay.
 
-## Comandos sem tipos-soma
+<a id="comandos-sem-tipos-soma"></a>
 
-Go não tem tipo-soma. O Decider canônico recebe um `C` que é a soma dos
-comandos do agregado e faz o casamento de padrões dentro do `decide`.
+## Commands without sum types
 
-**Um `decide` por comando.** `decideDeposit` recebe `deposit` e
-`decidePoints` recebe `earnPoints`. Cada um é uma `FallibleTransition` com o
-próprio tipo de comando, e o ponto de entrada da aplicação (handler, caso de
-uso) chama o certo. Não há interface `Command`, dispatcher, registry nem
-command bus.
+Go has no sum type. The canonical Decider takes a `C` that is the sum of the
+aggregate's commands and pattern-matches inside `decide`.
 
-**Eventos usam interface selada.** O histórico mistura tipos de evento num só
-`iter.Seq[E]`, e `evolve` precisa aceitar todos. Uma interface com método não
-exportado faz o papel da soma:
+**One `decide` per command.** `decideDeposit` takes `deposit` and `decidePoints`
+takes `earnPoints`. Each is a `FallibleTransition` with its own command type,
+and the application's entry point (handler, use case) calls the right one.
+There is no `Command` interface, dispatcher, registry, or command bus.
+
+**Events use a sealed interface.** The history mixes event types in a single
+`iter.Seq[E]`, and `evolve` must accept them all. An interface with an
+unexported method plays the role of the sum:
 
 ```go
 type walletEvent interface {
@@ -101,7 +102,7 @@ func (accountDeposited) walletEvent() {}
 func (pointsEarned) walletEvent() {}
 ```
 
-`evolve` despacha com type switch:
+`evolve` dispatches with a type switch:
 
 ```go
 func evolveWallet(state wallet, event walletEvent) wallet {
@@ -115,13 +116,13 @@ func evolveWallet(state wallet, event walletEvent) wallet {
 }
 ```
 
-O compilador não verifica se o switch é exaustivo. Um evento sem `case` sai do
-switch sem mudar o estado; se o `decide` emite esse evento, a lei quebra e a
-tabela ou o fuzz acusa.
+The compiler does not check that the switch is exhaustive. An event without a
+`case` leaves the switch without changing state; if the `decide` emits that
+event, the law breaks and the table or the fuzz flags it.
 
-**Comando-soma, quando precisar.** Um ponto de entrada único usa a mesma
-forma: interface selada e type switch no `decide`. `topUp`, ao contrário, é
-comando-produto e leva os dois subcomandos de uma vez:
+**Sum-typed command, when needed.** A single entry point uses the same shape: a
+sealed interface and a type switch in `decide`. `topUp`, by contrast, is a
+product command that carries both subcommands at once:
 
 ```go
 type topUp struct {
@@ -130,9 +131,9 @@ type topUp struct {
 }
 ```
 
-## Composição sobre estado-produto
+## Composition over a product state
 
-A carteira é o produto da conta e dos pontos:
+The wallet is the product of the account and the points:
 
 ```go
 type wallet struct {
@@ -143,8 +144,8 @@ type wallet struct {
 var deciderWalletInitial = wallet{account: deciderAccountInitial, points: deciderPointsInitial}
 ```
 
-`decideWallet` decide cada componente, leva o resultado para a carteira com
-`MapState` (estado) e `MapEvents` (eventos) e junta os dois lados com
+`decideWallet` decides each component, lifts the result into the wallet with
+`MapState` (state) and `MapEvents` (events), and joins the two sides with
 `Combine`:
 
 ```go
@@ -173,34 +174,34 @@ func toWalletEvent[E walletEvent](event E) walletEvent {
 }
 ```
 
-- **Composição sequencial.** `Combine(left, right)` fica com o estado de
-  `right` e põe os eventos de `left` antes dos de `right`. Como `right` foi
-  decidido sobre `left.State()`, isso é composição sequencial: primeiro a
-  conta, depois os pontos sobre o estado resultante. A lei do produto sai das
-  leis dos componentes e da concatenação do Replay, desde que `evolveWallet`
-  encaminhe cada evento ao seu componente:
+- **Sequential composition.** `Combine(left, right)` keeps `right`'s state and
+  puts `left`'s events before `right`'s. Because `right` was decided over
+  `left.State()`, this is sequential composition: first the account, then the
+  points over the resulting state. The product law follows from the component
+  laws and Replay concatenation, as long as `evolveWallet` forwards each event
+  to its component:
   `Replay(before, L ++ R) = Replay(Replay(before, L), R) = Replay(left.State(), R) = right.State()`.
-- **Componentes disjuntos.** `decidePoints` só lê `points`, e
-  `left.State().points` é igual a `state.points`. Com componentes disjuntos,
-  decidir sobre `left.State()` dá o mesmo que decidir sobre o estado anterior.
-  Quando um componente lê o que o outro muda (pontos proporcionais ao saldo,
-  por exemplo), decidir sobre o estado anterior usaria dados velhos, e só a
-  forma sequencial dá "um depois do outro". Ao levantar `right`, o estado de
-  `left` precisa entrar no produto: `Combine` guarda só o estado de `right`, e
-  um `right` montado sobre o estado anterior descartaria a mudança de `left`.
-  A lei acusa, porque os eventos de `left` continuam no histórico.
-- **Rejeição atômica.** Se um componente rejeita, `decideWallet` devolve o
-  erro e uma Decision sem eventos sobre o estado original. Não existe meia
-  decisão.
-- **Produto canônico.** No Decider canônico, o produto recebe um comando-soma
-  `C1 | C2` e o encaminha a um único componente. O outro componente fica como
-  está e não há `Combine`. Em Go, isso é o type switch de
-  [Comandos sem tipos-soma](#comandos-sem-tipos-soma) chamando um único
-  `decide`, levantado com `MapState` e `MapEvents`. `decideWallet` é outra
-  composição: o comando-produto `topUp` aciona os dois componentes em
-  sequência.
+- **Disjoint components.** `decidePoints` only reads `points`, and
+  `left.State().points` equals `state.points`. With disjoint components,
+  deciding over `left.State()` gives the same result as deciding over the
+  previous state. When one component reads what the other changes (points
+  proportional to the balance, for example), deciding over the previous state
+  would use stale data, and only the sequential form gives "one after the
+  other". When lifting `right`, `left`'s state must enter the product:
+  `Combine` keeps only `right`'s state, and a `right` built over the previous
+  state would discard `left`'s change. The law flags it, because `left`'s
+  events are still in the history.
+- **Atomic rejection.** If a component rejects, `decideWallet` returns the
+  error and a Decision without events over the original state. There is no
+  half decision.
+- **Canonical product.** In the canonical Decider, the product takes a sum
+  command `C1 | C2` and forwards it to a single component. The other component
+  stays as it is, and there is no `Combine`. In Go this is the type switch of
+  [Commands without sum types](#comandos-sem-tipos-soma) calling a single
+  `decide`, lifted with `MapState` and `MapEvents`. `decideWallet` is another
+  composition: the product command `topUp` drives both components in sequence.
 
-O exemplo executável mostra a ordem dos eventos e a lei no produto:
+The executable example shows the event order and the law on the product:
 
 ```go
 func Example_deciderComposition() {
@@ -224,38 +225,38 @@ func Example_deciderComposition() {
 }
 ```
 
-`TestDecideEvolveLawTable` e `FuzzDecideEvolveLaw` cobrem a carteira com as
-mesmas receitas da conta.
+`TestDecideEvolveLawTable` and `FuzzDecideEvolveLaw` cover the wallet with the
+same recipes as the account.
 
-## Não é
+## What it is not
 
-- **Não é tipo de biblioteca.** modeling não exporta `Decider`, `Compose`,
-  `Run`, runner nem registry de deciders.
+- **Not a library type.** modeling exports no `Decider`, `Compose`, `Run`,
+  runner, or decider registry.
   [minimal type safe domain modeling](../../adr/modeling/minimal-type-safe-domain-modeling.md)
-  (`adr:modeling:minimal-type-safe-domain-modeling`) mantém o núcleo mínimo e exige mudança aprovada à parte
-  para qualquer tipo novo de framework.
-  [A decisão sobre runtime DDD no workflow](../../../workflow/docs/adr/workflow/no-ddd-runtime-module.md)
-  (`adr:workflow:no-ddd-runtime-module`) decide que a ajuda a aplicações DDD é documentação de
-  padrões, não runtime. Um helper de Decider numa biblioteca exigiria ADR
-  própria.
-- **Não é Event Sourcing.** Nada aqui carrega streams, persiste, versiona nem
-  tira snapshot (ver [overview](../overview.md)).
-- **Não é command bus.** Escolher o `decide` de cada comando é código da
-  aplicação.
+  (`adr:modeling:minimal-type-safe-domain-modeling`) keeps the core minimal and requires a separately
+  approved change for any new framework type.
+  [The workflow decision on DDD runtimes](../../../workflow/docs/adr/workflow/no-ddd-runtime-module.md)
+  (`adr:workflow:no-ddd-runtime-module`) decides that helping DDD applications is pattern
+  documentation, not a runtime. A Decider helper in a library would need its
+  own ADR.
+- **Not Event Sourcing.** Nothing here loads streams, persists, versions, or
+  takes snapshots (see the [overview](../overview.md)).
+- **Not a command bus.** Choosing the `decide` for each command is application
+  code.
 
-## Relação com load → decide → confirm
+## Relation to load → decide → confirm
 
-O Decider é o meio puro de
+The Decider is the pure middle of
 [load → decide → confirm](../../../workflow/docs/patterns/load-decide-confirm.md):
 
-- **load** produz o estado anterior. Com repositório de estado, é o estado
-  lido. Com histórico de eventos, é o Replay do histórico gravado a partir de
-  `deciderWalletInitial` com `evolveWallet`.
-- **decide** é `decideWallet`: função pura, sem efeito.
-- **confirm** grava `d.State()` e faz append sequencial de `d.Events()` no
-  outbox da aplicação (ver
-  [Outbox e inbox](../../../workflow/docs/patterns/outbox-inbox.md)).
+- **load** produces the previous state. With a state repository, it is the
+  state read. With an event history, it is the Replay of the recorded history
+  from `deciderWalletInitial` with `evolveWallet`.
+- **decide** is `decideWallet`: a pure function, no effect.
+- **confirm** writes `d.State()` and appends `d.Events()` in order to the
+  application's outbox (see
+  [Outbox and inbox](../../../workflow/docs/patterns/outbox-inbox.md)).
 
-A lei é o que permite confirmar estado e eventos juntos: quem reconstrói o
-estado a partir dos eventos publicados chega ao mesmo `d.State()` que foi
-gravado, dentro da observação declarada.
+The law is what makes confirming state and events together possible: whoever
+rebuilds the state from the published events arrives at the same `d.State()`
+that was written, within the declared observation.

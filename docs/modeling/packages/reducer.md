@@ -2,10 +2,10 @@
 
 **Import path:** `go.alvadorn.org/functional/modeling/reducer`
 
-Reducer evolui estado de domínio a partir de fatos já ocorridos. É uma
-capability de modelagem síncrona e pura, não um runtime de Event Sourcing.
+Reducer evolves domain state from facts that have already happened. It is a
+synchronous, pure modeling capability, not an Event Sourcing runtime.
 
-## API pública
+## Public API
 
 ```go
 type Reducer[S, E any] func(S, E) S
@@ -17,11 +17,11 @@ func Replay[S, E any](
 ) S
 ```
 
-Funções ordinárias `func(S, E) S` funcionam diretamente. S e E são de
-propriedade da aplicação. A semântica é de valor: o metamodelo não usa
-ponteiro, `Ref`, `Box` nem `Readonly` no tipo `Reducer`.
+Ordinary `func(S, E) S` functions work directly. S and E are application-owned.
+The semantics are value semantics: the metamodel uses no pointer, `Ref`, `Box`,
+or `Readonly` in the `Reducer` type.
 
-## Exemplo completo
+## Complete example
 
 ```go
 type Account struct {
@@ -53,90 +53,88 @@ state := reducer.Replay(
 )
 ```
 
-`ReduceAccount` não lê database, broker, Event Store, relógio, filesystem nem
-registry global. A aplicação fornece os fatos e decide o que fazer com o
-estado devolvido.
+`ReduceAccount` reads no database, broker, event store, clock, filesystem, or
+global registry. The application supplies the facts and decides what to do with
+the returned state.
 
-## Uso incremental e em lote
+## Incremental and batch use
 
-A função Reducer já é a operação incremental:
+The Reducer function is already the incremental operation:
 
 ```go
 next := ReduceAccount(current, event)
 ```
 
-Replay é a forma em lote, de passagem única:
+Replay is the batch, single-pass form:
 
 ```go
 rebuilt := reducer.Replay(empty, history, ReduceAccount)
 ```
 
-Ambos compartilham a semântica `S x E -> S`. Replay aplica cada evento
-exatamente uma vez na ordem de encontro da sequência e encadeia o resultado.
-Sequência vazia devolve o estado inicial.
+Both share the `S x E -> S` semantics. Replay applies each event exactly once in
+the sequence's encounter order and chains the result. An empty sequence returns
+the initial state.
 
-## Ponte com Decision
+## Decision bridge
 
-`Decision[S,E].Events()` já é `iter.Seq[E]`. Quando esses eventos reconstróem
-estado:
+`Decision[S,E].Events()` is already an `iter.Seq[E]`. When those events rebuild
+state:
 
 ```go
 state := reducer.Replay(previous, decision.Events(), ReduceAccount)
 ```
 
-Não é necessário `immutable.CollectList`. Quem precisar varrer a sequência
-mais de uma vez materializa explicitamente antes de chamar Replay.
+`immutable.CollectList` is unnecessary. Anyone who needs to traverse the
+sequence more than once materializes it explicitly before calling Replay.
 
-A consistência entre `decision.State()` e esse Replay é lei da aplicação, não
-do pacote: Replay não compara os dois estados e não há `VerifyDecision` nem
-`ReplayDecision`. As receitas de teste (tabela e fuzz) estão em
-[Lei decide/evolve](../patterns/decide-evolve-law.md).
+Consistency between `decision.State()` and that Replay is an application law,
+not a package law: Replay does not compare the two states, and there is no
+`VerifyDecision` or `ReplayDecision`. The test recipes (table and fuzz) are in
+the [decide/evolve law](../patterns/decide-evolve-law.md).
 
 ## Reducer versus Projection
 
-Ambos têm forma `valor x evento -> valor`, com ownership distinto:
+Both have the shape `value x event -> value`, with different ownership:
 
-- `reducer.Reducer[S,E]` evolui estado de domínio a partir de fatos;
-- `projection.Projection[P,E]` evolui uma representação derivada a partir de
-  fatos.
+- `reducer.Reducer[S,E]` evolves domain state from facts;
+- `projection.Projection[P,E]` evolves a derived representation from facts.
 
-A mesma história pode ser reaplicada em estado e projetada em read model de
-forma independente. Os pacotes não se importam.
+The same history can be replayed into state and projected into a read model
+independently. The packages do not import each other.
 
-## Eventos ignorados e desconhecidos
+## Ignored and unknown events
 
-Um Reducer ignora um evento devolvendo o estado corrente:
+A Reducer ignores an event by returning the current state:
 
 ```go
 default:
     return state
 ```
 
-A aplicação é dona de uniões heterogêneas e da política de kind desconhecido.
-O pacote não adiciona erro, optional, marker, registry nem reflection para
-esse caso.
+The application owns heterogeneous unions and the unknown-kind policy. The
+package adds no error, optional, marker, registry, or reflection for that case.
 
-## Dependência e custo
+## Dependencies and cost
 
-Produção importa somente a biblioteca padrão (`iter`). Replay roda em
-`O(n * cost(reduce))`, consome a sequência uma vez e não materializa `[]E`
-nem List intermediária.
+Production imports only the standard library (`iter`). Replay runs in
+`O(n * cost(reduce))`, consumes the sequence once, and materializes neither
+`[]E` nor an intermediate List.
 
-Leis:
+Laws:
 
 ```text
 Replay(s, empty, r) = s
 Replay(s, A ++ B, r) = Replay(Replay(s, A, r), B, r)
 ```
 
-Para `r` determinístico, entradas iguais produzem estados iguais.
+For a deterministic `r`, equal inputs produce equal states.
 
-Benchmarks de `Replay` cobrem N ∈ {0, 1, 10, 100, 1000, 10000} com
-`b.ReportAllocs()`. Os números abaixo são evidência local (não limiar de CI).
+`Replay` benchmarks cover N ∈ {0, 1, 10, 100, 1000, 10000} with
+`b.ReportAllocs()`. The numbers below are local evidence, not a CI threshold.
 
-### Baseline local (darwin/arm64, Apple M2 Max, go1.26.4)
+### Local baseline (darwin/arm64, Apple M2 Max, go1.26.4)
 
-Comando:
+Command:
 
 ```bash
 go test -bench=BenchmarkReplayInt -benchtime=50ms -count=1 ./reducer/
@@ -151,25 +149,27 @@ go test -bench=BenchmarkReplayInt -benchtime=50ms -count=1 ./reducer/
 | 1000 | 348 | 0 | 0 |
 | 10000 | 3182 | 0 | 0 |
 
-`Replay` sobre `int` não aloca no hot path; o custo cresce linearmente com N.
-Valores medidos em 2026-08-12; reexecute o comando ao comparar outra máquina.
+`Replay` over `int` allocates nothing in the hot path; cost grows linearly with
+N. Values measured on 2026-08-12; rerun the command when comparing on another
+machine.
 
-## Valores grandes e `hugeParam`
+## Large values and `hugeParam`
 
-`hugeParam` (e regras similares de lint) é um guarda-corpo arquitetural sobre
-o **tamanho de valores concretos** na aplicação — não um motivo para
-ponteirizar `Reducer` ou o metamodelo. Estados grandes devem ser modelados
-pela aplicação (por exemplo, estrutura interna adequada); o pacote não
-autoriza `//nolint` nem `Reducer[*S, E]` como “solução”.
+`hugeParam` (and similar lint rules) is an architectural guardrail over the
+size of concrete values in the application, not a reason to pointerize
+`Reducer` or the metamodel. Large states must be modeled by the application
+(for example, with suitable internal structure); the package authorizes
+neither `//nolint` nor `Reducer[*S, E]` as a "solution".
 
-## Fronteira de Event Sourcing
+## Event Sourcing boundary
 
-Replay é um fold puro. A aplicação carrega fatos, invoca Replay e persiste o
-resultado se desejar. Loader de stream, Event Store, snapshot, serialização,
-versão, publicação, handler e transporte ficam fora deste pacote.
+Replay is a pure fold. The application loads facts, invokes Replay, and
+persists the result if it wants to. Stream loaders, event stores, snapshots,
+serialization, versioning, publishing, handlers, and transport stay outside
+this package.
 
-## Exclusões deliberadas
+## Deliberate exclusions
 
-Não há Apply, FallibleReducer, sobrecarga de slice/List, ReplayDecision,
-VerifyDecision, marker Event, registry, dispatcher, projection embutida,
-persistência, broker consumer nem runtime de Event Sourcing.
+There is no Apply, FallibleReducer, slice/List overload, ReplayDecision,
+VerifyDecision, Event marker, registry, dispatcher, embedded projection,
+persistence, broker consumer, or Event Sourcing runtime.

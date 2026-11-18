@@ -1,35 +1,35 @@
-# Lei decide/evolve
+# Decide/evolve law
 
-Padrão de modelagem, não API. Um decider state-first calcula o próximo estado
-por conta própria (`Decision.State()`) e emite os fatos (`Decision.Events()`)
-que um `reducer.Reducer` reaplica. As duas rotas precisam concordar sobre
-aquilo que os eventos prometem reconstruir.
+A modeling pattern, not an API. A state-first decider computes the next state
+itself (`Decision.State()`) and emits the facts (`Decision.Events()`) that a
+`reducer.Reducer` replays. The two routes must agree on what the events promise
+to rebuild.
 
-Todo código desta página é trecho de
-[`decider_example_test.go`](../../../modeling/decider_example_test.go), que `go test`
-compila e executa no módulo.
+All code on this page is an excerpt from
+[`decider_example_test.go`](../../../modeling/decider_example_test.go), which `go test`
+compiles and runs in the module.
 
-## Enunciado
+## Statement
 
-Para toda decisão bem-sucedida `d` tomada a partir de `before`:
+For every successful decision `d` made from `before`:
 
 ```text
 obs(Replay(before, d.Events(), evolve)) == obs(d.State())
 ```
 
-- `obs` é a observação escolhida pela aplicação: a parte do estado que os
-  eventos se comprometem a reconstruir. `obs` igual à identidade é o caso mais
-  forte. Uma observação parcial declara o que os eventos não carregam (ver
-  [Observação parcial](#observação-parcial)).
-- `==` só serve quando a observação é comparável em Go, como a struct
-  `account` do exemplo. Estado com `immutable.List`, `Map` ou `Set`, dinheiro
-  com moeda ou outro value object compara pelo `Equal`/`EqualFunc` do próprio
-  tipo, campo a campo. `reflect.DeepEqual` não serve: compara representação
-  interna, não valor.
-- Decisões rejeitadas (erro, ou `Result` em `Err`) ficam fora da lei, porque
-  não há Decision a confrontar.
+- `obs` is the observation the application chooses: the part of the state the
+  events commit to rebuilding. `obs` equal to the identity is the strongest
+  case. A partial observation declares what the events do not carry (see
+  [Partial observation](#observação-parcial)).
+- `==` only works when the observation is comparable in Go, like the example's
+  `account` struct. State with an `immutable.List`, `Map`, or `Set`, money with
+  a currency, or another value object compares through that type's own
+  `Equal`/`EqualFunc`, field by field. `reflect.DeepEqual` does not work: it
+  compares internal representation, not value.
+- Rejected decisions (an error, or a `Result` in `Err`) stay outside the law,
+  because there is no Decision to confront.
 
-O predicado recebe a observação embutida em `equal(a, b)`, que significa
+The predicate receives the observation embedded in `equal(a, b)`, which means
 `obs(a) == obs(b)`:
 
 ```go
@@ -43,9 +43,9 @@ func decideEvolveConsistent[S, E any](
 }
 ```
 
-No exemplo, `decideDeposit` é o decide state-first, `evolveAccount` é o evolve
-e `deciderAccountInitial` é o estado inicial. Os dois são funções ordinárias
-das formas de modeling:
+In the example, `decideDeposit` is the state-first decide, `evolveAccount` is
+the evolve, and `deciderAccountInitial` is the initial state. Both are ordinary
+functions of the modeling shapes:
 
 ```go
 var _ modeling.FallibleTransition[account, deposit, modeling.Decision[account, accountDeposited]] = decideDeposit
@@ -53,8 +53,8 @@ var _ modeling.FallibleTransition[account, deposit, modeling.Decision[account, a
 var _ reducer.Reducer[account, accountDeposited] = evolveAccount
 ```
 
-Como `account` é comparável e `accountDeposited` carrega tudo o que
-`decideDeposit` muda, a observação é o estado inteiro:
+Because `account` is comparable and `accountDeposited` carries everything
+`decideDeposit` changes, the observation is the whole state:
 
 ```go
 func sameAccount(a, b account) bool {
@@ -62,23 +62,25 @@ func sameAccount(a, b account) bool {
 }
 ```
 
-## Lei da aplicação, não da biblioteca
+## An application law, not a library law
 
-modeling não compara `Decision.State()` com o resultado de Replay e não
-oferece `VerifyDecision` nem `ReplayDecision`
-([TDD Reducer e Replay, linhas 95-98](../../tdd/modeling/reducer-replay.md)).
-Decision e Reducer continuam ortogonais. Eventos de integração não são
-universalmente reconstrutores de estado, e só a aplicação sabe qual `obs` é
-honesta para o seu agregado.
+modeling does not compare `Decision.State()` with the Replay result and offers
+neither `VerifyDecision` nor `ReplayDecision`
+([TDD Reducer and Replay, lines 97-99](../../tdd/modeling/reducer-replay.md)).
+Decision and Reducer stay orthogonal. Integration events are not universal
+state rebuilders, and only the application knows which `obs` is honest for its
+aggregate.
 
-A lei vive nos testes da aplicação. O predicado acima tem uma linha de corpo:
-copie-o para o `_test.go` do domínio em vez de esperar um helper exportado.
+The law lives in the application's tests. The predicate above has a one-line
+body: copy it into the domain's `_test.go` instead of waiting for an exported
+helper.
 
-## Corolários
+## Corollaries
 
-**1. Mudança observável exige evento.** Como `Replay(s, vazio, r) = s`, uma
-decisão sem eventos só satisfaz a lei se `obs(d.State()) == obs(before)`. Um
-decider que altera o estado em silêncio quebra a lei, e o predicado detecta:
+**1. Observable change requires an event.** Since `Replay(s, empty, r) = s`, a
+decision without events satisfies the law only if
+`obs(d.State()) == obs(before)`. A decider that changes state silently breaks
+the law, and the predicate catches it:
 
 ```go
 func decideDepositWithoutEvent(state account, command deposit) modeling.Decision[account, accountDeposited] {
@@ -97,21 +99,21 @@ func TestDecideEvolveLawRejectsStateChangeWithoutEvent(t *testing.T) {
 }
 ```
 
-O mesmo vale campo a campo: quando a decisão emite eventos, eles precisam
-carregar toda mudança observável que ela fez.
+The same holds field by field: when the decision emits events, they must carry
+every observable change it made.
 
-**2. Histórico.** Se cada passo satisfaz a lei, reaplicar todos os eventos
-emitidos a partir do estado inicial reproduz o estado final. Isso segue da lei
-de concatenação `Replay(s, A ++ B, r) = Replay(Replay(s, A, r), B, r)`. Com
-observação parcial, o corolário exige também que `evolve` não leia o que `obs`
-descarta. Sem isso, dois estados com a mesma observação podem divergir no
-passo seguinte.
+**2. History.** If every step satisfies the law, replaying all emitted events
+from the initial state reproduces the final state. This follows from the
+concatenation law `Replay(s, A ++ B, r) = Replay(Replay(s, A, r), B, r)`. With
+a partial observation, the corollary also requires that `evolve` never reads
+what `obs` discards. Without that, two states with the same observation can
+diverge on the next step.
 
-## Receita de tabela
+## Table recipe
 
-Um caso por comando relevante. Cada caso decide a partir de `before` e
-confronta a Decision com o Replay dos próprios eventos. A função tem uma
-tabela por decider; a segunda cobre a carteira, o produto descrito em
+One case per relevant command. Each case decides from `before` and confronts
+the Decision with the Replay of its own events. The test has one table per
+decider; the second covers the wallet, the product described in
 [Decider](decider.md):
 
 ```go
@@ -169,15 +171,15 @@ func TestDecideEvolveLawTable(t *testing.T) {
 }
 ```
 
-A tabela é o lugar dos casos de borda conhecidos do domínio, como
-arredondamento e valor zero.
+The table is where the domain's known edge cases live, such as rounding and
+zero values.
 
-## Receita de fuzz
+## Fuzz recipe
 
-O fuzz gera uma sequência de comandos, verifica a lei em cada passo e, no fim,
-o corolário de histórico. A mesma entrada dirige a conta e a carteira; na
-carteira, o valor 1 rende zero pontos e exercita a rejeição depois que o
-depósito já decidiu:
+The fuzz generates a sequence of commands, checks the law at each step, and
+checks the history corollary at the end. The same input drives the account and
+the wallet; in the wallet, the value 1 earns zero points and exercises
+rejection after the deposit has already decided:
 
 ```go
 func FuzzDecideEvolveLaw(f *testing.F) {
@@ -228,21 +230,23 @@ func FuzzDecideEvolveLaw(f *testing.F) {
 }
 ```
 
-`go test` roda só as sementes. Para explorar localmente:
+`go test` runs only the seeds. To explore locally:
 
 ```bash
 cd modeling && go test -run '^$' -fuzz FuzzDecideEvolveLaw -fuzztime 10s .
 ```
 
-Uma falha grava o caso em `testdata/fuzz/` dentro do pacote. Transforme o caso
-em linha da tabela ou em semente `f.Add` e não versione o corpus.
+A failure writes the case to `testdata/fuzz/` inside the package. Turn the case
+into a table row or an `f.Add` seed, and do not version the corpus.
 
-## Observação parcial
+<a id="observação-parcial"></a>
 
-Por exemplo, num catálogo, o replay pode reconstruir título e versão a
-partir dos eventos, mas não uma nota de edição que nunca foi registrada em
-evento. A observação `obs` deve excluir a nota e explicar o motivo.
+## Partial observation
 
-Se o campo faz parte do contrato de replay, excluí-lo da comparação esconderia
-um defeito: nesse caso, escreva o teste com o campo e corrija a decisão ou o
-evento que deveria carregar a informação.
+For example, in a catalog, the replay can rebuild the title and version from
+the events but not an editing note that was never recorded as an event. The
+observation `obs` must exclude the note and explain why.
+
+If the field is part of the replay contract, excluding it from the comparison
+would hide a defect: in that case, write the test with the field and fix the
+decision or the event that should have carried the information.

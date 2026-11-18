@@ -10,13 +10,13 @@ date: 2026-08-10
 ---
 # TDD: Modeling Policy
 
-## Escopo técnico
+## Technical scope
 
-Criar o package público `modeling/policy`, independente da raiz e de outras
-capabilities. Change/Reducer/Replay não são pré-requisitos nem fazem parte
-desta entrega.
+Create the public package `modeling/policy`, independent of the root and of
+other capabilities. Change/Reducer/Replay are neither prerequisites nor part of
+this delivery.
 
-## Contrato público
+## Public contracts
 
 ```go
 type Policy[I, O any] func(I) O
@@ -32,56 +32,57 @@ func Choose[I, O any](condition predicate.Predicate[I], whenTrue Policy[I, O], w
 func OrElse[I, O any](left func(I) optional.Optional[O], right func(I) optional.Optional[O]) func(I) optional.Optional[O]
 ```
 
-Apply, FlatMap, Conditional nominal, multi-aridade de input, métodos, aliases,
-tuple pública e bridges não fazem parte do contrato. Múltiplos dados entram por
-um contexto explícito em I.
+Apply, FlatMap, a nominal Conditional, multi-arity input, methods, aliases, a
+public tuple, and bridges are not part of the contract. Multiple data items
+enter through an explicit context in I.
 
-## Semântica
+## Semantics
 
-Constant ignora o input. Map transforma apenas o output e satisfaz identidade e
-composição. Contramap adapta apenas o input e satisfaz as leis correspondentes.
-When avalia o predicate uma vez e só chama a policy quando true; true sempre
-produz Some, inclusive para zero value. FirstApplicable é não vazio, ordenado e
-para no primeiro Some. Fallback preserva Some e só chama fallback em None.
-Compose avalia first e depois second. Zip avalia left, right e combine nessa
-ordem. Choose avalia o predicate uma vez e somente o branch selecionado.
-OrElse é binário, left-to-right e faz short-circuit; FirstApplicable permanece
-a forma N-ária.
+Constant ignores the input. Map transforms only the output and satisfies
+identity and composition. Contramap adapts only the input and satisfies the
+corresponding laws. When evaluates the predicate once and calls the policy only
+on true; true always produces Some, including for a zero value. FirstApplicable
+is non-empty, ordered, and stops at the first Some. Fallback preserves Some and
+calls the fallback only on None. Compose evaluates first and then second. Zip
+evaluates left, right, and combine in that order. Choose evaluates the
+predicate once and only the selected branch. OrElse is binary, left-to-right,
+and short-circuits; FirstApplicable remains the N-ary form.
 
-Construção com policy, mapper, predicate ou conditional nil panica com,
-respectivamente, `modeling/policy: nil policy`, `modeling/policy: nil mapper`,
-`modeling/policy: nil predicate` e `modeling/policy: nil conditional`.
-Zip também rejeita combiner nil com `modeling/policy: nil combiner`.
+Construction with a nil policy, mapper, predicate, or conditional panics with,
+respectively, `modeling/policy: nil policy`, `modeling/policy: nil mapper`,
+`modeling/policy: nil predicate`, and `modeling/policy: nil conditional`.
+Zip also rejects a nil combiner with `modeling/policy: nil combiner`.
 
-## Dependências e arquitetura
+## Dependencies and architecture
 
-Somente `conditional.go` importa Predicate e Optional, além do stdlib `slices`.
-`modeling/policy` não importa raiz, siblings ou internal. Gates AST limitam
-exports exatos; gates de dependência mantêm a exceção funcional restrita ao
-package e aos dois imports functional.
+Only `conditional.go` imports Predicate and Optional, besides the stdlib
+`slices`. `modeling/policy` imports neither the root, nor siblings, nor
+internal. AST gates limit the exact exports; dependency gates keep the
+functional exception restricted to the package and its two functional imports.
 
-## Testes e leis
+## Tests and laws
 
-Testes black-box fixam assinaturas, ordinary-function assignability, zero values,
-contagem/ordem de chamadas, leis Map/Contramap, short-circuit, Some(zero),
-all-None, fallback lazy, Compose associativity, Zip order, Choose branch único,
-OrElse short-circuit e panics nil. Exemplos executáveis mostram todos os
-combinadores sem efeitos; fuzzing bounded cobre Compose associativity.
+Black-box tests pin signatures, ordinary-function assignability, zero values,
+call count/order, Map/Contramap laws, short-circuit, Some(zero), all-None, lazy
+fallback, Compose associativity, Zip order, the single Choose branch, OrElse
+short-circuit, and nil panics. Executable examples show every combinator
+without effects; bounded fuzzing covers Compose associativity.
 
-## Compatibilidade
+## Compatibility
 
-A API pública existente permanece intacta. Testes rodam no workspace e com
-`GOWORK=off` contra functional v1.1.0. A única mudança de metadata é o bump
-autorizado de functional para v1.1.0; não há mudança de go.work, migração,
-config, benchmark ou publicação.
+The existing public API stays intact. Tests run in the workspace and with
+`GOWORK=off` against functional v1.1.0. The only metadata change is the
+authorized functional bump to v1.1.0; there is no go.work change, migration,
+config, benchmark, or publication.
 
-## Superfície excluída
+## Excluded surface
 
-Não há Rule/Requirement/Transition/Change/Reducer bridge, engine, registry,
-dispatcher, reflection, efeito, persistência, transporte, erro de aplicabilidade,
-domain type concreto ou símbolo Policy na raiz.
+There is no Rule/Requirement/Transition/Change/Reducer bridge, engine, registry,
+dispatcher, reflection, effect, persistence, transport, applicability error,
+concrete domain type, or Policy symbol in the root.
 
-## Verificação
+## Verification
 
-Executar testes focados, módulo, published dependency, race, vet, tidy-diff,
-lint uncapped, package listing e os gates workspace definidos no plano.
+Run focused tests, module tests, the published dependency check, race, vet,
+tidy-diff, uncapped lint, package listing, and the workspace gates defined in
+the plan.

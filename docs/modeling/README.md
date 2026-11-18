@@ -1,7 +1,7 @@
 # modeling documentation
 
-A documentação do módulo é de propriedade daqui. A raiz do repositório
-permanece um catálogo de módulos e não deve adquirir uma árvore `docs/`.
+This module owns its documentation here. The repository root stays a catalog
+of modules and must not grow a `docs/` tree.
 
 ## Guides
 
@@ -15,7 +15,7 @@ permanece um catálogo de módulos e não deve adquirir uma árvore `docs/`.
 
 ## Patterns
 
-- [Lei decide/evolve](patterns/decide-evolve-law.md)
+- [Decide/evolve law](patterns/decide-evolve-law.md)
 - [Decider](patterns/decider.md)
 
 ## Architecture decisions
@@ -42,5 +42,5 @@ permanece um catálogo de módulos e não deve adquirir uma árvore `docs/`.
 - [TDD: Reducer and Replay](../tdd/modeling/reducer-replay.md)
 - [TDD: Projection and Project](../tdd/modeling/projection.md)
 
-Registros formais usam a spine AKB do módulo; nenhuma cópia pertence à raiz do
-repositório.
+Formal records use the module's AKB spine; no copies belong to the repository
+root.

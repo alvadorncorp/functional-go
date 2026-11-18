@@ -321,4 +321,4 @@ immutable type itself when linear bulk construction is the goal.
 - [Internal: core](core.md)
 - [Thin immutability core](../adr/functional/thin-immutability-core.md)
 - [Persistent engine family](../adr/functional/persistent-engine-family.md)
-- [SortedMap sobre um motor de árvore balanceada por peso (wbtree)](../adr/functional/sorted-map-weight-balanced-engine.md)
+- [SortedMap on a weight-balanced tree](../adr/functional/sorted-map-weight-balanced-engine.md)

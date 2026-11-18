@@ -2,32 +2,32 @@
 
 **Import path:** `go.alvadorn.org/functional/modeling/policy`
 
-`Policy[I,O]` é uma estratégia pura que deriva um resultado ou escolha de
-política a partir de um contexto explícito. Ela responde **qual resultado ou
-estratégia usar?**; não valida, executa efeito, busca dados nem conduz workflow.
+`Policy[I,O]` is a pure strategy that derives a result or policy choice from
+explicit context. It answers which result or strategy to use; it does not
+validate, run effects, fetch data, or drive workflow.
 
-## Escolha da operação
+## Choosing the operation
 
-| Necessidade | Operação |
+| Need | Operation |
 |---|---|
-| resultado constante | `Constant` |
-| transformar output | `Map` |
-| adaptar input | `Contramap` |
-| encadear `A -> B -> C` | `Compose` |
-| calcular duas decisões independentes | `Zip` |
-| escolher entre duas estratégias totais | `Choose` |
-| tornar uma policy condicional | `When` |
-| tentar alternativa binária | `OrElse` |
-| primeira entre N alternativas | `FirstApplicable` |
-| fornecer default | `Fallback` |
+| constant result | `Constant` |
+| transform output | `Map` |
+| adapt input | `Contramap` |
+| chain `A -> B -> C` | `Compose` |
+| compute two independent decisions | `Zip` |
+| choose between two total strategies | `Choose` |
+| make a policy conditional | `When` |
+| try a binary alternative | `OrElse` |
+| first among N alternatives | `FirstApplicable` |
+| supply a default | `Fallback` |
 
-## Totalidade e inaplicabilidade
+## Totality and inapplicability
 
-Use `Choose` quando exatamente um branch deve produzir `O`. O predicate é
-avaliado uma vez e somente o branch escolhido roda. Use `When` quando a policy
-pode não se aplicar; ela produz `Optional[O]`. `OrElse` combina duas formas
-condicionais, `FirstApplicable` combina N e `Fallback` converte a seleção em uma
-Policy total.
+Use `Choose` when exactly one branch must produce `O`. The predicate is
+evaluated once and only the chosen branch runs. Use `When` when the policy may
+not apply; it produces an `Optional[O]`. `OrElse` combines two conditional
+forms, `FirstApplicable` combines N, and `Fallback` turns the selection into a
+total Policy.
 
 ```go
 vip := policy.When(isVIP, vipDiscount)
@@ -40,16 +40,16 @@ discount := policy.Fallback(many, defaultDiscount)
 _, _ = binary, discount
 ```
 
-## Composição
+## Composition
 
-`Compose(first, second)` executa first e passa seu output para second.
+`Compose(first, second)` runs first and passes its output to second.
 
 ```go
 creditPolicy := policy.Compose(customerTierPolicy, creditLimitPolicy)
 ```
 
-`Zip` avalia left, depois right, depois combine sobre o mesmo input e produz o
-tipo de domínio escolhido pela aplicação, sem tuple pública.
+`Zip` evaluates left, then right, then combine over the same input and produces
+the domain type the application chooses, with no public tuple.
 
 ```go
 pricing := policy.Zip(discountPolicy, shippingPolicy, func(discount Discount, shipping ShippingMethod) PricingDecision {
@@ -57,29 +57,29 @@ pricing := policy.Zip(discountPolicy, shippingPolicy, func(discount Discount, sh
 })
 ```
 
-## Policy versus outros conceitos
+## Policy versus the other concepts
 
-| Conceito | Pergunta | Forma |
+| Concept | Question | Shape |
 |---|---|---|
-| Policy | qual estratégia/resultado usar? | `I -> O` |
-| Specification | pertence a uma categoria de domínio? | `T -> bool` |
-| Rule | satisfaz uma condição explicável? | `T -> error` |
-| Requirement | a operação é permitida? | `S x I -> error` |
-| Invariant | o estado resultante é válido? | `S -> error` |
-| Change | como transformar o mesmo estado? | `S -> S` |
+| Policy | which strategy/result to use? | `I -> O` |
+| Specification | belongs to a domain category? | `T -> bool` |
+| Rule | satisfies an explainable condition? | `T -> error` |
+| Requirement | is the operation permitted? | `S x I -> error` |
+| Invariant | is the resulting state valid? | `S -> error` |
+| Change | how to transform the same state? | `S -> S` |
 
-Uma Specification pode alimentar Choose, mas a aplicação faz a adaptação
-explicitamente. Policy e Specification não importam uma à outra.
+A Specification can feed Choose, but the application does the adaptation
+explicitly. Policy and Specification do not import each other.
 
-## Pureza, nil e zero values
+## Purity, nil, and zero values
 
-Policies recebem todos os dados pelo input; banco, HTTP, broker, clock,
-filesystem e context pertencem ao workflow/adapters. Zero output é um resultado
-válido. A zero Policy é função nil quando invocada diretamente. Combinadores
-rejeitam Policy, mapper, predicate, conditional ou combiner nil na construção
-com os panics documentados no TDD.
+Policies receive all data through their input; database, HTTP, broker, clock,
+filesystem, and context belong to workflow/adapters. A zero output is a valid
+result. The zero Policy is a nil function when invoked directly. Combinators
+reject a nil Policy, mapper, predicate, conditional, or combiner at
+construction with the panics documented in the TDD.
 
-Policy não possui FlatMap, engine, registry, dispatcher, métodos, marker types,
-serviços, efeitos ou integração automática. Quando o vocabulário atual não
-expressar um caso, a aplicação pode declarar uma Policy própria sobre um input
-struct explícito.
+Policy has no FlatMap, engine, registry, dispatcher, methods, marker types,
+services, effects, or automatic integration. When the current vocabulary does
+not express a case, the application can declare its own Policy over an explicit
+input struct.

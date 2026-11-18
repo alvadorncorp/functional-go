@@ -10,13 +10,13 @@ date: 2026-08-11
 ---
 # TDD: Modeling Specification
 
-## Escopo técnico
+## Technical scope
 
-Criar o leaf package público `modeling/specification`, independente da raiz,
-de Policy e dos demais siblings. O package é metamodelo puro, sem efeito,
-runtime, infraestrutura ou tipo de domínio concreto.
+Create the public leaf package `modeling/specification`, independent of the
+root, of Policy, and of the other siblings. The package is a pure metamodel
+with no effect, runtime, infrastructure, or concrete domain type.
 
-## Contrato público
+## Public contracts
 
 ```go
 type Specification[T any] func(T) bool
@@ -26,43 +26,44 @@ func Not[T any](spec Specification[T]) Specification[T]
 func Contramap[A, B any](spec Specification[B], mapper func(A) B) Specification[A]
 ```
 
-Essa é a superfície inteira. `Of` e `Xor` foram avaliados e rejeitados;
-Filter, Validate, Explain, Reason, Error, Message e bridges ficam excluídos.
+This is the entire surface. `Of` and `Xor` were evaluated and rejected; Filter,
+Validate, Explain, Reason, Error, Message, and bridges stay excluded.
 
-## Semântica
+## Semantics
 
-Specification classifica um valor com vocabulário de domínio. All e Any
-avaliam left-to-right com short-circuit; `All()` retorna true e `Any()` retorna
-false. Not nega. Contramap adapta um input antes de uma única avaliação.
+Specification classifies a value with domain vocabulary. All and Any evaluate
+left-to-right with short-circuit; `All()` returns true and `Any()` returns
+false. Not negates. Contramap adapts an input before a single evaluation.
 
-A zero Specification é função nil e panica naturalmente quando invocada.
-Combinadores rejeitam operandos nil eager com
-`modeling/specification: nil specification`; Contramap rejeita mapper nil com
-`modeling/specification: nil mapper`. Nil nunca significa true, false ou skip.
+The zero Specification is a nil function and panics naturally when invoked.
+Combinators reject nil operands eagerly with
+`modeling/specification: nil specification`; Contramap rejects a nil mapper with
+`modeling/specification: nil mapper`. Nil never means true, false, or skip.
 
-## Dependências e arquitetura
+## Dependencies and architecture
 
-Os production files importam somente o stdlib `slices` (apenas `logic.go`);
-`transform.go` e `specification.go` não têm imports. Specification não importa
-Predicate, raiz, Policy, Change, Reducer ou Projection. Archtests pinam o oitavo
-package, o conjunto de imports exatamente `["slices"]`, cinco exports, ausência
-de aliases na raiz e proibição das arestas entre siblings.
+Production files import only the stdlib `slices` (`logic.go` only);
+`transform.go` and `specification.go` have no imports. Specification imports
+neither Predicate, the root, Policy, Change, Reducer, nor Projection. Archtests
+pin the eighth package, the import set exactly `["slices"]`, five exports, the
+absence of root aliases, and the prohibition of sibling edges.
 
-## Testes e leis
+## Tests and laws
 
-Testes black-box fixam identidade nominal, atribuição de função ordinária,
-zero/nil, ordem, short-circuit e Contramap. Leis observacionais cobrem dupla
-negação, formas unárias, identidades vazias e true/false. Fuzzing da standard
-library valida as mesmas propriedades sobre inputs arbitrários sem comparar
-funções diretamente nem adicionar dependência.
+Black-box tests pin nominal identity, ordinary-function assignment, zero/nil,
+order, short-circuit, and Contramap. Observational laws cover double negation,
+unary forms, empty identities, and true/false. Standard library fuzzing
+validates the same properties over arbitrary inputs without comparing functions
+directly or adding a dependency.
 
-## Verificação
+## Verification
 
-Executar testes focados, archtests, módulo, módulo standalone, race, vet,
-tidy-diff, fuzz bounded, exemplo externo, workspace tests e lint uncapped.
+Run focused tests, archtests, module tests, standalone module tests, race, vet,
+tidy-diff, bounded fuzzing, the external example, workspace tests, and uncapped
+lint.
 
-## Compatibilidade e exclusões
+## Compatibility and exclusions
 
-A capability é aditiva. Nenhuma API existente muda. Não há go.mod, go.work,
-benchmark, migration, config, release, reflection, error, runner, engine,
-registry, dispatcher, persistence, transporte ou efeito.
+The capability is additive. No existing API changes. There is no go.mod,
+go.work, benchmark, migration, config, release, reflection, error, runner,
+engine, registry, dispatcher, persistence, transport, or effect.
