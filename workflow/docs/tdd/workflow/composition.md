@@ -3,9 +3,9 @@ type: tdd
 id: tdd:workflow:composition
 context: workflow
 title: Workflow composition
-status: Aceito
+status: Accepted
 tags: [workflow, composition, inputs, generics, closures, reuse]
-related: [adr:workflow:001, adr:workflow:003, adr:workflow:009, tdd:workflow:action]
+related: [adr:workflow:workflow-as-reusable-effectful-composition, adr:workflow:functional-dependency-injection-through-capabilities, adr:workflow:composition-and-resource-safety, tdd:workflow:action]
 date: 2026-08-11
 ---
 # TDD: Composição de Workflow

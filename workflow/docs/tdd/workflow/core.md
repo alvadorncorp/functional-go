@@ -3,9 +3,9 @@ type: tdd
 id: tdd:workflow:core
 context: workflow
 title: Workflow module core
-status: Aceito
+status: Accepted
 tags: [workflow, core, module, architecture, archtest]
-related: [adr:workflow:001, adr:workflow:007, adr:workflow:009, adr:workflow:010, adr:workflow:011, adr:workflow:014, tdd:workflow:action, tdd:workflow:composition, tdd:workflow:plan-resilience]
+related: [adr:workflow:workflow-as-reusable-effectful-composition, adr:workflow:functional-integration-without-effect-duplication, adr:workflow:composition-and-resource-safety, adr:workflow:plan-as-explicit-non-executable-workflow-description, adr:workflow:explicit-resilience-as-action-transformation, adr:workflow:ast-evidence-for-exercised-surface-gate, tdd:workflow:action, tdd:workflow:composition, tdd:workflow:plan-resilience]
 date: 2026-08-11
 ---
 # TDD: Núcleo do módulo workflow
@@ -55,7 +55,7 @@ nome, assinatura, field shape ou arquivo precisam alterar o gate na mesma fase.
   `AfterFunc`); a única exceção é `context.WithTimeout` no pacote `resilience`;
 - `Pair` e `AttemptResult` possuem somente os campos decididos e zero métodos;
 - cada export possui consumo exercitado fora do próprio pacote, provado por
-  `go/parser` sem tipos (`adr:workflow:014`): seletor exato de import path e
+  `go/parser` sem tipos (`adr:workflow:ast-evidence-for-exercised-surface-gate`): seletor exato de import path e
   símbolo, com alias resolvido, dot import de pacote rastreado rejeitado, import
   em branco ignorado e identificadores sombreados descartados; comentário,
   string, prefixo e pacote estrangeiro não contam. Uma função consumida alcança

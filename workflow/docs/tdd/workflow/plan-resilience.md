@@ -3,9 +3,9 @@ type: tdd
 id: tdd:workflow:plan-resilience
 context: workflow
 title: Contratos de plan e resilience
-status: Aceito
+status: Accepted
 tags: [workflow, plan, resilience, retry, timeout, context, contracts]
-related: [adr:workflow:010, adr:workflow:011, adr:workflow:002, tdd:workflow:action, tdd:workflow:core, tdd:workflow:transaction]
+related: [adr:workflow:plan-as-explicit-non-executable-workflow-description, adr:workflow:explicit-resilience-as-action-transformation, adr:workflow:action-as-deferred-context-bound-computation, tdd:workflow:action, tdd:workflow:core, tdd:workflow:transaction]
 date: 2026-10-23
 ---
 # TDD: Contratos de `plan` e `resilience`
@@ -13,7 +13,7 @@ date: 2026-10-23
 ## Escopo técnico
 
 Este desenho detalha os contratos de dois pacotes de produção do módulo:
-`workflow/plan` (ADR-010) e `workflow/resilience` (ADR-011). Os três pacotes
+`workflow/plan` (`adr:workflow:plan-as-explicit-non-executable-workflow-description`) e `workflow/resilience` (`adr:workflow:explicit-resilience-as-action-transformation`). Os três pacotes
 restantes — `workflow`, `workflow/action` e `workflow/transaction` — são
 cobertos por [`tdd:workflow:core`](core.md),
 [`tdd:workflow:action`](action.md) e
@@ -188,7 +188,7 @@ por `Timeout`. Nenhum outro pacote cria, cancela ou protege contexto.
 - `Plan` não executa, não compila para `Action`, não registra nem agenda;
 - `Retry` e `Timeout` não são motor de execução: não persistem estado nem
   agendam, e não incluem jitter, circuit breaker ou classificação de erros
-  (ADR-011);
+  (`adr:workflow:explicit-resilience-as-action-transformation`);
 - `Retry` não torna uma operação idempotente; repetir efeitos exige que a
   operação, ou seu adaptador, seja segura para repetição.
 

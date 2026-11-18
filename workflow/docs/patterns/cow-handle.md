@@ -2,7 +2,7 @@
 
 `hugeParam` (gocritic, 80 bytes) é um guarda-corpo sobre valores que a
 **aplicação** copia por assinatura — não um motivo para ponteirizar
-`Decision`, `Reducer` ou `Workflow` (`adr:modeling:010`).
+`Decision`, `Reducer` ou `Workflow` (`adr:modeling:streaming-replay-project-seq`).
 
 Padrão (checkout `Order`, withdraw `Account`): um struct `Order { p *orderPayload }`
 com API por valor; payload imutável após publicar.

@@ -1,7 +1,7 @@
 # Outbox e inbox como composição da aplicação
 
 Publicar num broker dentro da TX é o erro que o outbox existe para evitar
-(`adr:workflow:008`). `Outbox`, `OutboxRepository` e `Inbox` são nomes
+(`adr:workflow:transactional-outbox-as-application-composition`). `Outbox`, `OutboxRepository` e `Inbox` são nomes
 proibidos no núcleo. A aplicação define `OutboxMessage` e `EventEncoder`.
 
 Invariant: claim (se houver MessageID), writes de estado e appends de
@@ -29,4 +29,4 @@ Encode e append ficam intercalados por evento, em ordem de índice; o erro do
 encoder mantém identidade e os appends seguintes não rodam. Zero eventos ⇒
 zero appends e slice vazio. A ordem vem da execução sequencial, não do
 `iter.Seq`: `slices.Collect` só fixa o que cada `Run` percorre
-(`adr:workflow:013`).
+(`adr:workflow:sequential-traverse-over-slices`).

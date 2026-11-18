@@ -3,9 +3,9 @@ type: tdd
 id: tdd:workflow:transaction
 context: workflow
 title: Transaction boundary and scoped capabilities
-status: Aceito
+status: Accepted
 tags: [workflow, transaction, boundary, scope, outbox, postgres]
-related: [adr:workflow:004, adr:workflow:006, adr:workflow:008, tdd:workflow:core]
+related: [adr:workflow:explicit-transaction-scopes, adr:workflow:no-distributed-transaction-abstraction, adr:workflow:transactional-outbox-as-application-composition, tdd:workflow:core]
 date: 2026-08-10
 ---
 # TDD: Fronteira de transação e capacidades escopadas

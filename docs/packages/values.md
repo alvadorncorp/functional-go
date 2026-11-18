@@ -4,7 +4,7 @@ The `values` packages are small, generic functional abstractions. They are
 not domain models and do not share a common runtime hierarchy. Choose a type
 for the meaning of a particular operation, then import only its package.
 
-See [ADR-007](../adr/functional/adr-007-values-family-dependency-boundary.md)
+See [values family dependency boundary](../adr/functional/values-family-dependency-boundary.md)
 for the boundary that keeps the family independently usable.
 
 ## Import paths
@@ -65,7 +65,7 @@ eliminator that calls exactly one handler and returns its result:
 The handler for the zero-value branch always comes first: `None`, `Err`,
 `Left`, and `Invalid` are the zero values in the table above, so a zero value
 runs the first handler. Handlers are called directly and are not nil-checked.
-See [ADR-012](../adr/functional/adr-012-values-error-pair-interop-and-match.md)
+See [values error pair interop and match](../adr/functional/values-error-pair-interop-and-match.md)
 for the rule.
 
 ## Dependency matrix

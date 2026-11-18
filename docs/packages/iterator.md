@@ -37,7 +37,7 @@ working with unchanged behavior. Prefer the standard library:
 The slice sources are **live views**: `slices.Values` does not copy, so a
 consumer that iterates after the caller mutates the slice sees the new
 contents. They are not immutable snapshots. See
-[ADR-014](../adr/functional/adr-014-v1-surface-hygiene.md).
+[v1 surface hygiene](../adr/functional/v1-surface-hygiene.md).
 
 ## Fold over `iter.Seq` vs. slice folds
 

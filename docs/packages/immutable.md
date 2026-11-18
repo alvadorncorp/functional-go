@@ -16,7 +16,7 @@ Constructors are **`ListOf` / `MapOf` / `SetOf` / `EmptySortedMap`** (not
 |---|---|---|
 | `Map[K,V]`, `Set[T]` | `internal/engine/hamt` | 32-way HAMT; path-copy structural sharing |
 | `List[T]` | `internal/engine/vector` | 32-way persistent vector (trie + tail); path-copy on Set/Append and tail removal on last-element Delete |
-| `SortedMap[K,V]` | `internal/engine/wbtree` | Weight-balanced binary search tree (Adams; Straka's `delta = 3`, `gamma = 2` on weight `size+1`); path-copy structural sharing; subtree size per node; see [ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md) |
+| `SortedMap[K,V]` | `internal/engine/wbtree` | Weight-balanced binary search tree (Adams; Straka's `delta = 3`, `gamma = 2` on weight `size+1`); path-copy structural sharing; subtree size per node; see [sorted map weight balanced engine](../adr/functional/sorted-map-weight-balanced-engine.md) |
 
 - **HAMT seed policy:** each independent empty `hamt.Root` holds its own
   `maphash.Seed`; derived versions preserve that seed. Key hashing uses
@@ -78,9 +78,9 @@ Constructors are **`ListOf` / `MapOf` / `SetOf` / `EmptySortedMap`** (not
 
 Documented log-n complexity bounds below are **upper-bound public-API
 headroom**. Decision records:
-[ADR-004](../adr/functional/adr-004-thin-immutability-core.md) (thin core),
-[ADR-005](../adr/functional/adr-005-persistent-engine-family.md) (engine
-family), [ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md)
+[thin immutability core](../adr/functional/thin-immutability-core.md) (thin core),
+[persistent engine family](../adr/functional/persistent-engine-family.md) (engine
+family), [sorted map weight balanced engine](../adr/functional/sorted-map-weight-balanced-engine.md)
 (SortedMap on wbtree). Historical note: early milestones used full-copy COW
 over a stdlib slice/map; that is no longer the engine.
 
@@ -149,7 +149,7 @@ over a stdlib slice/map; that is no longer the engine.
 Only the table's documented bound is guaranteed as API headroom for methods
 that meet it. `List.Delete`'s public bound is O(n): the last index is
 faster, but do not depend on a tighter constant. See
-[ADR-005](../adr/functional/adr-005-persistent-engine-family.md)
+[persistent engine family](../adr/functional/persistent-engine-family.md)
 and [core.md](core.md).
 
 ---
@@ -258,7 +258,7 @@ Keys for which `cmp` returns 0 are the same key. A nil comparator panics
 | `(m SortedMap[K,V]) EqualFunc(other SortedMap[K,V], eq func(V, V) bool) bool` | Same keys; values compared with `eq`. |
 | `(m SortedMap[K,V]) Builder() *SortedMapBuilder[K,V]` | Seeds a `SortedMapBuilder[K,V]` with `m`'s root and comparator (opens a `transient.Window`). Panics on the zero `SortedMap`. |
 
-[ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md)
+[sorted map weight balanced engine](../adr/functional/sorted-map-weight-balanced-engine.md)
 keeps `First`/`Last`/`Floor`/`Ceiling`, range queries and reverse iteration,
 `SortedSet`, `SortedMap.Update`, and the engine's rank, split and join
 operations out until a consumer needs them.
@@ -319,6 +319,6 @@ immutable type itself when linear bulk construction is the goal.
 - [Overview](../overview.md)
 - [Examples](../examples.md)
 - [Internal: core](core.md)
-- [ADR-004 — Thin immutability core](../adr/functional/adr-004-thin-immutability-core.md)
-- [ADR-005 — Persistent engine family](../adr/functional/adr-005-persistent-engine-family.md)
-- [ADR-013 — SortedMap sobre um motor de árvore balanceada por peso (wbtree)](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md)
+- [Thin immutability core](../adr/functional/thin-immutability-core.md)
+- [Persistent engine family](../adr/functional/persistent-engine-family.md)
+- [SortedMap sobre um motor de árvore balanceada por peso (wbtree)](../adr/functional/sorted-map-weight-balanced-engine.md)

@@ -12,7 +12,7 @@ engines.
 **Status: supported and frozen.** The existing API remains supported as
 documented; the package receives no new surface. It is not marked
 `Deprecated`, and there is no removal or v2 plan. See
-[ADR-006](../adr/functional/adr-006-state-semantic-layer.md#amendment-frozen-state-surface).
+[state semantic layer](../adr/functional/state-semantic-layer.md#amendment-frozen-state-surface).
 
 ---
 
@@ -162,5 +162,5 @@ go test ./state/ -run '^$' -bench . -benchmem
 - [Overview](../overview.md)
 - [Examples](../examples.md)
 - [Package API: immutable](immutable.md) (collections; not imported by state)
-- [ADR-006 — State semantic layer](../adr/functional/adr-006-state-semantic-layer.md)
-- [ADR-003 — Zero-dependency boundary](../adr/functional/adr-003-zero-dependency-boundary.md)
+- [State semantic layer](../adr/functional/state-semantic-layer.md)
+- [Zero-dependency boundary](../adr/functional/zero-dependency-boundary.md)

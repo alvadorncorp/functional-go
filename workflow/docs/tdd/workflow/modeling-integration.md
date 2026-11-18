@@ -3,9 +3,9 @@ type: tdd
 id: tdd:workflow:modeling-integration
 context: workflow
 title: Modeling integration pattern
-status: Aceito
+status: Accepted
 tags: [workflow, modeling, decision, domain, outbox]
-related: [adr:workflow:005, adr:workflow:008, tdd:workflow:transaction]
+related: [adr:workflow:modeling-integration-boundary, adr:workflow:transactional-outbox-as-application-composition, tdd:workflow:transaction]
 date: 2026-08-10
 ---
 # TDD: Padrão de integração com modeling

@@ -13,4 +13,4 @@ tipos de biblioteca.
 8. [Optics e Change](optics-and-change.md)
 9. [Eventos operacionais e mensagens de integração](eventbus-vs-application-outbox.md)
 
-Ver também [ADR-012](../adr/workflow/adr-012-no-ddd-runtime-module.md) e o padrão [Decider](../../../modeling/docs/patterns/decider.md) do modeling.
+Ver também [no ddd runtime module](../adr/workflow/no-ddd-runtime-module.md) e o padrão [Decider](../../../docs/modeling/patterns/decider.md) do modeling.

@@ -11,12 +11,12 @@
 Maintainer guide for the thin immutability substrate: three packages
 (`ownership`, `cow`, `transient`). Callers outside
 `functional` cannot import these packages (`internal/`). For the decision
-record see [ADR-004](../adr/functional/adr-004-thin-immutability-core.md)
+record see [thin immutability core](../adr/functional/thin-immutability-core.md)
 and its partial amendment in
-[ADR-014](../adr/functional/adr-014-v1-surface-hygiene.md).
+[v1 surface hygiene](../adr/functional/v1-surface-hygiene.md).
 Engines (HAMT, vector, wbtree) are separate — see
-[ADR-005](../adr/functional/adr-005-persistent-engine-family.md),
-[ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md), and
+[persistent engine family](../adr/functional/persistent-engine-family.md),
+[sorted map weight balanced engine](../adr/functional/sorted-map-weight-balanced-engine.md), and
 [immutable.md](immutable.md).
 
 ---
@@ -69,14 +69,14 @@ never provides `Clone[T]` and never uses `reflect`.
   After `Invalidate`, `IsOwnedBy` is false even if the pointer stamp still
   matches — engines copy-on-write into the new window.
 - There is no `NeedsCopy` function: it was removed as an unused alias of
-  `!IsOwnedBy` (ADR-014).
+  `!IsOwnedBy` (`adr:functional:v1-surface-hygiene`).
 
 ---
 
 ## Removed: `sharing`
 
 The former `sharing` package (`Detach` / `Published`) had no production
-caller and was removed (ADR-014). Freeze is O(1) by `Invalidate`, so inactive
+caller and was removed (`adr:functional:v1-surface-hygiene`). Freeze is O(1) by `Invalidate`, so inactive
 stamps already fail `IsOwnedBy`; no walk clears stamps, and a published node
 is simply one whose stamp is nil or inactive.
 
@@ -140,8 +140,8 @@ substrate stays a pure ownership/COW layer.
 Engines live under `functional/internal/engine/` (`hamt`, `vector`,
 `wbtree`, `keyhash`) — representation, not laws. See
 [immutable.md](immutable.md),
-[ADR-005](../adr/functional/adr-005-persistent-engine-family.md), and
-[ADR-013](../adr/functional/adr-013-sorted-map-weight-balanced-engine.md).
+[persistent engine family](../adr/functional/persistent-engine-family.md), and
+[sorted map weight balanced engine](../adr/functional/sorted-map-weight-balanced-engine.md).
 
 ---
 
@@ -149,7 +149,7 @@ Engines live under `functional/internal/engine/` (`hamt`, `vector`,
 
 - [Overview](../overview.md)
 - [Package API: immutable](immutable.md)
-- [ADR-004 — Thin immutability core](../adr/functional/adr-004-thin-immutability-core.md)
-- [ADR-005 — Persistent engine family](../adr/functional/adr-005-persistent-engine-family.md)
-- [ADR-014 — v1 surface hygiene (removes `sharing` and `cow.NeedsCopy`)](../adr/functional/adr-014-v1-surface-hygiene.md)
-- [ADR-003 — Zero-dependency boundary](../adr/functional/adr-003-zero-dependency-boundary.md)
+- [Thin immutability core](../adr/functional/thin-immutability-core.md)
+- [Persistent engine family](../adr/functional/persistent-engine-family.md)
+- [v1 surface hygiene (removes `sharing` and `cow.NeedsCopy`)](../adr/functional/v1-surface-hygiene.md)
+- [Zero-dependency boundary](../adr/functional/zero-dependency-boundary.md)

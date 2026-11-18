@@ -16,20 +16,20 @@
 
 ## Decisões de arquitetura
 
-- [ADR-001 — Workflow como composição reutilizável com efeitos](adr/workflow/adr-001-workflow-as-reusable-effectful-composition.md)
-- [ADR-002 — Action como computação adiada ligada a contexto](adr/workflow/adr-002-action-as-deferred-context-bound-computation.md)
-- [ADR-003 — Injeção funcional de dependências por capacidades](adr/workflow/adr-003-functional-dependency-injection-through-capabilities.md)
-- [ADR-004 — Escopos de transação explícitos e capacidades escopadas](adr/workflow/adr-004-explicit-transaction-scopes.md)
-- [ADR-005 — Fronteira de integração com modeling](adr/workflow/adr-005-modeling-integration-boundary.md)
-- [ADR-006 — Sem abstração de transação distribuída](adr/workflow/adr-006-no-distributed-transaction-abstraction.md)
-- [ADR-007 — Integração com functional sem duplicar efeitos](adr/workflow/adr-007-functional-integration-without-effect-duplication.md)
-- [ADR-008 — Outbox transacional como composição da aplicação](adr/workflow/adr-008-transactional-outbox-as-application-composition.md)
-- [ADR-009 — Composição avançada e resource safety em retornos normais](adr/workflow/adr-009-composition-and-resource-safety.md)
-- [ADR-010 — Plan como descrição explícita e não executável de workflow](adr/workflow/adr-010-plan-as-explicit-non-executable-workflow-description.md)
-- [ADR-011 — Resiliência explícita como transformação de Action](adr/workflow/adr-011-explicit-resilience-as-action-transformation.md)
-- [ADR-012 — Sem módulo DDD/hexagonal de runtime](adr/workflow/adr-012-no-ddd-runtime-module.md)
-- [ADR-013 — Traverse sequencial sobre slices](adr/workflow/adr-013-sequential-traverse-over-slices.md)
-- [ADR-014 — Evidência AST para o gate de superfície exercitada](adr/workflow/adr-014-ast-evidence-for-exercised-surface-gate.md)
+- [Workflow as reusable effectful composition](adr/workflow/workflow-as-reusable-effectful-composition.md)
+- [Action as deferred context-bound computation](adr/workflow/action-as-deferred-context-bound-computation.md)
+- [Functional dependency injection through capabilities](adr/workflow/functional-dependency-injection-through-capabilities.md)
+- [Explicit transaction scopes and scoped capabilities](adr/workflow/explicit-transaction-scopes.md)
+- [Modeling integration boundary](adr/workflow/modeling-integration-boundary.md)
+- [No distributed transaction abstraction](adr/workflow/no-distributed-transaction-abstraction.md)
+- [Functional integration without effect duplication](adr/workflow/functional-integration-without-effect-duplication.md)
+- [Transactional outbox as application composition](adr/workflow/transactional-outbox-as-application-composition.md)
+- [Advanced composition and normal-return resource safety](adr/workflow/composition-and-resource-safety.md)
+- [Plan as explicit non-executable workflow description](adr/workflow/plan-as-explicit-non-executable-workflow-description.md)
+- [Explicit resilience as Action transformation](adr/workflow/explicit-resilience-as-action-transformation.md)
+- [No DDD/hexagonal runtime module](adr/workflow/no-ddd-runtime-module.md)
+- [Sequential Traverse over slices](adr/workflow/sequential-traverse-over-slices.md)
+- [AST evidence for the exercised-surface gate](adr/workflow/ast-evidence-for-exercised-surface-gate.md)
 
 ## Desenhos técnicos
 

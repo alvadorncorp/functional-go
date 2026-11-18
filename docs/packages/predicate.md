@@ -25,7 +25,7 @@ behavior is unchanged and the names stay exported:
 When the data is already an `iter.Seq`, `structural/iterator.Any` and
 `iterator.All` quantify it directly. `predicate` stays a standard-library-only
 leaf and does not import `iterator`. See
-[ADR-014](../adr/functional/adr-014-v1-surface-hygiene.md).
+[v1 surface hygiene](../adr/functional/v1-surface-hygiene.md).
 
 The package is a standard-library-only leaf. It does not import `function` just
 to express negation or composition.

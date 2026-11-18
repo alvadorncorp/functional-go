@@ -17,7 +17,7 @@ Function and predicate combinators copy retained variadic slices at construction
 later changes to the caller's slice do not change an existing composition.
 
 Public packages are grouped by role under path prefixes (no Go package at the
-group directory itself; ADR-011):
+group directory itself; `adr:functional:primitives-and-structural-path-groups`):
 
 ### `primitives/`
 
@@ -62,7 +62,7 @@ group directory itself; ADR-011):
 
 Every v1 public name stays. Where a name only forwards to the standard
 library or to another name in its own package, it carries a `Deprecated:`
-marker and keeps its behavior ([ADR-014](adr/functional/adr-014-v1-surface-hygiene.md)):
+marker and keeps its behavior ([v1 surface hygiene](adr/functional/v1-surface-hygiene.md)):
 `iterator.FromSlice`/`FromValues` (use `slices.Values`), `iterator.Collect`
 (use `slices.Collect`), `predicate.All`/`Any`/`None` (use
 `slices.ContainsFunc`, or `iterator.All`/`Any` over `slices.Values`), and
@@ -111,7 +111,7 @@ mutation and batch edit windows. It is **not** a public package and **not**
 an engine. Core answers only "may I mutate?"; concrete engines own how they
 clone and share structure. See
 [packages/core.md](packages/core.md) and
-[ADR-004](adr/functional/adr-004-thin-immutability-core.md).
+[thin immutability core](adr/functional/thin-immutability-core.md).
 
 | Package | Role |
 |---|---|
@@ -125,13 +125,13 @@ Engines live under `functional/internal/engine/` (also internal):
 |---|---|---|
 | `hamt` | `immutable.Map`, `immutable.Set` | 32-way HAMT; path-copy structural sharing; per-`Root` `maphash.Seed` via `maphash.Comparable` |
 | `vector` | `immutable.List` | 32-way persistent vector (trie + tail); path-copy on Set/Append/Pop (Pop O(1)/O(log n) internal); mid-index `Delete` O(n) |
-| `wbtree` | `immutable.SortedMap` | Weight-balanced binary search tree (`delta = 3`, `gamma = 2` on weight `size+1`); path-copy structural sharing; comparator fixed per `Root`; imports only `ownership` and `cow` ([ADR-013](adr/functional/adr-013-sorted-map-weight-balanced-engine.md)) |
+| `wbtree` | `immutable.SortedMap` | Weight-balanced binary search tree (`delta = 3`, `gamma = 2` on weight `size+1`); path-copy structural sharing; comparator fixed per `Root`; imports only `ownership` and `cow` ([sorted map weight balanced engine](adr/functional/sorted-map-weight-balanced-engine.md)) |
 
 `immutable` Builders open a `transient.Window`, edit under the window's
 exclusive owner (engine transient paths mutate owned nodes in place), and
 `Freeze` on `Build` — O(1) publish by invalidating the owner token; no tree
 walk. Documented complexity bounds on the public API are upper-bound
-headroom; see [ADR-005](adr/functional/adr-005-persistent-engine-family.md).
+headroom; see [persistent engine family](adr/functional/persistent-engine-family.md).
 
 `state` does **not** use core or engines. Its plan is a reverse-linked list
 of pure `func(T) T` steps owned entirely by the `state` package.
@@ -303,16 +303,16 @@ not use `reflect`.
 - [Package API: values Validated](packages/values-validated.md)
 - [Examples](examples.md)
 - [Value object pattern](patterns/value-objects.md)
-- [ADR-001 — Optional representation and zero value](adr/functional/adr-001-optional-representation-and-zero-value.md)
-- [ADR-003 — Zero-dependency boundary](adr/functional/adr-003-zero-dependency-boundary.md)
-- [ADR-010 — Retire top-level optional and valueobject](adr/functional/adr-010-retire-optional-and-valueobject.md)
-- [ADR-011 — primitives and structural path groups](adr/functional/adr-011-primitives-and-structural-path-groups.md)
-- [ADR-004 — Thin immutability core](adr/functional/adr-004-thin-immutability-core.md)
-- [ADR-005 — Persistent engine family (HAMT + vector)](adr/functional/adr-005-persistent-engine-family.md)
-- [ADR-006 — State semantic layer](adr/functional/adr-006-state-semantic-layer.md)
-- [ADR-007 — Values family dependency boundary](adr/functional/adr-007-values-family-dependency-boundary.md)
-- [ADR-008 — Functional primitives and fold dependency boundary](adr/functional/adr-008-functional-primitives-and-fold-boundary.md)
-- [ADR-009 — Tuplas, lazy, iteradores e optics sobre contratos nativos de Go](adr/functional/adr-009-structural-primitives-and-iterator-boundary.md)
-- [ADR-012 — Interop de Result com o par (T, error) e regra de ordem do Match](adr/functional/adr-012-values-error-pair-interop-and-match.md)
-- [ADR-013 — SortedMap sobre um motor de árvore balanceada por peso (wbtree)](adr/functional/adr-013-sorted-map-weight-balanced-engine.md)
-- [ADR-014 — Higiene da superfície v1 (sinônimos Deprecated, núcleo enxuto, Lazy nativo, state congelado)](adr/functional/adr-014-v1-surface-hygiene.md)
+- [Optional[T] representation, zero value, and Equal as a method](adr/functional/optional-representation-and-zero-value.md)
+- [Zero-dependency boundary, v0 public-signature restraint, and the pgtype/Optional split](adr/functional/zero-dependency-boundary.md)
+- [Retire top-level optional and valueobject packages](adr/functional/retire-optional-and-valueobject.md)
+- [Group public packages under primitives/ and structural/ path prefixes](adr/functional/primitives-and-structural-path-groups.md)
+- [Thin immutability core — ownership, cow, transient](adr/functional/thin-immutability-core.md)
+- [Persistent engine family — HAMT + 32-way vector, seed policy, O(1) Freeze](adr/functional/persistent-engine-family.md)
+- [State semantic layer — pure State[T], mesh deps, lineage and single-use Tx](adr/functional/state-semantic-layer.md)
+- [Values family dependency boundary](adr/functional/values-family-dependency-boundary.md)
+- [Functional primitives and the fold dependency boundary](adr/functional/functional-primitives-and-fold-boundary.md)
+- [Tuples, lazy values, iterators, and optics over native Go contracts](adr/functional/structural-primitives-and-iterator-boundary.md)
+- [Result interop with the (T, error) pair and the Match argument-order rule](adr/functional/values-error-pair-interop-and-match.md)
+- [SortedMap on a weight-balanced tree engine (wbtree)](adr/functional/sorted-map-weight-balanced-engine.md)
+- [v1 surface hygiene — Deprecated synonyms, lean core, native Lazy, frozen state](adr/functional/v1-surface-hygiene.md)

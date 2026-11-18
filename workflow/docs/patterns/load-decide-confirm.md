@@ -12,7 +12,7 @@ Dois tempos de `Decide`, ambos legítimos:
 
 Crosscontext: duas decisões puras, depois uma TX compartilhada **ou** TX
 local + relay. Não extraia `CommitDecision` até três domínios concordarem
-na forma (`adr:workflow:005` — hoje não concordam).
+na forma (`adr:workflow:modeling-integration-boundary` — hoje não concordam).
 
 O fragmento que se repete é iterar `decision.Events()` e fazer append
 **sequencial** no outbox da aplicação (ver outbox-inbox.md).

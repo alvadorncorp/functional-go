@@ -197,6 +197,31 @@ func TestNoNonStdlibDependencies(t *testing.T) {
 	}
 }
 
+func TestPrimitivesDoNotDependOnModeling(t *testing.T) {
+	t.Parallel()
+	const modelingPath = functionalModulePrefix + "modeling"
+	command := exec.Command("go", "list", "-f", "{{.ImportPath}} {{join .Deps \" \"}}", "./...")
+	command.Dir = "../.."
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("list functional package dependencies: %v\n%s", err, output)
+	}
+	isModeling := func(path string) bool {
+		return path == modelingPath || strings.HasPrefix(path, modelingPath+"/")
+	}
+	for line := range strings.Lines(string(output)) {
+		packages := strings.Fields(line)
+		if len(packages) == 0 || isModeling(packages[0]) {
+			continue
+		}
+		for _, dependency := range packages[1:] {
+			if isModeling(dependency) {
+				t.Errorf("%s must not depend on %s", packages[0], dependency)
+			}
+		}
+	}
+}
+
 // TestPublicDependencyDAG proves the exact public-package dependency DAG as a
 // tested invariant, not just a documented one. It is what
 // guarantees, for example, that immutable.Map.Get returns comma-ok instead

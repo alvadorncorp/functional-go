@@ -13,14 +13,10 @@ go      1.27
 - [`modeling`](modeling/) — typed domain decisions and state transitions.
 - [`workflow`](workflow/) — composition and execution of deferred effects.
 
-The modules are released independently. From a local checkout, run
-`make test-unit` and `make lint` to check all three. Licensed under
-[Apache 2.0](LICENSE).
-
-For the first release, publish the root module at `v1.3.2`, then run
-`GOWORK=off go mod tidy` in `modeling` and commit the resulting `go.sum`.
-Run `make test-published` before tagging `modeling`. The target checks all three
-modules without the development workspace. `workflow` has no sibling dependency.
+`modeling` ships with the root module and has no separate version. `workflow`
+has its own module and release tags (`workflow/vX.Y.Z`). Run `make test-unit`
+and `make lint` to check both modules, or `make test-published` to test without
+the development workspace. Licensed under [Apache 2.0](LICENSE).
 
 ## functional
 
@@ -85,19 +81,19 @@ This README is the **documentation index**. Guides live under
 
 | Document | ID |
 |---|---|
-| [docs/adr/functional/adr-001-optional-representation-and-zero-value.md](docs/adr/functional/adr-001-optional-representation-and-zero-value.md) | `adr:functional:001` |
-| [docs/adr/functional/adr-003-zero-dependency-boundary.md](docs/adr/functional/adr-003-zero-dependency-boundary.md) | `adr:functional:003` |
-| [docs/adr/functional/adr-004-thin-immutability-core.md](docs/adr/functional/adr-004-thin-immutability-core.md) | `adr:functional:004` |
-| [docs/adr/functional/adr-005-persistent-engine-family.md](docs/adr/functional/adr-005-persistent-engine-family.md) | `adr:functional:005` |
-| [docs/adr/functional/adr-006-state-semantic-layer.md](docs/adr/functional/adr-006-state-semantic-layer.md) | `adr:functional:006` |
-| [docs/adr/functional/adr-007-values-family-dependency-boundary.md](docs/adr/functional/adr-007-values-family-dependency-boundary.md) | `adr:functional:007` |
-| [docs/adr/functional/adr-008-functional-primitives-and-fold-boundary.md](docs/adr/functional/adr-008-functional-primitives-and-fold-boundary.md) | `adr:functional:008` |
-| [docs/adr/functional/adr-009-structural-primitives-and-iterator-boundary.md](docs/adr/functional/adr-009-structural-primitives-and-iterator-boundary.md) | `adr:functional:009` |
-| [docs/adr/functional/adr-010-retire-optional-and-valueobject.md](docs/adr/functional/adr-010-retire-optional-and-valueobject.md) | `adr:functional:010` |
-| [docs/adr/functional/adr-011-primitives-and-structural-path-groups.md](docs/adr/functional/adr-011-primitives-and-structural-path-groups.md) | `adr:functional:011` |
-| [docs/adr/functional/adr-012-values-error-pair-interop-and-match.md](docs/adr/functional/adr-012-values-error-pair-interop-and-match.md) | `adr:functional:012` |
-| [docs/adr/functional/adr-013-sorted-map-weight-balanced-engine.md](docs/adr/functional/adr-013-sorted-map-weight-balanced-engine.md) | `adr:functional:013` |
-| [docs/adr/functional/adr-014-v1-surface-hygiene.md](docs/adr/functional/adr-014-v1-surface-hygiene.md) | `adr:functional:014` |
+| [docs/adr/functional/optional-representation-and-zero-value.md](docs/adr/functional/optional-representation-and-zero-value.md) | `adr:functional:optional-representation-and-zero-value` |
+| [docs/adr/functional/zero-dependency-boundary.md](docs/adr/functional/zero-dependency-boundary.md) | `adr:functional:zero-dependency-boundary` |
+| [docs/adr/functional/thin-immutability-core.md](docs/adr/functional/thin-immutability-core.md) | `adr:functional:thin-immutability-core` |
+| [docs/adr/functional/persistent-engine-family.md](docs/adr/functional/persistent-engine-family.md) | `adr:functional:persistent-engine-family` |
+| [docs/adr/functional/state-semantic-layer.md](docs/adr/functional/state-semantic-layer.md) | `adr:functional:state-semantic-layer` |
+| [docs/adr/functional/values-family-dependency-boundary.md](docs/adr/functional/values-family-dependency-boundary.md) | `adr:functional:values-family-dependency-boundary` |
+| [docs/adr/functional/functional-primitives-and-fold-boundary.md](docs/adr/functional/functional-primitives-and-fold-boundary.md) | `adr:functional:functional-primitives-and-fold-boundary` |
+| [docs/adr/functional/structural-primitives-and-iterator-boundary.md](docs/adr/functional/structural-primitives-and-iterator-boundary.md) | `adr:functional:structural-primitives-and-iterator-boundary` |
+| [docs/adr/functional/retire-optional-and-valueobject.md](docs/adr/functional/retire-optional-and-valueobject.md) | `adr:functional:retire-optional-and-valueobject` |
+| [docs/adr/functional/primitives-and-structural-path-groups.md](docs/adr/functional/primitives-and-structural-path-groups.md) | `adr:functional:primitives-and-structural-path-groups` |
+| [docs/adr/functional/values-error-pair-interop-and-match.md](docs/adr/functional/values-error-pair-interop-and-match.md) | `adr:functional:values-error-pair-interop-and-match` |
+| [docs/adr/functional/sorted-map-weight-balanced-engine.md](docs/adr/functional/sorted-map-weight-balanced-engine.md) | `adr:functional:sorted-map-weight-balanced-engine` |
+| [docs/adr/functional/v1-surface-hygiene.md](docs/adr/functional/v1-surface-hygiene.md) | `adr:functional:v1-surface-hygiene` |
 
 ---
 
@@ -132,7 +128,7 @@ This README is the **documentation index**. Guides live under
 Names marked **Deprecated** are thin synonyms of standard-library calls
 (`slices.Values`, `slices.Collect`, `slices.ContainsFunc`) or of `Of2`. They
 keep working and are not removed in v1; see
-[ADR-014](docs/adr/functional/adr-014-v1-surface-hygiene.md).
+[v1 surface hygiene](docs/adr/functional/v1-surface-hygiene.md).
 
 ---
 
@@ -207,15 +203,15 @@ cd functional && go test ./... -count=1
   weight-balanced tree (`wbtree`). Documented log-n complexity bounds are
   public-API upper bounds. `List.Delete` is currently O(n). Builders publish
   with O(1) owner invalidation. See
-  [ADR-005](docs/adr/functional/adr-005-persistent-engine-family.md),
-  [ADR-013](docs/adr/functional/adr-013-sorted-map-weight-balanced-engine.md),
-  [ADR-004](docs/adr/functional/adr-004-thin-immutability-core.md), and
+  [persistent engine family](docs/adr/functional/persistent-engine-family.md),
+  [sorted map weight balanced engine](docs/adr/functional/sorted-map-weight-balanced-engine.md),
+  [thin immutability core](docs/adr/functional/thin-immutability-core.md), and
   [docs/packages/core.md](docs/packages/core.md). Core remains laws only —
   not a generic engine library.
 - **`state` is pure over T and mesh-isolated.** Production `state` does not
   import `immutable`, core, or engines. `Version` is not a DB revision;
   `Diff` is not a domain event; `Transaction` is not a `immutable.Builder`.
-  See [ADR-006](docs/adr/functional/adr-006-state-semantic-layer.md).
+  See [state semantic layer](docs/adr/functional/state-semantic-layer.md).
 
 ---
 

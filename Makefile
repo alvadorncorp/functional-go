@@ -1,4 +1,4 @@
-MODULES := . modeling workflow
+MODULES := . workflow
 
 .PHONY: test-unit test-race test-published vet bench lint
 

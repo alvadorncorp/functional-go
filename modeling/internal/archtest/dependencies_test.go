@@ -102,8 +102,7 @@ func productionPackages(t *testing.T) []listedPackage {
 }
 
 func dependencyAllowed(pkg *listedPackage) bool {
-	return pkg.Standard || (pkg.Module != nil &&
-		(pkg.Module.Path == modelingModule || pkg.Module.Path == functionalModule))
+	return pkg.Standard || (pkg.Module != nil && pkg.Module.Path == functionalModule)
 }
 
 func isFunctionalPackage(importPath string) bool {

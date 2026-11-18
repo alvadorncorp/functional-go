@@ -20,4 +20,4 @@ you already hold: a slice goes to `fold.*`, a sequence goes to
 
 The package imports exactly `values/optional` and `values/nonempty`. It does not
 import immutable collections or the other primitive packages. See
-[ADR-008](../adr/functional/adr-008-functional-primitives-and-fold-boundary.md).
+[functional primitives and fold boundary](../adr/functional/functional-primitives-and-fold-boundary.md).

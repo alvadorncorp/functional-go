@@ -3,9 +3,9 @@ type: tdd
 id: tdd:workflow:action
 context: workflow
 title: Action representation and execution
-status: Aceito
+status: Accepted
 tags: [workflow, action, composition, resources, context, errors, panic]
-related: [adr:workflow:002, adr:workflow:009, adr:workflow:013, tdd:workflow:core, tdd:workflow:composition]
+related: [adr:workflow:action-as-deferred-context-bound-computation, adr:workflow:composition-and-resource-safety, adr:workflow:sequential-traverse-over-slices, tdd:workflow:core, tdd:workflow:composition]
 date: 2026-08-11
 ---
 # TDD: Representação e execução de Action
